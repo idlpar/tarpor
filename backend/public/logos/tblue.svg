@@ -1,0 +1,46 @@
+<svg id="Layer_2" data-name="Layer 2" xmlns="http://www.w3.org/2000/svg" class="h-6 w-10" viewBox="0 0 173.21 399.86">
+    <defs>
+        <style>
+            .cls-1 {
+            fill: #006d77; /* Deep teal */
+            }
+
+            .cls-1, .cls-2, .cls-3, .cls-4, .cls-5, .cls-6 {
+            stroke-width: 1px;
+            stroke: white;
+            }
+
+            .cls-2 {
+            fill: #f4a261; /* Warm gold */
+            }
+
+            .cls-3 {
+            fill: #83c5be; /* Soft mint */
+            }
+
+            .cls-4 {
+            fill: #ffddd2; /* Pastel pink */
+            }
+
+            .cls-5 {
+            fill: #e29578; /* Coral */
+            }
+
+            .cls-6 {
+            fill: #457b9d; /* Muted blue */
+            }
+        </style>
+    </defs>
+    <g id="Layer_1-2" data-name="Layer 1">
+        <path class="cls-4" d="M0,250l86.6,50v-100S0,250,0,250l86.6-50L0,250"/>
+        <path class="cls-3" d="M86.6,299.86l86.6,50v-100s-86.6,50-86.6,50l86.6-50-86.6,50"/>
+        <path class="cls-5" d="M0,150l86.6,50v-100S0,150,0,150l86.6-50L0,150"/>
+        <path class="cls-1" d="M0,50l86.6,50V0S0,50,0,50L86.6,0,0,50"/>
+        <path class="cls-4" d="M0,349.86l86.6,50v-100S0,349.86,0,349.86l86.6-50L0,349.86"/>
+        <path class="cls-2" d="M173.21,349.86l-86.6,50v-100s86.6,50,86.6,50l-86.6-50,86.6,50"/>
+        <path class="cls-3" d="M86.6,299.86L0,349.86v-100s86.6,50,86.6,50L0,249.86l86.6,50"/>
+        <path class="cls-6" d="M86.6,200L0,250v-100s86.6,50,86.6,50L0,150l86.6,50"/>
+        <path class="cls-3" d="M86.6,100L0,150V50s86.6,50,86.6,50L0,50l86.6,50"/>
+        <path class="cls-2" d="M173.21,150l-86.6,50v-100s86.6,50,86.6,50l-86.6-50,86.6,50"/>
+    </g>
+</svg>
