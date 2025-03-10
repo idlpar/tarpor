@@ -51,15 +51,11 @@ document.addEventListener("DOMContentLoaded", function () {
                     const li = document.createElement("li");
                     li.classList.add("px-2", "py-2", "border-b", "border-gray-300", "hover:bg-gray-100", "cursor-pointer");
 
-                    // Build the search result item
                     li.innerHTML = `
                         <a href="${item.link}" class="flex items-center space-x-3 p-1 hover:bg-gray-50 transition-colors duration-200 rounded-lg">
-                            <!-- Thumbnail -->
                             <span class="size-20 shrink-0 border border-lime-500 rounded-lg">
                                 <img src="${item.imageUrl}" alt="${item.title}" class="w-full h-full object-cover rounded-md shadow-sm">
                             </span>
-
-                            <!-- Text Content -->
                             <span class="flex-1 text-sm">
                                 <div class="text-left">
                                     <span class="font-semibold text-gray-800 truncate">${item.title}</span>
@@ -97,63 +93,58 @@ document.addEventListener("DOMContentLoaded", function () {
     const searchDropdown = document.getElementById("search-dropdown");
     const searchResults = document.getElementById("search-results");
 
-    searchBox.addEventListener("input", function () {
-        handleSearch(searchBox, searchDropdown, searchResults);
-    });
+    if (searchBox && searchDropdown && searchResults) {
+        searchBox.addEventListener("input", function () {
+            handleSearch(searchBox, searchDropdown, searchResults);
+        });
+    }
 
     // Mobile Search Elements
     const mobileSearchBox = document.querySelector("#mobile-search-box input[type='search']");
     const mobileSearchDropdown = document.getElementById("mobile-search-dropdown");
     const mobileSearchResults = document.getElementById("mobile-search-results");
 
-    mobileSearchBox.addEventListener("input", function () {
-        handleSearch(mobileSearchBox, mobileSearchDropdown, mobileSearchResults);
-    });
+    if (mobileSearchBox && mobileSearchDropdown && mobileSearchResults) {
+        mobileSearchBox.addEventListener("input", function () {
+            handleSearch(mobileSearchBox, mobileSearchDropdown, mobileSearchResults);
+        });
+    }
 
     // Hide dropdowns when clicking outside
     document.addEventListener("click", function (e) {
-        if (!searchBox.contains(e.target) && !searchDropdown.contains(e.target)) {
+        if (searchDropdown && !searchBox.contains(e.target) && !searchDropdown.contains(e.target)) {
             searchDropdown.classList.add("hidden");
         }
 
-        if (!mobileSearchBox.contains(e.target) && !mobileSearchDropdown.contains(e.target)) {
+        if (mobileSearchDropdown && !mobileSearchBox.contains(e.target) && !mobileSearchDropdown.contains(e.target)) {
             mobileSearchDropdown.classList.add("hidden");
         }
     });
 
     // Toggle Mobile Search Visibility
-    document.getElementById('toggle-search').addEventListener('click', function () {
-        const searchBox = document.getElementById('mobile-search-box');
-        searchBox.classList.toggle('hidden');
-    });
+    const toggleSearchButton = document.getElementById('toggle-search');
+    const mobileSearchBoxContainer = document.getElementById('mobile-search-box');
 
-
-
+    if (toggleSearchButton && mobileSearchBoxContainer) {
+        toggleSearchButton.addEventListener('click', function () {
+            mobileSearchBoxContainer.classList.toggle('hidden');
+        });
+    }
 
     // Cart Sidebar
     const cartSidebar = document.getElementById('cart-sidebar');
     const openCartButton = document.querySelector('[aria-label="Cart"]');
     const closeCartButton = document.getElementById('close-cart-sidebar');
 
-    openCartButton.addEventListener('click', () => {
-        cartSidebar.classList.remove('translate-x-full');
-    });
+    if (openCartButton && cartSidebar && closeCartButton) {
+        openCartButton.addEventListener('click', () => {
+            cartSidebar.classList.remove('translate-x-full');
+        });
 
-    closeCartButton.addEventListener('click', () => {
-        cartSidebar.classList.add('translate-x-full');
-    });
-
-
-
-
-    // // Toggle User Dropdown
-    // document.getElementById('user-menu-button').addEventListener('click', function () {
-    //     const dropdown = document.getElementById('user-dropdown');
-    //     dropdown.classList.toggle('hidden');
-    // });
-
-
-
+        closeCartButton.addEventListener('click', () => {
+            cartSidebar.classList.add('translate-x-full');
+        });
+    }
 
     // Mobile Menu Functionality
     const mobileMenu = document.getElementById("mobile-menu");
@@ -162,125 +153,75 @@ document.addEventListener("DOMContentLoaded", function () {
     const mobileMenuList = document.getElementById("mobile-menu-list");
     const desktopMenu = document.getElementById("desktop-menu");
 
-    // Clone desktop menu into mobile menu
-    mobileMenuList.innerHTML = desktopMenu.innerHTML;
+    if (desktopMenu && mobileMenuList) {
+        mobileMenuList.innerHTML = desktopMenu.innerHTML;
 
-    // Modify each menu item
-    mobileMenuList.querySelectorAll("li").forEach((menuItem) => {
-        // Apply styles to list items Main Menu List
-        // menuItem.className="";
-        menuItem.classList.add(
-            "border-b",
-            "border-gray-700",
-            "pb-2",
-            "flex",
-            "justify-between",
-            "items-center",
-            "cursor-pointer",
-            "relative"
-        );
-
-        // Target child <li> elements inside dropdowns
-        const childLis = menuItem.querySelectorAll(".dropdown li");
-        childLis.forEach((childLi) => {
-            // This is whet i see on DIV > LI
-            childLi.classList.add(
-                "py-1",
-                "px-4",
-                "border-b-[1px]",
-                "border-lime-500",
-                "bg-lime-200",
+        mobileMenuList.querySelectorAll("li").forEach((menuItem) => {
+            menuItem.classList.add(
+                "border-b",
+                "border-gray-700",
+                "pb-2",
+                "flex",
+                "justify-between",
+                "items-center",
+                "cursor-pointer",
+                "relative"
             );
+
+            const childLis = menuItem.querySelectorAll(".dropdown li");
+            childLis.forEach((childLi) => {
+                childLi.classList.add(
+                    "py-1",
+                    "px-4",
+                    "border-b-[1px]",
+                    "border-lime-500",
+                    "bg-lime-200"
+                );
+            });
+
+            let dropdown = menuItem.querySelector(".dropdown");
+            if (dropdown) {
+                dropdown.className = "";
+                dropdown.classList.add("hidden", "w-full");
+
+                let toggleBtn = document.createElement("span");
+                toggleBtn.textContent = "+";
+                toggleBtn.classList.add("text-white", "text-lg", "font-bold", "ml-auto");
+
+                let dropdownWrapper = document.createElement("div");
+                dropdownWrapper.classList.add("w-full");
+                dropdownWrapper.appendChild(dropdown);
+                menuItem.after(dropdownWrapper);
+
+                menuItem.appendChild(toggleBtn);
+
+                menuItem.addEventListener("click", function (e) {
+                    if (e.target.closest(".dropdown")) return;
+
+                    dropdown.classList.toggle("hidden");
+                    toggleBtn.textContent = dropdown.classList.contains("hidden") ? "+" : "−";
+
+                    if (!dropdown.classList.contains("hidden")) {
+                        dropdown.className = "";
+                        dropdown.classList.add("transition-all", "duration-300", "ease-in-out");
+                        dropdown.classList.remove("flex", "justify-between", "bg-gray-50", "item-center", "relative");
+                    }
+                });
+            }
+        });
+    }
+
+    if (openMenuBtn && mobileMenu && closeMenuBtn) {
+        openMenuBtn.addEventListener("click", function () {
+            mobileMenu.classList.remove("-translate-x-full");
         });
 
-        let dropdown = menuItem.querySelector(".dropdown");
-        if (dropdown) {
-            // Remove desktop-only styles
-            // dropdown.classList.remove(
-            //     "absolute",
-            //     "left-0",
-            //     "mt-4",
-            //     "opacity-0",
-            //     "invisible",
-            //     "group-hover:opacity-100",
-            //     "group-hover:visible"
-            // );
-            dropdown.className = "";
-            // Style dropdown for mobile and ensure it appears below li which is DIV > UL
-            dropdown.classList.add(
-                "hidden",
-                "w-full",
-                // "bg-gray-800",
-                // "mt-1",
-                // "rounded",
-                // "px-2",
-                // "border",
-                // "border-dark",
-                // "max-h-48",
-                // "overflow-y-auto"
-            );
+        closeMenuBtn.addEventListener("click", function () {
+            mobileMenu.classList.add("-translate-x-full");
+        });
+    }
 
-            // Create a toggle button inside the <li>
-            let toggleBtn = document.createElement("span");
-            toggleBtn.textContent = "+";
-            toggleBtn.classList.add("text-white", "text-lg", "font-bold", "ml-auto");
-
-            // Create a wrapper to place dropdown BELOW the li
-            let dropdownWrapper = document.createElement("div");
-            dropdownWrapper.classList.add("w-full"); // Ensures full width
-            dropdownWrapper.appendChild(dropdown);
-            menuItem.after(dropdownWrapper); // Places it BELOW li
-
-            menuItem.appendChild(toggleBtn);
-
-            // Click the entire li to toggle the dropdown
-            menuItem.addEventListener("click", function (e) {
-                // Prevent clicks inside dropdown from toggling it again
-                if (e.target.closest(".dropdown")) return;
-
-                dropdown.classList.toggle("hidden");
-                toggleBtn.textContent = dropdown.classList.contains("hidden") ? "+" : "−";
-
-                // Apply custom TailwindCSS classes to the dropdown when it's visible DIV > UL
-                if (!dropdown.classList.contains("hidden")) {
-                    dropdown.className = "";
-                    dropdown.classList.add(
-                        "transition-all",
-                        "duration-300",
-                        "ease-in-out",
-                    );
-                    dropdown.classList.remove(
-                        "flex",
-                        "justify-between",
-                        "bg-gray-50",
-                        "item-center",
-                        "relative",
-                    );
-                    // dropdown.classList.add(
-                    //     "w-full",
-                    //     "bg-sky-300",
-                    //     "border-b",
-                    //     "border-lime-500",
-                    //     "px-2",
-                    //     "max-h-48",
-                    //     "overflow-y-auto"
-                    // );
-                }
-            });
-        }
-    });
-
-    // Open mobile menu
-    openMenuBtn.addEventListener("click", function () {
-        mobileMenu.classList.remove("-translate-x-full");
-    });
-
-    // Close mobile menu
-    closeMenuBtn.addEventListener("click", function () {
-        mobileMenu.classList.add("-translate-x-full");
-    });
-
-    // Slider Option displaying slider on homepage
+    // Slider Functionality
     const slideContainer = document.getElementById("slide-container");
     const slides = document.querySelectorAll(".slide");
     const indicators = document.querySelectorAll(".slide-indicator");
@@ -288,109 +229,93 @@ document.addEventListener("DOMContentLoaded", function () {
     const nextButton = document.getElementById("next-button");
     let currentIndex = 0;
 
-    // Function to update the slide position
     function updateSlide() {
-        slideContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+        if (slideContainer) {
+            slideContainer.style.transform = `translateX(-${currentIndex * 100}%)`;
+        }
         indicators.forEach((indicator, index) => {
             indicator.classList.toggle("opacity-100", index === currentIndex);
             indicator.classList.toggle("opacity-50", index !== currentIndex);
         });
     }
 
-    // Previous Button Click
-    prevButton.addEventListener("click", () => {
-        currentIndex = (currentIndex - 1 + slides.length) % slides.length;
-        updateSlide();
-    });
-
-    // Next Button Click
-    nextButton.addEventListener("click", () => {
-        currentIndex = (currentIndex + 1) % slides.length;
-        updateSlide();
-    });
-
-    // Auto-slide functionality
-    setInterval(() => {
-        currentIndex = (currentIndex + 1) % slides.length;
-        updateSlide();
-    }, 5000);
-
-    // Indicator Click Functionality
-    indicators.forEach((indicator) => {
-        indicator.addEventListener("click", () => {
-            const slideIndex = parseInt(indicator.getAttribute("data-slideindex"));
-            currentIndex = slideIndex;
+    if (prevButton && nextButton) {
+        prevButton.addEventListener("click", () => {
+            currentIndex = (currentIndex - 1 + slides.length) % slides.length;
             updateSlide();
         });
-    });
 
-
-
-    // To show Tooltips
-    document.querySelectorAll('.btn').forEach(button => {
-        button.addEventListener('mouseenter', () => {
-            const tooltip = button.querySelector('.tooltip-text');
-            const buttonRect = button.getBoundingClientRect();
-            const tooltipRect = tooltip.getBoundingClientRect();
-
-            if (buttonRect.right + tooltipRect.width > window.innerWidth) {
-                tooltip.classList.remove('left-full', 'ml-2');
-                tooltip.classList.add('right-full', 'mr-2');
-                tooltip.querySelector('span').classList.remove('-left-2', 'border-r-4');
-                tooltip.querySelector('span').classList.add('-right-2', 'border-l-4');
-            } else {
-                tooltip.classList.remove('right-full', 'mr-2');
-                tooltip.classList.add('left-full', 'ml-2');
-                tooltip.querySelector('span').classList.remove('-right-2', 'border-l-4');
-                tooltip.querySelector('span').classList.add('-left-2', 'border-r-4');
-            }
+        nextButton.addEventListener("click", () => {
+            currentIndex = (currentIndex + 1) % slides.length;
+            updateSlide();
         });
+    }
+
+    // Tooltips
+    document.querySelectorAll('.btn').forEach(button => {
+        const tooltip = button.querySelector('.tooltip-text');
+        if (tooltip) {
+            button.addEventListener('mouseenter', () => {
+                const buttonRect = button.getBoundingClientRect();
+                const tooltipRect = tooltip.getBoundingClientRect();
+
+                if (buttonRect.right + tooltipRect.width > window.innerWidth) {
+                    tooltip.classList.remove('left-full', 'ml-2');
+                    tooltip.classList.add('right-full', 'mr-2');
+                    tooltip.querySelector('span').classList.remove('-left-2', 'border-r-4');
+                    tooltip.querySelector('span').classList.add('-right-2', 'border-l-4');
+                } else {
+                    tooltip.classList.remove('right-full', 'mr-2');
+                    tooltip.classList.add('left-full', 'ml-2');
+                    tooltip.querySelector('span').classList.remove('-right-2', 'border-l-4');
+                    tooltip.querySelector('span').classList.add('-left-2', 'border-r-4');
+                }
+            });
+        }
     });
 
-
-    // Scrolling to the top funciton
+    // Scroll to Top
     const scrollToTopButton = document.getElementById("scrollToTop");
 
-    // Show the button and adjust opacity based on scroll position
-    window.addEventListener("scroll", () => {
-        const scrollPosition = document.documentElement.scrollTop || document.body.scrollTop;
-        const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollToTopButton) {
+        window.addEventListener("scroll", () => {
+            const scrollPosition = document.documentElement.scrollTop || document.body.scrollTop;
+            const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+            const opacity = Math.min(scrollPosition / maxScroll, 1);
+            scrollToTopButton.style.opacity = opacity;
 
-        // Calculate opacity based on how much you've scrolled
-        const opacity = Math.min(scrollPosition / maxScroll, 1); // Max opacity is 1 when fully scrolled
-        scrollToTopButton.style.opacity = opacity;
+            if (scrollPosition > 100) {
+                scrollToTopButton.classList.remove("hidden");
+            } else {
+                scrollToTopButton.classList.add("hidden");
+            }
+        });
 
-        // Show the button when scrolled down enough
-        if (scrollPosition > 100) {
-            scrollToTopButton.classList.remove("hidden");
-        } else {
-            scrollToTopButton.classList.add("hidden");
-        }
-    });
+        scrollToTopButton.addEventListener("click", () => {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+        });
+    }
 
-    // Scroll to top when the button is clicked
-    scrollToTopButton.addEventListener("click", () => {
-        window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    // Read More/Less Functionality
+    const readMoreLink = document.getElementById("readMoreLink");
 
-    // This is to show SEO part for HOME page
-    document.getElementById("readMoreLink").addEventListener("click", function () {
-        var dots = document.getElementById("dots");
-        var moreText = document.getElementById("more");
-        var extraContent = document.getElementById("extraContent");
+    if (readMoreLink) {
+        readMoreLink.addEventListener("click", function () {
+            const dots = document.getElementById("dots");
+            const moreText = document.getElementById("more");
+            const extraContent = document.getElementById("extraContent");
 
-        if (moreText.style.display === "none") {
-            // Show extra content
-            moreText.style.display = "inline";
-            dots.style.display = "none";
-            this.innerHTML = "Read Less";
-            extraContent.style.display = "block";
-        } else {
-            // Hide extra content
-            moreText.style.display = "none";
-            dots.style.display = "inline";
-            this.innerHTML = "Read More";
-            extraContent.style.display = "none";
-        }
-    });
+            if (moreText.style.display === "none") {
+                moreText.style.display = "inline";
+                dots.style.display = "none";
+                this.textContent = "Read Less";
+                extraContent.style.display = "block";
+            } else {
+                moreText.style.display = "none";
+                dots.style.display = "inline";
+                this.textContent = "Read More";
+                extraContent.style.display = "none";
+            }
+        });
+    }
 });

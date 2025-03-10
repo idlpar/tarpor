@@ -4,8 +4,6 @@ import Collapse from '@alpinejs/collapse'
 import '@fortawesome/fontawesome-free/js/all.js';
 
 window.Alpine = Alpine;
-Alpine.start();
-
 Alpine.plugin(Collapse)
 Alpine.start()
 
