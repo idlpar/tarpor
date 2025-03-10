@@ -74,7 +74,7 @@
                            class="w-full px-4 py-3 text-lg bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-100 transition-all duration-200"
                            placeholder="your@email.com">
                     @error('email')
-                    <p class="mt-2 text-sm text-red-500">{{ $message }}</p>
+                    <p id="email-error" class="mt-2 text-sm text-red-500">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -188,6 +188,24 @@
             init();
             animate();
         });
+
+        // Function to clear error messages when the user starts typing
+        const clearErrorOnInput = (inputId, errorId) => {
+            const input = document.getElementById(inputId);
+            const error = document.getElementById(errorId);
+
+            if (input && error) {
+                input.addEventListener('input', () => {
+                    error.classList.add('hidden'); // Hide the error message
+                });
+            }
+        };
+
+        // Clear email error message
+        clearErrorOnInput('email', 'email-error');
+
+        // Clear password error message
+        clearErrorOnInput('password', 'password-error');
     </script>
 
 @endpush

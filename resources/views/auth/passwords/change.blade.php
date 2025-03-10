@@ -101,7 +101,7 @@
                                 <x-icon name="icon-eye" class="h-7 w-7" />
                         </span>
                         @error('current_password')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="current-password-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
@@ -132,7 +132,7 @@
                         </ul>
                     </div>
                         @error('new_password')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="new-password-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -153,7 +153,7 @@
                                 <x-icon name="icon-eye" class="h-7 w-7" />
                         </span>
                         @error('new_password_confirmation')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="new-password-confirmation-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
@@ -360,6 +360,23 @@
 
                 confirmPasswordInput.addEventListener('input', validatePasswordMatch);
             }
+
+            // Function to clear error messages when the user starts typing
+            const clearErrorOnInput = (inputId, errorId) => {
+                const input = document.getElementById(inputId);
+                const error = document.getElementById(errorId);
+
+                if (input && error) {
+                    input.addEventListener('input', () => {
+                        error.classList.add('hidden'); // Hide the error message
+                    });
+                }
+            };
+
+            // Clear password error message
+            clearErrorOnInput('current_password', 'current-password-error');
+            clearErrorOnInput('new_password', 'new-password-error');
+            clearErrorOnInput('new_password_confirmation', 'new-password-confirmation-error');
         });
     </script>
 @endpush

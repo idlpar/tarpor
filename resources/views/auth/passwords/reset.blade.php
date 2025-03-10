@@ -139,7 +139,7 @@
                         </ul>
                     </div>
                     @error('password')
-                    <span class="text-red-400 text-sm mt-2">{{ $message }}</span>
+                    <span id="password-error" class="text-red-400 text-sm mt-2">{{ $message }}</span>
                     @enderror
                 </div>
 
@@ -155,7 +155,7 @@
                         </span>
                     </div>
                     @error('password_confirmation')
-                    <span class="text-red-400 text-sm mt-2">{{ $message }}</span>
+                    <span id="confirm-password-error" class="text-red-400 text-sm mt-2">{{ $message }}</span>
                     @enderror
                 </div>
 
@@ -373,6 +373,22 @@
             if (passwordInput) {
                 passwordInput.addEventListener('input', validatePassword);
             }
+
+            // Function to clear error messages when the user starts typing
+            const clearErrorOnInput = (inputId, errorId) => {
+                const input = document.getElementById(inputId);
+                const error = document.getElementById(errorId);
+
+                if (input && error) {
+                    input.addEventListener('input', () => {
+                        error.classList.add('hidden'); // Hide the error message
+                    });
+                }
+            };
+
+            // Clear password error message
+            clearErrorOnInput('password', 'password-error');
+            clearErrorOnInput('password_confirmation', 'confirm-password-error');
         });
     </script>
 @endpush

@@ -288,6 +288,21 @@
                 startCountdown();
                 document.getElementById('resend-otp-form').submit();
             });
+
+            // Function to clear error messages when the user starts typing
+            const clearErrorOnInput = (inputId, errorId) => {
+                const input = document.getElementById(inputId);
+                const error = document.getElementById(errorId);
+
+                if (input && error) {
+                    input.addEventListener('input', () => {
+                        error.classList.add('hidden'); // Hide the error message
+                    });
+                }
+            };
+
+            // Clear password error message
+            clearErrorOnInput('password', 'password-error');
         });
     </script>
 @endpush

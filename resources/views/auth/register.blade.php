@@ -108,11 +108,11 @@
                     <!-- Email -->
                     <div>
                         <label class="block text-sm font-medium text-gray-300 mb-2">Email Address</label>
-                        <input type="email" name="email" value="{{ old('email') }}" required
+                        <input type="email" id="email" name="email" value="{{ old('email') }}" required
                                class="w-full px-4 py-3 text-sm bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-100 transition-all duration-200"
                                placeholder="example@mail.com">
                         @error('email')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="email-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -121,7 +121,7 @@
                         <label class="block text-sm font-medium text-gray-300 mb-2">Mobile Number</label>
                         <input type="text" id="phone" name="phone" value="{{ old('phone') }}" required
                                class="w-full px-4 py-3 text-sm bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-100 transition-all duration-200"
-                               placeholder="017XXXXXXXX" maxlength="11" oninput="validatePhoneNumber()">
+                               placeholder="017XXXXXXXX" maxlength="11">
                         @error('phone')
                         <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
@@ -139,7 +139,7 @@
                             </span>
                         </div>
                         @error('password')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="password-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -155,7 +155,7 @@
                             </span>
                         </div>
                         @error('password_confirmation')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="confirm-password-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
@@ -186,6 +186,12 @@
     <!-- Password Toggle Script -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
+            // Phone Number Validation
+            const phoneInput = document.getElementById("phone");
+            if (phoneInput) {
+                phoneInput.addEventListener("input", validatePhoneNumber);
+            }
+            // Icon for Toggle to Display
             const togglePassword = (inputId, toggleId) => {
                 const input = document.getElementById(inputId);
                 const toggle = document.getElementById(toggleId);
@@ -231,6 +237,25 @@
                 const phoneInput = document.getElementById("phone");
                 phoneInput.value = phoneInput.value.replace(/\D/g, "");
             }
+
+            // Function to clear error messages when the user starts typing
+            const clearErrorOnInput = (inputId, errorId) => {
+                const input = document.getElementById(inputId);
+                const error = document.getElementById(errorId);
+
+                if (input && error) {
+                    input.addEventListener('input', () => {
+                        error.classList.add('hidden'); // Hide the error message
+                    });
+                }
+            };
+
+            // Clear email error message
+            clearErrorOnInput('email', 'email-error');
+
+            // Clear password error message
+            clearErrorOnInput('password', 'password-error');
+            clearErrorOnInput('password_confirmation', 'confirm-password-error');
         });
     </script>
 

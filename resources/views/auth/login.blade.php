@@ -105,7 +105,7 @@
                             placeholder="Enter Your Email"
                         >
                         @error('email')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p  id="email-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
 
@@ -127,7 +127,7 @@
                             </span>
                         </div>
                         @error('password')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                        <p id="password-error" class="mt-2 text-sm text-red-400">{{ $message }}</p>
                         @enderror
                     </div>
                 </div>
@@ -252,6 +252,24 @@
             };
 
             togglePassword('password', 'toggle-password');
+
+            // Function to clear error messages when the user starts typing
+            const clearErrorOnInput = (inputId, errorId) => {
+                const input = document.getElementById(inputId);
+                const error = document.getElementById(errorId);
+
+                if (input && error) {
+                    input.addEventListener('input', () => {
+                        error.classList.add('hidden'); // Hide the error message
+                    });
+                }
+            };
+
+            // Clear email error message
+            clearErrorOnInput('email', 'email-error');
+
+            // Clear password error message
+            clearErrorOnInput('password', 'password-error');
         });
     </script>
 
@@ -309,8 +327,7 @@
                     this.container.appendChild(this.canvas);
                     this.ctx = this.canvas.getContext('2d');
 
-                    // Debug: Log canvas element
-                    console.log('Canvas:', this.canvas);
+
 
                     this.setCanvasSize();
 
