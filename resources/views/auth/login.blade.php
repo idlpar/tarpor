@@ -3,6 +3,7 @@
 @section('title', 'Login - TARPOR | Secure User Authentication')
 @section('meta_title', 'Login - TARPOR | Secure User Authentication')
 @section('description', 'Access your TARPOR account securely. Log in with your credentials to explore our features.')
+
 @push('styles')
     <style>
         /* Hide the default password toggle icon in Edge and other browsers */
@@ -10,11 +11,52 @@
         input[type="password"]::-webkit-reveal {
             display: none;
         }
+
+        /* Particle canvas styling */
+        #particle-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Ensure content is above the particle canvas */
+        .content {
+            position: relative;
+            z-index: 10;
+        }
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .animated-gradient {
+            background-size: 300% 300%;
+            background-image: linear-gradient(45deg,
+            #FF6B6B, /* Red */
+            #FFD93D, /* Yellow */
+            #6BCB77, /* Green */
+            #4D96FF, /* Blue */
+            #A66DD4, /* Purple */
+            #E84A5F  /* Pink */
+            );
+            animation: gradientAnimation 6s infinite linear;
+        }
     </style>
 @endpush
+
 @section('content')
     <div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full bg-gray-800/80 backdrop-blur-lg border border-gray-700 p-10 rounded-2xl shadow-2xl transition-all hover:-translate-y-1">
+        <!-- Particle canvas -->
+        <div id="particle-canvas"></div>
+
+        <!-- Main content -->
+        <div class="max-w-md w-full bg-gray-900/50 backdrop-blur-md border border-gray-700 p-10 rounded-2xl
+            shadow-[0_0_5px_rgba(139,92,246,0.6)] transition-all hover:-translate-y-1 hover:shadow-[0_0_15px_rgba(139,92,246,0.9)] relative z-10">
             <!-- Header Section -->
             <div class="text-center">
                 <div class="mx-auto mb-4 flex justify-center">
@@ -24,7 +66,7 @@
                         </svg>
                     </div>
                 </div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                <h2 class="animated-gradient text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
                     Welcome Back
                 </h2>
                 <p class="mt-2 text-sm text-gray-200">
@@ -80,13 +122,9 @@
                                 class="w-full px-4 py-3 bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-100 transition-all duration-200"
                                 placeholder="Enter Your Password"
                             >
-                            <button
-                                id="toggle-password"
-                                type="button"
-                                class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer text-gray-950 hover:text-purple-300 transition-colors duration-200"
-                            >
+                            <span id="toggle-password" class="absolute inset-y-0 right-0 pr-3 flex items-center cursor-pointer">
                                 <x-icon name="icon-eye" class="h-7 w-7" />
-                            </button>
+                            </span>
                         </div>
                         @error('password')
                         <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
@@ -150,7 +188,6 @@
                         <span class="ml-2 text-white">Google</span>
                     </a>
 
-
                     <!-- Facebook Login -->
                     <a href="{{ route('login.facebook') }}" class="w-full flex items-center justify-center px-4 py-2 bg-blue-700/60 border border-gray-600 rounded-lg hover:bg-blue-700 transition-all duration-200">
                         <span class="w-6 h-6">
@@ -160,7 +197,6 @@
                         </span>
                         <span class="ml-2 text-white">Facebook</span>
                     </a>
-
                 </div>
             </div>
 
@@ -174,46 +210,244 @@
             </div>
         </div>
     </div>
-
 @endsection
 
 @push('footer-scripts')
     <!-- Password Toggle Script -->
     <script>
         document.addEventListener("DOMContentLoaded", function () {
-            const passwordInput = document.getElementById("password");
-            const toggleButton = document.getElementById("toggle-password");
+            const togglePassword = (inputId, toggleId) => {
+                const input = document.getElementById(inputId);
+                const toggle = document.getElementById(toggleId);
+                const icon = toggle.querySelector('svg use'); // Target the <use> element inside the <svg>
 
-            // Initially hide the eye icon
-            toggleButton.style.display = "none";
+                // Initially hide the eye icon
+                toggle.style.display = 'none';
 
-            // Show the eye icon when typing in the password field
-            passwordInput.addEventListener("input", function () {
-                if (passwordInput.value.length > 0) {
-                    toggleButton.style.display = "flex";
-                } else {
-                    toggleButton.style.display = "none";
-                }
-            });
+                // Show the eye icon when the user starts typing
+                input.addEventListener('input', () => {
+                    if (input.value.length > 0) {
+                        toggle.style.display = 'flex';
+                    } else {
+                        toggle.style.display = 'none';
+                    }
+                });
 
-            // Toggle password visibility on click
-            toggleButton.addEventListener("click", function () {
-                const toggleIcon = toggleButton.querySelector("svg");
+                // Toggle password visibility and icon
+                toggle.addEventListener('click', () => {
+                    if (input.type === "password") {
+                        input.type = "text";
+                        icon.setAttribute('xlink:href', "{{ asset('svg/sprite.svg#icon-eye-slash') }}"); // Change to eye-slash icon
 
-                if (passwordInput.type === "password") {
-                    passwordInput.type = "text";
-                    toggleIcon.innerHTML = `<x-icon name="icon-eye-slash" />`; // Change to hide icon
+                        // Revert back after 3 seconds
+                        setTimeout(() => {
+                            input.type = "password";
+                            icon.setAttribute('xlink:href', "{{ asset('svg/sprite.svg#icon-eye') }}"); // Change back to eye icon
+                        }, 3000);
+                    } else {
+                        input.type = "password";
+                        icon.setAttribute('xlink:href', "{{ asset('svg/sprite.svg#icon-eye') }}"); // Ensure icon is eye when hiding password
+                    }
+                });
+            };
 
-                    // Automatically revert to hidden after 3 seconds
-                    setTimeout(() => {
-                        passwordInput.type = "password";
-                        toggleIcon.innerHTML = `<x-icon name="icon-eye" />`; // Change back to show icon
-                    }, 3000);
-                } else {
-                    passwordInput.type = "password";
-                    toggleIcon.innerHTML = `<x-icon name="icon-eye" />`; // Show eye icon
-                }
-            });
+            togglePassword('password', 'toggle-password');
         });
+    </script>
+
+    <!-- Particle Network Script -->
+    <script>
+        (function () {
+            // Particle class
+            class Particle {
+                constructor(canvas, ctx, particleColor, x, y, velocity) {
+                    this.canvas = canvas;
+                    this.ctx = ctx;
+                    this.particleColor = particleColor;
+                    this.x = x;
+                    this.y = y;
+                    this.velocity = velocity;
+                }
+
+                update() {
+                    if (this.x > this.canvas.width + 20 || this.x < -20) {
+                        this.velocity.x = -this.velocity.x;
+                    }
+                    if (this.y > this.canvas.height + 20 || this.y < -20) {
+                        this.velocity.y = -this.velocity.y;
+                    }
+
+                    this.x += this.velocity.x;
+                    this.y += this.velocity.y;
+                }
+
+                draw() {
+                    this.ctx.beginPath();
+                    this.ctx.fillStyle = this.particleColor;
+                    this.ctx.globalAlpha = 0.7;
+                    this.ctx.arc(this.x, this.y, 1.5, 0, Math.PI * 2);
+                    this.ctx.fill();
+                }
+            }
+
+            // Particle Network class
+            class ParticleNetwork {
+                constructor(container, options) {
+                    this.container = container;
+                    this.options = {
+                        particleColor: options.particleColor || '#fff',
+                        background: options.background || 'transparent',
+                        interactive: options.interactive !== undefined ? options.interactive : true,
+                        velocity: this.setVelocity(options.speed),
+                        density: this.setDensity(options.density)
+                    };
+                    this.init();
+                }
+
+                init() {
+                    this.canvas = document.createElement('canvas');
+                    this.container.appendChild(this.canvas);
+                    this.ctx = this.canvas.getContext('2d');
+
+                    // Debug: Log canvas element
+                    console.log('Canvas:', this.canvas);
+
+                    this.setCanvasSize();
+
+                    window.addEventListener('resize', () => {
+                        this.setCanvasSize();
+                        this.particles = [];
+                        this.createParticles();
+                    });
+
+                    this.particles = [];
+                    this.createParticles();
+
+                    if (this.options.interactive) {
+                        this.interactiveParticle = new Particle(
+                            this.canvas,
+                            this.ctx,
+                            this.options.particleColor,
+                            this.canvas.width / 2,
+                            this.canvas.height / 2,
+                            { x: 0, y: 0 }
+                        );
+                        this.particles.push(this.interactiveParticle);
+
+                        let lastMouseX = this.interactiveParticle.x;
+                        let lastMouseY = this.interactiveParticle.y;
+
+                        this.canvas.addEventListener('mousemove', (event) => {
+                            const mouseX = event.clientX;
+                            const mouseY = event.clientY;
+
+                            // Debug: Log mouse coordinates
+                            console.log('Mouse X:', mouseX, 'Mouse Y:', mouseY);
+
+                            // Calculate velocity based on mouse movement
+                            this.interactiveParticle.velocity.x = (mouseX - lastMouseX) * 0.1;
+                            this.interactiveParticle.velocity.y = (mouseY - lastMouseY) * 0.1;
+
+                            // Update the interactive particle's position
+                            this.interactiveParticle.x = mouseX;
+                            this.interactiveParticle.y = mouseY;
+
+                            // Debug: Log interactive particle position and velocity
+                            console.log('Interactive Particle X:', this.interactiveParticle.x, 'Y:', this.interactiveParticle.y);
+                            console.log('Interactive Particle Velocity X:', this.interactiveParticle.velocity.x, 'Y:', this.interactiveParticle.velocity.y);
+
+                            // Update last mouse position
+                            lastMouseX = mouseX;
+                            lastMouseY = mouseY;
+                        });
+
+                        this.canvas.addEventListener('mouseup', () => {
+                            // Add some random velocity on mouseup
+                            this.interactiveParticle.velocity = {
+                                x: (Math.random() - 0.5) * this.options.velocity,
+                                y: (Math.random() - 0.5) * this.options.velocity
+                            };
+                        });
+                    }
+
+                    this.animate();
+                }
+
+                setCanvasSize() {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                }
+
+                createParticles() {
+                    const particleCount = (this.canvas.width * this.canvas.height) / this.options.density;
+                    for (let i = 0; i < particleCount; i++) {
+                        const x = Math.random() * this.canvas.width;
+                        const y = Math.random() * this.canvas.height;
+                        const velocity = {
+                            x: (Math.random() - 0.5) * this.options.velocity,
+                            y: (Math.random() - 0.5) * this.options.velocity
+                        };
+                        this.particles.push(new Particle(this.canvas, this.ctx, this.options.particleColor, x, y, velocity));
+                    }
+                }
+
+                animate() {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    this.particles.forEach(particle => {
+                        particle.update();
+                        particle.draw();
+                    });
+
+                    for (let i = 0; i < this.particles.length; i++) {
+                        for (let j = i + 1; j < this.particles.length; j++) {
+                            const dx = this.particles[i].x - this.particles[j].x;
+                            const dy = this.particles[i].y - this.particles[j].y;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance < 120) {
+                                this.ctx.beginPath();
+                                this.ctx.strokeStyle = this.options.particleColor;
+                                this.ctx.globalAlpha = (120 - distance) / 120;
+                                this.ctx.lineWidth = 0.7;
+                                this.ctx.moveTo(this.particles[i].x, this.particles[i].y);
+                                this.ctx.lineTo(this.particles[j].x, this.particles[j].y);
+                                this.ctx.stroke();
+                            }
+                        }
+                    }
+
+                    requestAnimationFrame(this.animate.bind(this));
+                }
+
+                setVelocity(speed) {
+                    switch (speed) {
+                        case 'fast': return 2;
+                        case 'slow': return 0.5;
+                        case 'none': return 0;
+                        default: return 1;
+                    }
+                }
+
+                setDensity(density) {
+                    switch (density) {
+                        case 'high': return 5000;
+                        case 'low': return 20000;
+                        default: return 10000;
+                    }
+                }
+            }
+
+            // Initialize Particle Network
+            const canvasDiv = document.getElementById('particle-canvas');
+            const options = {
+                particleColor: '#8b5cf6',
+                background: 'transparent',
+                interactive: true,
+                speed: 'medium',
+                density: 'high'
+            };
+            new ParticleNetwork(canvasDiv, options);
+        })();
     </script>
 @endpush

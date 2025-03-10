@@ -44,7 +44,7 @@ class AuthController extends Controller
             }
 
             // Redirect based on user role after verification
-            return redirect()->intended($this->redirectTo());
+            return redirect()->intended($this->redirectTo())->with('success', 'Login successful! Welcome back.');
         }
 
         // If login fails
@@ -111,7 +111,7 @@ class AuthController extends Controller
             $request->session()->forget('otp_email');
 
             return redirect()->intended($this->redirectTo())
-                ->with('success', 'Your account has been successfully verified. Welcome back!');
+                ->with('success', 'Your account has been successfully verified!');
         }
 
         return back()->with('error', 'Invalid OTP or OTP expired');

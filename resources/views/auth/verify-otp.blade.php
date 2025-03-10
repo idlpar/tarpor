@@ -1,11 +1,75 @@
 @extends('layouts.app')
 
+@section('title', 'Verify OTP - TARPOR | Secure User Authentication')
+@section('meta_title', 'Verify OTP - TARPOR | Secure User Authentication')
+@section('description', 'Verify your OTP securely on TARPOR.')
+
+@push('styles')
+    <style>
+        /* Hide the default password toggle icon in Edge and other browsers */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-webkit-reveal {
+            display: none;
+        }
+
+        /* Raindrop Particle Canvas */
+        #raindrop-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* Ensure content is above the particle canvas */
+        .content {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Gradient animation */
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .animated-gradient {
+            background-size: 300% 300%;
+            background-image: linear-gradient(45deg,
+            #6C5CE7, /* Purple */
+            #0984E3, /* Blue */
+            #00B894, /* Green */
+            #FDCB6E, /* Yellow */
+            #E17055, /* Orange */
+            #D63031  /* Red */
+            );
+            animation: gradientAnimation 6s infinite linear;
+        }
+
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+    </style>
+@endpush
+
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-900 to-gray-800 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div class="max-w-md w-full space-y-8 bg-gray-800/90 backdrop-blur-lg rounded-3xl shadow-2xl border border-gray-700 p-10 transition-all duration-300 hover:shadow-3xl hover:-translate-y-1">
+    <div class="min-h-screen bg-gradient-to-br from-[#0C1220] via-[#1E3A5F] to-[#101624] flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <!-- Raindrop Particle Canvas -->
+        <div id="raindrop-canvas" class="absolute inset-0 z-0"></div>
+
+        <!-- Main Content -->
+        <div class="max-w-md w-full space-y-8 bg-[#1E1E2E]/80 backdrop-blur-xl border border-gray-700 p-10 rounded-3xl
+                shadow-[0_0_5px_rgba(93,188,252,0.6)] transition-all duration-300 hover:shadow-[0_0_15px_rgba(93,188,252,0.9)]
+                hover:-translate-y-1 relative z-10">
             <!-- Header Section -->
             <div class="text-center">
-                <div class="mx-auto mb-4 flex justify-center">
+                <div class="mx-auto mb-4 flex justify-center animate-float">
                     <div class="p-3 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-lg shadow-lg">
                         <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -13,15 +77,13 @@
                         </svg>
                     </div>
                 </div>
-                <h2 class="text-3xl font-bold bg-gradient-to-r from-purple-400 to-indigo-400 bg-clip-text text-transparent">
+                <h2 class="animated-gradient text-3xl font-bold bg-clip-text text-transparent">
                     Verify OTP
                 </h2>
                 <p class="mt-2 text-sm text-gray-400">
                     Check your email for the 6-digit code
                 </p>
             </div>
-
-            <!-- ... (keep messages section same) ... -->
 
             <!-- Verification Form -->
             <form class="mt-8 space-y-6" method="POST" action="{{ route('verify.otp') }}">
@@ -81,10 +143,111 @@
                 @csrf
                 <input type="hidden" name="email" value="{{ session('otp_email') }}">
             </form>
-
         </div>
     </div>
+@endsection
 
+@push('footer-scripts')
+    <!-- Raindrop Particle Script -->
+    <script>
+        (function () {
+            // Raindrop class
+            class Raindrop {
+                constructor(canvas, ctx, colors) {
+                    this.canvas = canvas;
+                    this.ctx = ctx;
+                    this.colors = colors;
+                    this.reset();
+                }
+
+                reset() {
+                    this.x = Math.random() * this.canvas.width;
+                    this.y = Math.random() * -this.canvas.height;
+                    this.speed = Math.random() * 3 + 2; // Falling speed
+                    this.size = Math.random() * 2 + 1; // Raindrop size
+                    this.color = this.colors[Math.floor(Math.random() * this.colors.length)];
+                }
+
+                update() {
+                    this.y += this.speed;
+                    if (this.y > this.canvas.height) {
+                        this.reset();
+                    }
+                }
+
+                draw() {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(this.x, this.y);
+                    this.ctx.lineTo(this.x + this.size / 2, this.y + this.size * 2);
+                    this.ctx.strokeStyle = this.color;
+                    this.ctx.lineWidth = this.size;
+                    this.ctx.stroke();
+                }
+            }
+
+            // Raindrop Animation
+            class RaindropAnimation {
+                constructor(container, options) {
+                    this.container = container;
+                    this.options = {
+                        colors: options.colors || ['#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031'],
+                        density: options.density || 100
+                    };
+                    this.init();
+                }
+
+                init() {
+                    this.canvas = document.createElement('canvas');
+                    this.container.appendChild(this.canvas);
+                    this.ctx = this.canvas.getContext('2d');
+
+                    this.setCanvasSize();
+
+                    window.addEventListener('resize', () => {
+                        this.setCanvasSize();
+                    });
+
+                    this.raindrops = [];
+                    this.createRaindrops();
+
+                    this.animate();
+                }
+
+                setCanvasSize() {
+                    this.canvas.width = window.innerWidth;
+                    this.canvas.height = window.innerHeight;
+                }
+
+                createRaindrops() {
+                    const raindropCount = (this.canvas.width * this.canvas.height) / this.options.density;
+                    for (let i = 0; i < raindropCount; i++) {
+                        this.raindrops.push(new Raindrop(this.canvas, this.ctx, this.options.colors));
+                    }
+                }
+
+                animate() {
+                    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                    this.raindrops.forEach(raindrop => {
+                        raindrop.update();
+                        raindrop.draw();
+                    });
+
+                    requestAnimationFrame(this.animate.bind(this));
+                }
+            }
+
+            // Initialize Raindrop Animation
+            const raindropDiv = document.getElementById('raindrop-canvas');
+            const options = {
+                colors: ['#6C5CE7', '#0984E3', '#00B894', '#FDCB6E', '#E17055', '#D63031'],
+                density: 2000
+            };
+            new RaindropAnimation(raindropDiv, options);
+        })();
+    </script>
+
+    <!-- Resend OTP Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const resendButton = document.getElementById('resend-button');
@@ -127,8 +290,4 @@
             });
         });
     </script>
-
-@endsection
-@push('footer-scripts')
-
 @endpush
