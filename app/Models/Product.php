@@ -12,8 +12,8 @@ class Product extends Model
     // Define fillable fields
     protected $fillable = [
         'sku', 'name', 'slug', 'description', 'short_description', 'price', 'sale_price',
-        'cost_price', 'stock_quantity', 'stock_status', 'tags', 'weight', 'related_products',
-        'length', 'width', 'height', 'brand_id', 'category_id', 'attributes', 'images', 'thumbnail',
+        'cost_price', 'stock_quantity', 'stock_status', 'barcode', 'tags',  'discount',  'related_products', 'is_featured',  'inventory_tracking',
+        'length', 'width', 'height', 'weight', 'brand_id', 'category_id', 'attributes', 'images', 'thumbnail',
         'status', 'deleted_at',
     ];
 
@@ -44,5 +44,10 @@ class Product extends Model
     public function categories()
     {
         return $this->belongsToMany(Category::class, 'category_product');
+    }
+    // Relationship with tags
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'product_tag');
     }
 }

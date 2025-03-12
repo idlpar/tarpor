@@ -93,20 +93,23 @@
 
 
 <div class="fixed md:relative bg-gray-900 w-64 shadow-lg h-screen lg:h-auto transition-all duration-300 transform"
-     :class="{ '-translate-x-full md:translate-x-0 md:w-16': isSidebarCollapsed, 'translate-x-0': !isSidebarCollapsed }">
+     :class="{ '-translate-x-full md:translate-x-0 md:w-16': $store.sidebar.isCollapsed, 'translate-x-0': !$store.sidebar.isCollapsed }"
+     x-data="{ openSubmenu: null }"
+     x-init="$watch('$store.sidebar.isCollapsed', (value) => { if (value) { openSubmenu = null; } })">
     <!-- Toggle Button Inside Left Nav -->
     <div class="flex justify-between items-center">
         <div class="p-4">
-            <h2 class="text-xl font-bold transition-opacity duration-300 ease-in-out" :class="{ 'hidden': isSidebarCollapsed }">
+            <h2 class="text-xl font-bold transition-opacity duration-300 ease-in-out" :class="{ 'hidden': $store.sidebar.isCollapsed }">
                 <span class="capitalize">admin</span>&nbsp;Dashboard
             </h2>
         </div>
 
-        <button @click="isSidebarCollapsed = !isSidebarCollapsed"
-                x-show="!isSidebarCollapsed"
+        <button @click="$store.sidebar.isCollapsed = !$store.sidebar.isCollapsed"
+                x-show="!$store.sidebar.isCollapsed"
                 x-transition
                 class="p-2 rounded-lg text-white hover:bg-lime-700">
-            <x-sidebar.sidebar-toggle-left-icon />
+                <x-icon name="icon-menu-left" class="h-8 w-8"  />
+{{--            <x-sidebar.sidebar-toggle-left-icon />--}}
         </button>
     </div>
 
@@ -120,10 +123,10 @@
                 <a href="{{ route('logout') }}" class="flex items-center p-2 text-white hover:bg-lime-700 rounded-lg group relative"
                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-{{ $item['icon'] }} mr-2"></i>
-                    <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': isSidebarCollapsed, 'opacity-100 translate-x-0': !isSidebarCollapsed }" class="ml-4 lg:ml-2 transition-all duration-300 ease-in-out opacity-0 translate-x-[-10px] w-0 overflow-hidden">
+                    <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }" class="ml-4 lg:ml-2 transition-all duration-300 ease-in-out opacity-0 translate-x-[-10px] w-0 overflow-hidden">
                         {{ $item['title'] }}
                     </span>
-                    <span x-show="isSidebarCollapsed" class="absolute ml-14 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    <span x-show="$store.sidebar.isCollapsed" class="absolute ml-14 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                         {{ $item['title'] }}
                     </span>
                 </a>
@@ -132,10 +135,10 @@
                 <li>
                     <a href="{{ $item['route'] }}" class="flex items-center p-2 text-white hover:bg-lime-700 rounded-lg group relative">
                         <i class="fas fa-{{ $item['icon'] }} mr-2"></i>
-                        <span :class="{ 'opacity-0 translate-x-[-10px]': isSidebarCollapsed, 'opacity-100 translate-x-0': !isSidebarCollapsed }" class="transition-all duration-300 ease-in-out">
+                        <span :class="{ 'opacity-0 translate-x-[-10px]': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }" class="transition-all duration-300 ease-in-out">
                             {{ $item['title'] }}
                         </span>
-                        <span x-show="isSidebarCollapsed"
+                        <span x-show="$store.sidebar.isCollapsed"
                               class="absolute left-16 bg-gray-700 text-white text-sm px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             {{ $item['title'] }}
                         </span>
@@ -145,14 +148,14 @@
                 <!-- Menu Item With Submenu -->
                 <li>
                     <div class="flex items-center p-2 text-white hover:bg-lime-700 rounded-lg cursor-pointer group relative"
-                         @click="openSubmenu === '{{ strtolower($item['title']) }}' ? (openSubmenu = null, isSidebarCollapsed = false) : (openSubmenu = '{{ strtolower($item['title']) }}', isSidebarCollapsed = false)">
+                         @click="openSubmenu === '{{ strtolower($item['title']) }}' ? (openSubmenu = null, $store.sidebar.isCollapsed = false) : (openSubmenu = '{{ strtolower($item['title']) }}', $store.sidebar.isCollapsed = false)">
                         <i class="fas fa-{{ $item['icon'] }} mr-2"></i>
-                        <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': isSidebarCollapsed, 'opacity-100 translate-x-0': !isSidebarCollapsed }" class="transition-all duration-300 ease-in-out">
+                        <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }" class="transition-all duration-300 ease-in-out">
                             {{ $item['title'] }}
                         </span>
                         <i class="fas fa-chevron-down ml-auto transition-transform duration-200"
-                           :class="{ 'rotate-180': openSubmenu === '{{ strtolower($item['title']) }}', 'hidden': isSidebarCollapsed }"></i>
-                        <span x-show="isSidebarCollapsed"
+                           :class="{ 'rotate-180': openSubmenu === '{{ strtolower($item['title']) }}' }"></i>
+                        <span x-show="$store.sidebar.isCollapsed"
                               class="absolute left-16 bg-gray-700 text-white text-sm px-2 py-1 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                             {{ $item['title'] }}
                         </span>
@@ -169,7 +172,7 @@
                             <li class="mb-2">
                                 <a href="{{ $subItem['route'] }}" class="flex items-center p-2 text-white hover:bg-lime-700 rounded-lg">
                                     <i class="fas fa-{{ $subItem['icon'] }} mr-2"></i>
-                                    <span :class="{ 'opacity-0 translate-x-[-10px]': isSidebarCollapsed, 'opacity-100 translate-x-0': !isSidebarCollapsed }" class="transition-all duration-300 ease-in-out">
+                                    <span :class="{ 'opacity-0 translate-x-[-10px]': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }" class="transition-all duration-300 ease-in-out">
                                         {{ $subItem['title'] }}
                                     </span>
                                 </a>
@@ -181,3 +184,13 @@
         @endforeach
     </ul>
 </div>
+
+@push('scripts')
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.store('sidebar', {
+                isCollapsed: true,
+            });
+        });
+    </script>
+@endpush

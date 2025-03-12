@@ -2,8 +2,6 @@
 
 @section('title', 'Add Product | ' . strtoupper(config('app.name')))
 
-
-
 @section('page-content')
     <div class="w-full h-full bg-sky-100 p-4 md:p-8 transition-all duration-300">
         <!-- Breadcrumbs -->
@@ -30,6 +28,143 @@
                         value="{{ old('slug') }}"
                         urlPrefix="{{ config('app.url') . '/product/' }}"
                     />
+                    <!-- Tag Input -->
+{{--                    <x-form.input name="tags" id="tags" label="Tags" value="{{ old('tag') }}" required hasDropdown />--}}
+{{--                    <input type="hidden" name="tag_ids" id="tag_ids" />--}}
+
+                    <!-- Tag Input Field -->
+                    <div class="form-group mb-4">
+                        <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
+                        <div class="mt-1 relative">
+                            <!-- Tag Container -->
+                            <div id="tag-container" class="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg">
+                                <!-- Tags will be dynamically inserted here -->
+                            </div>
+                            <!-- Input Field -->
+                            <input
+                                type="text"
+                                id="tags-input"
+                                class="mt-1 block w-full border-none focus:ring-0 focus:outline-none"
+                                placeholder="Type tags and press space or comma"
+                            >
+                            <!-- Suggestions Dropdown -->
+                            <div id="tag-suggestions" class="hidden absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto z-50">
+                                <!-- Suggestions will be dynamically inserted here -->
+                            </div>
+                        </div>
+                        <!-- Hidden Input for Tags -->
+                        <input type="hidden" name="tags" id="tags-hidden">
+                    </div>
+                    <!-- Container for suggestions -->
+
+                    <script>
+                        document.addEventListener("DOMContentLoaded", function () {
+                            const tagContainer = document.getElementById('tag-container');
+                            const tagsInput = document.getElementById('tags-input');
+                            const tagSuggestions = document.getElementById('tag-suggestions');
+                            const tagsHidden = document.getElementById('tags-hidden');
+
+                            let tags = []; // Array to store tags
+
+                            // Function to create a tag span
+                            function createTagSpan(tagName) {
+                                const span = document.createElement('span');
+                                span.className = 'inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
+                                span.textContent = tagName;
+
+                                // Add a remove button
+                                const removeButton = document.createElement('button');
+                                removeButton.className = 'ml-2 text-blue-800 hover:text-blue-600 focus:outline-none';
+                                removeButton.innerHTML = '&times;';
+                                removeButton.addEventListener('click', function () {
+                                    // Remove the tag from the array
+                                    tags = tags.filter(tag => tag !== tagName);
+                                    // Update the hidden input
+                                    tagsHidden.value = JSON.stringify(tags);
+                                    // Remove the span from the DOM
+                                    span.remove();
+                                });
+
+                                span.appendChild(removeButton);
+                                return span;
+                            }
+
+                            // Function to update the hidden input with tags
+                            function updateHiddenInput() {
+                                tagsHidden.value = JSON.stringify(tags);
+                            }
+
+                            // Handle input events
+                            tagsInput.addEventListener('input', function (e) {
+                                const input = e.target.value.trim();
+
+                                if (input.endsWith(' ') || input.endsWith(',')) {
+                                    const tagName = input.slice(0, -1).trim(); // Remove the last space or comma
+                                    if (tagName && !tags.includes(tagName)) {
+                                        tags.push(tagName);
+                                        const tagSpan = createTagSpan(tagName);
+                                        tagContainer.insertBefore(tagSpan, tagsInput);
+                                        updateHiddenInput();
+                                    }
+                                    e.target.value = ''; // Clear the input
+                                }
+
+                                // Fetch suggestions
+                                if (input.length > 0) {
+                                    fetch(`/tag/suggestions?query=${input}`)
+                                        .then(response => response.json())
+                                        .then(suggestions => {
+                                            if (suggestions.length > 0) {
+                                                tagSuggestions.innerHTML = suggestions.map(tag => `
+                            <div class="tag-suggestion px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer">
+                                ${tag.name}
+                            </div>
+                        `).join('');
+                                                tagSuggestions.classList.remove('hidden');
+                                            } else {
+                                                tagSuggestions.classList.add('hidden');
+                                            }
+                                        });
+                                } else {
+                                    tagSuggestions.classList.add('hidden');
+                                }
+                            });
+
+                            // Handle suggestion selection
+                            tagSuggestions.addEventListener('click', function (e) {
+                                if (e.target.classList.contains('tag-suggestion')) {
+                                    const tagName = e.target.textContent.trim();
+                                    if (!tags.includes(tagName)) {
+                                        tags.push(tagName);
+                                        const tagSpan = createTagSpan(tagName);
+                                        tagContainer.insertBefore(tagSpan, tagsInput);
+                                        updateHiddenInput();
+                                    }
+                                    tagsInput.value = ''; // Clear the input
+                                    tagSuggestions.classList.add('hidden');
+                                }
+                            });
+
+                            // Handle Tab key for auto-completion
+                            tagsInput.addEventListener('keydown', function (e) {
+                                if (e.key === 'Tab') {
+                                    e.preventDefault();
+                                    const firstSuggestion = tagSuggestions.querySelector('.tag-suggestion');
+                                    if (firstSuggestion) {
+                                        const tagName = firstSuggestion.textContent.trim();
+                                        if (!tags.includes(tagName)) {
+                                            tags.push(tagName);
+                                            const tagSpan = createTagSpan(tagName);
+                                            tagContainer.insertBefore(tagSpan, tagsInput);
+                                            updateHiddenInput();
+                                        }
+                                        tagsInput.value = ''; // Clear the input
+                                        tagSuggestions.classList.add('hidden');
+                                    }
+                                }
+                            });
+                        });
+                    </script>
 
                     <!-- Price, Sale Price, Cost Price & SKU -->
                     <x-form.input name="price" label="Regular Price" type="number" step="1.00" value="{{ old('price') }}" required />

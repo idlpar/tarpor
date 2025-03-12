@@ -6,6 +6,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SvgController;
+use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
 
@@ -102,6 +103,12 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::get('{category}/edit', [CategoryController::class, 'edit'])->name('edit');
         Route::put('{category}', [CategoryController::class, 'update'])->name('update');
         Route::delete('{category}', [CategoryController::class, 'destroy'])->name('destroy');
+    });
+
+    Route::prefix('tag')->name('tag.')->group(function () {
+        Route::post('/', [TagController::class, 'store'])->name('store');
+        Route::get('/', [TagController::class, 'index'])->name('index');
+        Route::get('/suggestions', [TagController::class, 'suggestions'])->name('suggestions');
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {

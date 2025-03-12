@@ -26,7 +26,16 @@
 <!-- Top Bar -->
 <div class="fixed top-0 left-0 right-0 bg-gray-950 shadow-md z-50 h-16">
     <div class="w-full mx-auto md:mx-2">
-        <div class="flex items-center justify-between md:px-2 h-16 relative">
+        <div class="flex items-center justify-between px-2 md:px-4 h-16 relative">
+            <!-- Floating Hamburger Menu for Mobile -->
+            <div class="md:hidden">
+                <button @click="$store.sidebar.isCollapsed = false"
+                        x-show="$store.sidebar.isCollapsed"
+                        x-transition
+                        class="text-gray-400 hover:text-white focus:outline-none">
+                    <i class="fas fa-bars text-2xl ml-2"></i>
+                </button>
+            </div>
             <!-- Logo (Left) -->
             <a href="{{ route('home') }}">
                 <div class="flex-shrink-0">
@@ -68,9 +77,13 @@
                         class="relative text-gray-400 hover:text-white focus:outline-none transition-colors duration-200"
                     >
                         <!-- Bell Icon -->
-                        <i class="fas fa-bell lg:text-xl"></i>
+                        <i class="fas fa-bell text-lg md:text-xl lg:text-2xl"></i>
+
                         <!-- Notification Count Badge -->
-                        <span class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full px-1 lg:px-2 py-1 transform translate-x-1/2 -translate-y-1/2">
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs md:text-sm font-bold
+                                     rounded-full px-1.5 md:px-2 py-0.5
+                                     flex items-center justify-center transform translate-x-1/3 -translate-y-1/3
+                                     min-w-[18px] min-h-[18px]">
                             3
                         </span>
                     </button>
@@ -150,11 +163,20 @@
                     <!-- Profile Dropdown Menu -->
                     <div x-show="openProfileDropdown" @click.away="openProfileDropdown = false" class="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-50 overflow-hidden">
                         <ul class="py-2">
+                            <!-- Profile -->
                             <li>
                                 <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-300 transition-colors duration-200">
                                     <i class="fas fa-user-circle mr-2"></i> Profile
                                 </a>
                             </li>
+                            <!-- Change Password -->
+                            <li>
+                                <a href="{{ route('password.change') }}"
+                                   class="block px-4 py-2 text-gray-700 hover:bg-gray-300 transition-colors duration-200">
+                                    <i class="fas fa-key mr-2"></i> Change Password
+                                </a>
+                            </li>
+                            <!-- Settings -->
                             <li>
                                 <a href="#" class="block px-4 py-2 text-gray-700 hover:bg-gray-300 transition-colors duration-200">
                                     <i class="fas fa-cog mr-2"></i> Settings
@@ -171,13 +193,6 @@
                         </ul>
                     </div>
                 </div>
-
-                <!-- Floating Hamburger Menu for Mobile -->
-                <div class="md:hidden">
-                    <button @click="isSidebarCollapsed = !isSidebarCollapsed" class="text-gray-400 hover:text-white focus:outline-none">
-                        <i class="fas fa-bars text-lg"></i>
-                    </button>
-                </div>
             </div>
         </div>
     </div>
@@ -192,8 +207,7 @@
         @include('partials.sidebars.admin-sidebar')
     </aside>
     <!-- Right Side Content -->
-    <!-- ✅ MAIN CONTENT (Takes remaining space) -->
-    <main class="flex-1 bg-white p-2">
+    <main class="flex-1 bg-white p-2 overflow-x-auto">
         @yield('page-content')
     </main>
 </div>

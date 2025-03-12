@@ -1,4 +1,4 @@
-@props(['name', 'label' => null, 'type' => 'text', 'required' => false, 'value' => null, 'urlPrefix' => null])
+@props(['name', 'label' => null, 'type' => 'text', 'required' => false, 'value' => null, 'urlPrefix' => null, 'hasDropdown' => false])
 
 <div class="col-span-1">
     @if($label)
@@ -28,6 +28,11 @@
                 {{ $attributes->except('class') }}
             >
         </div>
+
+        <!-- Dropdown for suggestions -->
+        @if($hasDropdown)
+            <div id="{{ $name }}-suggestions" class="hidden absolute mt-1 w-full bg-gray-100 border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto z-10"></div>
+        @endif
     </div>
 
     @error($name)

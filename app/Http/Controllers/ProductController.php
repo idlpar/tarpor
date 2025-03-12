@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Tag;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
@@ -115,7 +116,7 @@ class ProductController extends Controller
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
-            'tags' => 'nullable|array',
+            'tags' => 'nullable|string', // Tags as a comma-separated string
             'related_products' => 'nullable|array',
             'is_featured' => 'nullable|boolean',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',
@@ -128,47 +129,53 @@ class ProductController extends Controller
             $validatedData['slug'] = Str::slug($validatedData['name']);
         }
 
-        // Handle thumbnail upload
-        if ($request->hasFile('thumbnail')) {
-            $thumbnail = $request->file('thumbnail');
-            $thumbnailNames = $this->generateUniqueFileName($thumbnail->getClientOriginalName(), 'uploads/products/thumbnails');
-
-            // Move the file to the public/uploads/products/thumbnails directory
-            $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailNames['physical_name']);
-
-            // Save the database-friendly name in the database
-            $validatedData['thumbnail'] = 'uploads/products/thumbnails/' . $thumbnailNames['db_name'];
-        }
-
-        // Handle product images upload
-        if ($request->hasFile('images')) {
-            $validatedData['images'] = [];
-            foreach ($request->file('images') as $image) {
-                $imageNames = $this->generateUniqueFileName($image->getClientOriginalName(), 'uploads/products/images');
-
-                // Move the file to the public/uploads/products/images directory
-                $image->move(public_path('uploads/products/images'), $imageNames['physical_name']);
-
-                // Save the database-friendly name in the database
-                $validatedData['images'][] = 'uploads/products/images/' . $imageNames['db_name'];
-            }
-
-            // Store as JSON without escaped slashes
-            $validatedData['images'] = json_encode($validatedData['images'], JSON_UNESCAPED_SLASHES);
-        }
-
-        // Store the product in the database
+        // Create the product
         $product = Product::create($validatedData);
 
         // Attach categories to the product
         $product->categories()->attach($validatedData['category_ids']);
+
+        // Attach tags to the product
+        if ($request->tags) {
+            $tags = explode(',', $request->tags); // Split tags by comma
+            $tagIds = [];
+
+            foreach ($tags as $tagName) {
+                $tag = Tag::firstOrCreate(['name' => trim($tagName)]); // Trim and create tag if it doesn't exist
+                $tagIds[] = $tag->id;
+            }
+
+            $product->tags()->sync($tagIds); // Sync tags with the product
+        }
+
+        // Handle thumbnail upload
+        if ($request->hasFile('thumbnail')) {
+            $thumbnail = $request->file('thumbnail');
+            $thumbnailName = 'thumbnail_' . time() . '.' . $thumbnail->getClientOriginalExtension();
+            $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
+            $product->thumbnail = 'uploads/products/thumbnails/' . $thumbnailName;
+            $product->save();
+        }
+
+        // Handle product images upload
+        if ($request->hasFile('images')) {
+            $images = [];
+            foreach ($request->file('images') as $image) {
+                $imageName = 'image_' . time() . '_' . rand(1, 1000) . '.' . $image->getClientOriginalExtension();
+                $image->move(public_path('uploads/products/images'), $imageName);
+                $images[] = 'uploads/products/images/' . $imageName;
+            }
+
+            $product->images = json_encode($images, JSON_UNESCAPED_SLASHES);
+            $product->save();
+        }
 
         // Automatically populate SEO metadata if not provided
         if (!$request->has('meta_title')) {
             $seoData = [
                 'meta_title' => $product->name,
                 'meta_description' => $product->short_description,
-                'meta_keywords' => implode(', ', $product->tags ?? []),
+                'meta_keywords' => implode(', ', $product->tags->pluck('name')->toArray() ?? []),
                 'canonical_url' => url('/products/' . $product->slug),
                 'robots' => 'index, follow',
             ];
@@ -191,25 +198,17 @@ class ProductController extends Controller
             // Handle Open Graph image upload
             if ($request->hasFile('og_image')) {
                 $ogImage = $request->file('og_image');
-                $ogImageNames = $this->generateUniqueFileName($ogImage->getClientOriginalName(), 'uploads/products/seo/og_images');
-
-                // Move the file to the public/uploads/products/seo/og_images directory
-                $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageNames['physical_name']);
-
-                // Save the database-friendly name in the database
-                $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageNames['db_name'];
+                $ogImageName = 'og_image_' . time() . '.' . $ogImage->getClientOriginalExtension();
+                $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageName);
+                $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageName;
             }
 
             // Handle Twitter image upload
             if ($request->hasFile('twitter_image')) {
                 $twitterImage = $request->file('twitter_image');
-                $twitterImageNames = $this->generateUniqueFileName($twitterImage->getClientOriginalName(), 'uploads/products/seo/twitter_images');
-
-                // Move the file to the public/uploads/products/seo/twitter_images directory
-                $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageNames['physical_name']);
-
-                // Save the database-friendly name in the database
-                $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageNames['db_name'];
+                $twitterImageName = 'twitter_image_' . time() . '.' . $twitterImage->getClientOriginalExtension();
+                $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageName);
+                $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageName;
             }
         }
 
