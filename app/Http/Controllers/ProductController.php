@@ -136,16 +136,33 @@ class ProductController extends Controller
         $product->categories()->attach($validatedData['category_ids']);
 
         // Attach tags to the product
-        if ($request->tags) {
-            $tags = explode(',', $request->tags); // Split tags by comma
-            $tagIds = [];
+        // Process tags
+        if ($request->has('tags')) {
+            $tags = explode(',', $request->input('tags')); // Split the comma-separated string into an array
+            $uniqueTags = []; // Array to store unique tags
 
             foreach ($tags as $tagName) {
-                $tag = Tag::firstOrCreate(['name' => trim($tagName)]); // Trim and create tag if it doesn't exist
-                $tagIds[] = $tag->id;
-            }
+                $tagName = trim($tagName);
+                if (!empty($tagName)) {
+                    // Normalize the tag name to lowercase
+                    $normalizedTagName = Str::lower($tagName);
 
-            $product->tags()->sync($tagIds); // Sync tags with the product
+                    // Check if the tag already exists in the unique tags array
+                    if (!in_array($normalizedTagName, $uniqueTags)) {
+                        // Find or create the tag
+                        $tag = Tag::firstOrCreate(
+                            ['name' => $normalizedTagName], // Ensure tags are stored in lowercase
+                            ['slug' => Str::slug($tagName)] // Generate a slug for the tag
+                        );
+
+                        // Attach the tag to the product
+                        $product->tags()->attach($tag->id);
+
+                        // Add the tag to the unique tags array
+                        $uniqueTags[] = $normalizedTagName;
+                    }
+                }
+            }
         }
 
         // Handle thumbnail upload
@@ -181,7 +198,7 @@ class ProductController extends Controller
             ];
         } else {
             $seoData = $request->validate([
-                'meta_title' => 'required|string|max:255',
+                'meta_title' => 'nullable|string|max:255',
                 'meta_description' => 'nullable|string',
                 'meta_keywords' => 'nullable|string',
                 'canonical_url' => 'nullable|url',

@@ -106,9 +106,8 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
     });
 
     Route::prefix('tag')->name('tag.')->group(function () {
-        Route::post('/', [TagController::class, 'store'])->name('store');
-        Route::get('/', [TagController::class, 'index'])->name('index');
-        Route::get('/suggestions', [TagController::class, 'suggestions'])->name('suggestions');
+        Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
+        Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {

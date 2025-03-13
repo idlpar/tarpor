@@ -2,6 +2,7 @@
 
 @section('title', 'Add Product | ' . strtoupper(config('app.name')))
 
+
 @section('page-content')
     <div class="w-full h-full bg-sky-100 p-4 md:p-8 transition-all duration-300">
         <!-- Breadcrumbs -->
@@ -15,7 +16,7 @@
         ])
 
         <!-- Form Container -->
-        <div class="max-w-6xl mx-auto bg-white shadow-lg rounded-lg p-8">
+        <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-8">
             <form action="{{ route('product.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -33,139 +34,36 @@
 {{--                    <input type="hidden" name="tag_ids" id="tag_ids" />--}}
 
                     <!-- Tag Input Field -->
-                    <div class="form-group mb-4">
-                        <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
-                        <div class="mt-1 relative">
-                            <!-- Tag Container -->
-                            <div id="tag-container" class="flex flex-wrap gap-2 p-2 border border-gray-300 rounded-lg">
-                                <!-- Tags will be dynamically inserted here -->
+                    <div class="col-span-1">
+                        <!-- Hidden Input for Storing Tags -->
+                        <input type="hidden" name="tags" id="tags" />
+
+                        <!-- Label -->
+                        <label class="block text-sm font-medium text-gray-700">
+                            Tags <span class="text-red-500">*</span>
+                        </label>
+
+                        <!-- Tag Input Container -->
+                        <div class="border border-gray-300 rounded-lg p-3 w-full max-w-full">
+                            <!-- Tags Container -->
+                            <div id="tags-container" class="flex flex-wrap gap-2 mb-2">
+                                <!-- Tags will be dynamically added here -->
                             </div>
+
                             <!-- Input Field -->
                             <input
                                 type="text"
-                                id="tags-input"
-                                class="mt-1 block w-full border-none focus:ring-0 focus:outline-none"
-                                placeholder="Type tags and press space or comma"
-                            >
-                            <!-- Suggestions Dropdown -->
-                            <div id="tag-suggestions" class="hidden absolute mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto z-50">
-                                <!-- Suggestions will be dynamically inserted here -->
+                                id="tag-input"
+                                class="w-full outline-none focus:ring-0 placeholder-gray-400"
+                                placeholder="Add tags..."
+                            />
+
+                            <!-- Suggestions Container -->
+                            <div id="suggestions-container" class="mt-2 space-y-1">
+                                <!-- Suggestions will be dynamically added here -->
                             </div>
                         </div>
-                        <!-- Hidden Input for Tags -->
-                        <input type="hidden" name="tags" id="tags-hidden">
                     </div>
-                    <!-- Container for suggestions -->
-
-                    <script>
-                        document.addEventListener("DOMContentLoaded", function () {
-                            const tagContainer = document.getElementById('tag-container');
-                            const tagsInput = document.getElementById('tags-input');
-                            const tagSuggestions = document.getElementById('tag-suggestions');
-                            const tagsHidden = document.getElementById('tags-hidden');
-
-                            let tags = []; // Array to store tags
-
-                            // Function to create a tag span
-                            function createTagSpan(tagName) {
-                                const span = document.createElement('span');
-                                span.className = 'inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
-                                span.textContent = tagName;
-
-                                // Add a remove button
-                                const removeButton = document.createElement('button');
-                                removeButton.className = 'ml-2 text-blue-800 hover:text-blue-600 focus:outline-none';
-                                removeButton.innerHTML = '&times;';
-                                removeButton.addEventListener('click', function () {
-                                    // Remove the tag from the array
-                                    tags = tags.filter(tag => tag !== tagName);
-                                    // Update the hidden input
-                                    tagsHidden.value = JSON.stringify(tags);
-                                    // Remove the span from the DOM
-                                    span.remove();
-                                });
-
-                                span.appendChild(removeButton);
-                                return span;
-                            }
-
-                            // Function to update the hidden input with tags
-                            function updateHiddenInput() {
-                                tagsHidden.value = JSON.stringify(tags);
-                            }
-
-                            // Handle input events
-                            tagsInput.addEventListener('input', function (e) {
-                                const input = e.target.value.trim();
-
-                                if (input.endsWith(' ') || input.endsWith(',')) {
-                                    const tagName = input.slice(0, -1).trim(); // Remove the last space or comma
-                                    if (tagName && !tags.includes(tagName)) {
-                                        tags.push(tagName);
-                                        const tagSpan = createTagSpan(tagName);
-                                        tagContainer.insertBefore(tagSpan, tagsInput);
-                                        updateHiddenInput();
-                                    }
-                                    e.target.value = ''; // Clear the input
-                                }
-
-                                // Fetch suggestions
-                                if (input.length > 0) {
-                                    fetch(`/tag/suggestions?query=${input}`)
-                                        .then(response => response.json())
-                                        .then(suggestions => {
-                                            if (suggestions.length > 0) {
-                                                tagSuggestions.innerHTML = suggestions.map(tag => `
-                            <div class="tag-suggestion px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 cursor-pointer">
-                                ${tag.name}
-                            </div>
-                        `).join('');
-                                                tagSuggestions.classList.remove('hidden');
-                                            } else {
-                                                tagSuggestions.classList.add('hidden');
-                                            }
-                                        });
-                                } else {
-                                    tagSuggestions.classList.add('hidden');
-                                }
-                            });
-
-                            // Handle suggestion selection
-                            tagSuggestions.addEventListener('click', function (e) {
-                                if (e.target.classList.contains('tag-suggestion')) {
-                                    const tagName = e.target.textContent.trim();
-                                    if (!tags.includes(tagName)) {
-                                        tags.push(tagName);
-                                        const tagSpan = createTagSpan(tagName);
-                                        tagContainer.insertBefore(tagSpan, tagsInput);
-                                        updateHiddenInput();
-                                    }
-                                    tagsInput.value = ''; // Clear the input
-                                    tagSuggestions.classList.add('hidden');
-                                }
-                            });
-
-                            // Handle Tab key for auto-completion
-                            tagsInput.addEventListener('keydown', function (e) {
-                                if (e.key === 'Tab') {
-                                    e.preventDefault();
-                                    const firstSuggestion = tagSuggestions.querySelector('.tag-suggestion');
-                                    if (firstSuggestion) {
-                                        const tagName = firstSuggestion.textContent.trim();
-                                        if (!tags.includes(tagName)) {
-                                            tags.push(tagName);
-                                            const tagSpan = createTagSpan(tagName);
-                                            tagContainer.insertBefore(tagSpan, tagsInput);
-                                            updateHiddenInput();
-                                        }
-                                        tagsInput.value = ''; // Clear the input
-                                        tagSuggestions.classList.add('hidden');
-                                    }
-                                }
-                            });
-                        });
-                    </script>
-
                     <!-- Price, Sale Price, Cost Price & SKU -->
                     <x-form.input name="price" label="Regular Price" type="number" step="1.00" value="{{ old('price') }}" required />
                     <x-form.input name="sale_price" label="Sale Price" type="number" step="1.00" value="{{ old('sale_price') }}" />
@@ -283,5 +181,264 @@
                 }
             });
         </script>
-@endpush
+            <script>
+                document.addEventListener('DOMContentLoaded', function () {
+                    const tagInput = document.getElementById('tag-input');
+                    const tagsContainer = document.getElementById('tags-container');
+                    const suggestionsContainer = document.getElementById('suggestions-container');
+                    const hiddenTagsInput = document.getElementById('tags'); // Hidden input for form submission
+
+                    // Timer for auto-wrapping non-existing tags
+                    let autoWrapTimer;
+
+                    // Debounce timer for suggestions
+                    let debounceTimer;
+
+                    // Add tag
+                    function addTag(tagText) {
+                        const formattedTag = capitalizeFirstLetter(tagText); // Capitalize first letter
+                        // Create a new tag element
+                        const tag = document.createElement('span');
+                        tag.className = 'inline-flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm';
+                        tag.innerHTML = `
+                ${formattedTag}
+                <span class="ml-2 cursor-pointer" onclick="window.removeTag(this.parentElement)">×</span>
+            `;
+                        tagsContainer.appendChild(tag);
+
+                        // Update the hidden input with selected tags
+                        updateHiddenTags();
+                    }
+
+                    // Remove tag (attached to the window object for global access)
+                    window.removeTag = function (tagElement) {
+                        tagElement.remove(); // Remove the tag from the UI
+                        updateHiddenTags(); // Update the hidden input
+                    };
+
+                    // Update the hidden input with selected tags
+                    function updateHiddenTags() {
+                        const tags = Array.from(tagsContainer.querySelectorAll('span')).map(tag =>
+                            tag.textContent.replace('×', '').trim() // Extract tag text
+                        );
+                        hiddenTagsInput.value = tags.join(','); // Update the hidden input
+                    }
+
+                    // Fetch tag suggestions from the backend
+                    async function fetchTagSuggestions(query) {
+                        const response = await fetch(`{{ route('tag.suggest') }}?query=${query}`);
+                        const data = await response.json();
+                        return data;
+                    }
+
+                    // Show suggestions in the dropdown
+                    async function showSuggestions(input) {
+                        suggestionsContainer.innerHTML = ''; // Clear previous suggestions
+                        if (input) {
+                            const suggestions = await fetchTagSuggestions(input);
+
+                            // Use a Set to ensure unique suggestions
+                            const uniqueSuggestions = [...new Set(suggestions.map(suggestion => capitalizeFirstLetter(suggestion.name)))];
+
+                            uniqueSuggestions.forEach(suggestion => {
+                                const suggestionElement = document.createElement('div');
+                                suggestionElement.className = 'px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200';
+                                suggestionElement.textContent = suggestion;
+                                suggestionElement.addEventListener('click', function () {
+                                    addTag(suggestion); // Add the selected tag
+                                    tagInput.value = ''; // Clear the input field
+                                    suggestionsContainer.innerHTML = ''; // Clear the dropdown
+                                    clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
+                                });
+                                suggestionsContainer.appendChild(suggestionElement);
+                            });
+                        }
+                    }
+
+                    // Debounce function to reduce API calls
+                    function debounce(func, delay) {
+                        clearTimeout(debounceTimer);
+                        debounceTimer = setTimeout(func, delay);
+                    }
+
+                    // Handle input events with debouncing
+                    tagInput.addEventListener('input', function () {
+                        const inputValue = tagInput.value.trim();
+
+                        // Clear the auto-wrap timer
+                        clearTimeout(autoWrapTimer);
+
+                        // Debounce the showSuggestions function
+                        debounce(() => {
+                            if (inputValue) {
+                                showSuggestions(inputValue); // Show suggestions
+                            } else {
+                                suggestionsContainer.innerHTML = ''; // Clear the dropdown if input is empty
+                            }
+                        }, 300); // 300ms delay
+
+                        // Auto-wrap non-existing tags after 3 seconds
+                        if (inputValue) {
+                            autoWrapTimer = setTimeout(async () => {
+                                const suggestions = await fetchTagSuggestions(inputValue);
+                                if (!suggestions.some(suggestion => suggestion.name === inputValue)) {
+                                    addTag(inputValue); // Add the input value as a new tag
+                                    tagInput.value = ''; // Clear the input field
+                                    suggestionsContainer.innerHTML = ''; // Clear the dropdown
+                                }
+                            }, 60000); // 60-second delay
+                        }
+                    });
+
+                    // Handle keydown events
+                    tagInput.addEventListener('keydown', async function (e) {
+                        const inputValue = tagInput.value.trim();
+
+                        // Auto-complete on Tab
+                        if (e.key === 'Tab' && inputValue) {
+                            e.preventDefault();
+                            const suggestions = await fetchTagSuggestions(inputValue);
+                            if (suggestions.length > 0) {
+                                const matchingTag = suggestions[0].name; // Use the first suggestion
+                                addTag(matchingTag); // Add the matching tag
+                                tagInput.value = ''; // Clear the input field
+                                suggestionsContainer.innerHTML = ''; // Clear the dropdown
+                                clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
+                            }
+                        }
+
+                        // Wrap tag on comma or space
+                        if ((e.key === ',' || e.key === ' ') && inputValue) {
+                            e.preventDefault();
+                            addTag(inputValue); // Add the input value as a tag
+                            tagInput.value = ''; // Clear the input field
+                            suggestionsContainer.innerHTML = ''; // Clear the dropdown
+                            clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
+                        }
+                    });
+
+                    // Helper function to capitalize the first letter of a string
+                    function capitalizeFirstLetter(string) {
+                        return string.charAt(0).toUpperCase() + string.slice(1);
+                    }
+                });
+            </script>
+{{--            <script>--}}
+{{--                document.addEventListener('DOMContentLoaded', function () {--}}
+{{--                    const tagInput = document.getElementById('tag-input');--}}
+{{--                    const tagsContainer = document.getElementById('tags-container');--}}
+{{--                    const suggestionsContainer = document.getElementById('suggestions-container');--}}
+
+{{--                    // Timer for auto-wrapping non-existing tags--}}
+{{--                    let autoWrapTimer;--}}
+
+{{--                    // Debounce timer for suggestions--}}
+{{--                    let debounceTimer;--}}
+
+{{--                    // Add tag--}}
+{{--                    function addTag(tagText) {--}}
+{{--                        const tag = document.createElement('span');--}}
+{{--                        tag.className = 'inline-flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm';--}}
+{{--                        tag.innerHTML = `--}}
+{{--                ${tagText}--}}
+{{--                <span class="ml-2 cursor-pointer" onclick="this.parentElement.remove()">×</span>--}}
+{{--            `;--}}
+{{--                        tagsContainer.appendChild(tag);--}}
+{{--                    }--}}
+
+{{--                    // Fetch tag suggestions from the backend--}}
+{{--                    async function fetchTagSuggestions(query) {--}}
+{{--                        const response = await fetch(`{{ route('tag.suggest') }}?query=${query}`);--}}
+{{--                        const data = await response.json();--}}
+{{--                        return data;--}}
+{{--                    }--}}
+
+{{--                    // Update the showSuggestions function--}}
+{{--                    async function showSuggestions(input) {--}}
+{{--                        suggestionsContainer.innerHTML = '';--}}
+{{--                        if (input) {--}}
+{{--                            const suggestions = await fetchTagSuggestions(input);--}}
+
+{{--                            // Use a Set to ensure unique suggestions--}}
+{{--                            const uniqueSuggestions = [...new Set(suggestions.map(suggestion => suggestion.name))];--}}
+
+{{--                            uniqueSuggestions.forEach(suggestion => {--}}
+{{--                                const suggestionElement = document.createElement('div');--}}
+{{--                                suggestionElement.className = 'px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200';--}}
+{{--                                suggestionElement.textContent = suggestion;--}}
+{{--                                suggestionElement.addEventListener('click', function () {--}}
+{{--                                    addTag(suggestion);--}}
+{{--                                    tagInput.value = '';--}}
+{{--                                    suggestionsContainer.innerHTML = '';--}}
+{{--                                    clearTimeout(autoWrapTimer); // Clear the timer when a suggestion is clicked--}}
+{{--                                });--}}
+{{--                                suggestionsContainer.appendChild(suggestionElement);--}}
+{{--                            });--}}
+{{--                        }--}}
+{{--                    }--}}
+
+{{--                    // Debounce function--}}
+{{--                    function debounce(func, delay) {--}}
+{{--                        clearTimeout(debounceTimer);--}}
+{{--                        debounceTimer = setTimeout(func, delay);--}}
+{{--                    }--}}
+
+{{--                    // Handle input events with debouncing--}}
+{{--                    tagInput.addEventListener('input', function () {--}}
+{{--                        const inputValue = tagInput.value.trim();--}}
+
+{{--                        // Clear the auto-wrap timer--}}
+{{--                        clearTimeout(autoWrapTimer);--}}
+
+{{--                        // Debounce the showSuggestions function--}}
+{{--                        debounce(() => {--}}
+{{--                            if (inputValue) {--}}
+{{--                                showSuggestions(inputValue);--}}
+{{--                            } else {--}}
+{{--                                suggestionsContainer.innerHTML = '';--}}
+{{--                            }--}}
+{{--                        }, 300); // 300ms delay--}}
+
+{{--                        // Auto-wrap non-existing tags after 3 seconds--}}
+{{--                        if (inputValue) {--}}
+{{--                            autoWrapTimer = setTimeout(async () => {--}}
+{{--                                const suggestions = await fetchTagSuggestions(inputValue);--}}
+{{--                                if (!suggestions.some(suggestion => suggestion.name === inputValue)) {--}}
+{{--                                    addTag(inputValue);--}}
+{{--                                    tagInput.value = '';--}}
+{{--                                    suggestionsContainer.innerHTML = '';--}}
+{{--                                }--}}
+{{--                            }, 30000);--}}
+{{--                        }--}}
+{{--                    });--}}
+
+{{--                    // Handle keydown events--}}
+{{--                    tagInput.addEventListener('keydown', async function (e) {--}}
+{{--                        const inputValue = tagInput.value.trim();--}}
+
+{{--                        // Auto-complete on Tab--}}
+{{--                        if (e.key === 'Tab' && inputValue) {--}}
+{{--                            e.preventDefault();--}}
+{{--                            const suggestions = await fetchTagSuggestions(inputValue);--}}
+{{--                            if (suggestions.length > 0) {--}}
+{{--                                const matchingTag = suggestions[0].name; // Use the first suggestion--}}
+{{--                                addTag(matchingTag);--}}
+{{--                                tagInput.value = '';--}}
+{{--                                suggestionsContainer.innerHTML = '';--}}
+{{--                                clearTimeout(autoWrapTimer); // Clear the timer when Tab is pressed--}}
+{{--                            }--}}
+{{--                        }--}}
+
+{{--                        // Wrap tag on comma or space--}}
+{{--                        if ((e.key === ',' || e.key === ' ') && inputValue) {--}}
+{{--                            e.preventDefault();--}}
+{{--                            addTag(inputValue);--}}
+{{--                            tagInput.value = '';--}}
+{{--                            suggestionsContainer.innerHTML = '';--}}
+{{--                            clearTimeout(autoWrapTimer); // Clear the timer when a tag is added manually--}}
+{{--                        }--}}
+{{--                    });--}}
+{{--                });--}}
+{{--            </script>--}}
+    @endpush
 
