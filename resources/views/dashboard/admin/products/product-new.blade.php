@@ -2,443 +2,493 @@
 
 @section('title', 'Add Product | ' . strtoupper(config('app.name')))
 
+@push('styles')
+    <!-- Preload styles to prevent FOUC -->
+    <link rel="preload" href="{{ asset('ckeditor/content-styles.css') }}" as="style" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="{{ asset('ckeditor/content-styles.css') }}"></noscript>
+@endpush
 
 @section('page-content')
-    <div class="w-full h-full bg-sky-100 p-4 md:p-8 transition-all duration-300">
-        <!-- Breadcrumbs -->
-        @include('components.breadcrumbs', [
-            'links' => [
-                'Dashboard' => route('admin.dashboard'),
-                'Products' => route('product.index'),
-                'Create Product' => null
-            ],
-             'title' => "Create Product"
-        ])
 
-        <!-- Form Container -->
-        <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-8">
-            <form action="{{ route('product.store') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    <!-- Name & Slug -->
-                    <x-form.input name="name" id="name" label="Product Name" value="{{ old('name') }}" required />
-                    <x-form.input
-                        name="slug"
-                        id="slug"
-                        label="Slug"
-                        value="{{ old('slug') }}"
-                        urlPrefix="{{ config('app.url') . '/product/' }}"
-                    />
-                    <!-- Tag Input -->
-{{--                    <x-form.input name="tags" id="tags" label="Tags" value="{{ old('tag') }}" required hasDropdown />--}}
-{{--                    <input type="hidden" name="tag_ids" id="tag_ids" />--}}
+<!-- Loading spinner -->
+<div id="loading-spinner" class="text-4xl text-blue-500">Loading...</div>
 
-                    <!-- Tag Input Field -->
-                    <div class="col-span-1">
-                        <!-- Hidden Input for Storing Tags -->
-                        <input type="hidden" name="tags" id="tags" />
+<!-- Breadcrumb Navigation -->
+@include('components.breadcrumbs', [
+    'links' => [
+        'Dashboard' => route('admin.dashboard'),
+        'Products' => route('product.index'),
+        'Create Product' => null
+    ]
+])
 
-                        <!-- Label -->
-                        <label class="block text-sm font-medium text-gray-700">
-                            Tags <span class="text-red-500">*</span>
-                        </label>
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
+    <form action="#" method="POST" class="w-full flex flex-col lg:flex-row gap-6">
+    @csrf
+        <!-- Left Column -->
+        <div class="w-full lg:w-9/12">
+            <!-- First Div (bg-white) -->
+            <div class="bg-white p-8 rounded-lg shadow-lg">
+                <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
 
-                        <!-- Tag Input Container -->
-                        <div class="border border-gray-300 rounded-lg p-3 w-full max-w-full">
-                            <!-- Tags Container -->
-                            <div id="tags-container" class="flex flex-wrap gap-2 mb-2">
-                                <!-- Tags will be dynamically added here -->
-                            </div>
+                <!-- Name -->
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-2">Name *</label>
+                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Product Name">
+                </div>
 
-                            <!-- Input Field -->
-                            <input
-                                type="text"
-                                id="tag-input"
-                                class="w-full outline-none focus:ring-0 placeholder-gray-400"
-                                placeholder="Add tags..."
-                            />
+                <!-- Permalink -->
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-2">Permalink *</label>
+                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://yourwebsite.com/products/">
+                    <p class="text-sm text-gray-500 mt-2">Preview: <a href="#" class="text-blue-500 hover:underline">https://yourwebsite.com/products/</a></p>
+                </div>
 
-                            <!-- Suggestions Container -->
-                            <div id="suggestions-container" class="mt-2 space-y-1">
-                                <!-- Suggestions will be dynamically added here -->
-                            </div>
-                        </div>
-                    </div>
-                    <!-- Price, Sale Price, Cost Price & SKU -->
-                    <x-form.input name="price" label="Regular Price" type="number" step="1.00" value="{{ old('price') }}" required />
-                    <x-form.input name="sale_price" label="Sale Price" type="number" step="1.00" value="{{ old('sale_price') }}" />
-                    <x-form.input name="cost_price" label="Cost Price" type="number" step="1.00" value="{{ old('cost_price') }}" />
-                    <x-form.input name="sku" label="SKU" value="{{ old('sku') }}" />
+                <!-- Description -->
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-2">Description</label>
+                    <textarea id="description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
 
-                    <!-- Stock & Stock Status -->
-                    <x-form.input name="stock_quantity" label="Stock Quantity" type="number" step="1.00" value="{{ old('stock_quantity') }}" required />
-                    <x-form.select
-                        name="stock_status"
-                        label="Inventory Status"
-                        :options="[
-                            'in_stock' => 'Available Now',
-                            'out_of_stock' => 'Sold Out',
-                            'backorder' => 'Pre-Order'
-                        ]"
-                        selected="{{ old('stock_status') }}"
-                        required
-                    />
+                <!-- Content -->
+                <div class="mb-6">
+                    <label class="block font-semibold text-gray-700 mb-2">Content</label>
+                    <textarea id="content" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                </div>
 
-                    <!-- Short Description -->
-                    <x-form.textarea name="short_description" label="Short Description">{{ old('short_description') }}</x-form.textarea>
-                    <x-form.textarea name="description" label="Description" required rows="6">{{ old('description') }}</x-form.textarea>
-
-                    <!-- Brand & Category -->
-                    <x-form.select
-                        name="brand_id"
-                        label="Brand"
-                        :options="$brands->pluck('name', 'id')"
-                        selected="{{ old('brand_id') }}"
-                    />
-
-                    <x-form.category-tree
-                        name="category_ids"
-                        label="Category"
-                        :categories="$categories"
-                        :selected="old('category_ids', [])"
-                        required
-                    />
-
-                    <!-- Images & Thumbnail -->
-                    <x-form.file-upload
-                        name="images[]"
-                        label="Product Images"
-                        uploadLabel="Upload Product Images"
-                        ManyImagesInput="true"
-                        multiple
-                        description="(Upload multiple images)"
-                    />
-                    <x-form.file-upload name="thumbnail" label="Thumbnail Image" uploadLabel="Upload Thumbnail Image" isSingleImage="true" />
-
-                    <!-- SEO Section -->
-                    <x-form.seo :seo="null" />
-
-                    <!-- Status -->
-                    <x-form.select
-                        name="status"
-                        label="Listing Status"
-                        :options="[
-                            'draft' => 'Unpublished',
-                            'published' => 'Live',
-                            'archived' => 'Retired'
-                        ]"
-                        selected="{{ old('status', 'draft') }}"
-                        class="mb-4"
-                    />
-
-                    <!-- Submit Button -->
-                    <div class="col-span-1 lg:col-span-2 text-right">
-                        <button type="submit" class="inline-flex items-center px-6 py-3 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                            Create Product
-                        </button>
+                <!-- Images -->
+                <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg text-center">
+                    <label class="block font-semibold text-left text-gray-700 mb-4">Images</label>
+                    <!-- Clickable Upload Box -->
+                    <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                        <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                            <path d="M15 8h.01"></path>
+                            <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
+                            <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
+                            <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
+                            <path d="M16 19h6"></path>
+                            <path d="M19 16v6"></path>
+                        </svg>
+                        <span class="text-gray-500 text-lg">Click here to add more images.</span>
                     </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Second Div (bg-gray-300) -->
+            <div class="bg-gray-300 p-6 rounded-lg shadow-lg mt-6">
+                <!-- Specification Tables -->
+                <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
+                    <div class="flex justify-between items-center border-b border-gray-200 mb-4">
+                        <label class="block font-semibold text-lg text-gray-700 mb-2">Specification Tables</label>
+                        <select id="specificationDropdown" class="border text-sm p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">None</option>
+                            <option value="general">General Specification</option>
+                            <option value="technical">Technical Specification</option>
+                        </select>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Setup meta title & description to make your site easy to discover on search engines such as Google.
+                    </p>
+
+                    <!-- Dynamic Specification Fields -->
+                    <div id="specificationFields" class="bg-white p-4 rounded-lg shadow-md hidden mt-4">
+                        <table class="w-full border-collapse border border-gray-300">
+                            <thead>
+                            <tr class="bg-gray-100">
+                                <th class="border p-3">Group</th>
+                                <th class="border p-3">Attribute</th>
+                                <th class="border p-3">Attribute Value</th>
+                            </tr>
+                            </thead>
+                            <tbody id="specTableBody">
+                            <!-- Rows will be added dynamically here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+
+
+                <!-- Overview -->
+                <x-form.card label="Overview" class="bg-transparent">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- SKU -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">SKU</label>
+                            <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SKU-CZA-PZ-997">
+                        </div>
+                        <!-- Price -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">Price</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tk. 0">
+                        </div>
+                        <!-- Price Sale -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tk. 0">
+                            <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
+                        </div>
+                        <!-- Cost per Item -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">Cost per Item</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tk. 0">
+                            <p class="text-sm text-gray-500 mt-2">Customers won't see this price.</p>
+                        </div>
+                        <!-- Barcode -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
+                            <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter barcode">
+                            <p class="text-sm text-gray-500 mt-2">Must be unique for each product.</p>
+                        </div>
+                    </div>
+                </x-form.card>
+
+                <!-- Stock Status -->
+                <x-form.card label="Stock Status" class="bg-transparent">
+                    <div class="flex items-center space-x-6">
+                        <label class="flex items-center">
+                            <input type="radio" name="stock_status" value="in_stock" class="mr-2">
+                            <span class="text-gray-700">In Stock</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="radio" name="stock_status" value="out_of_stock" class="mr-2">
+                            <span class="text-gray-700">Out of Stock</span>
+                        </label>
+                    </div>
+                </x-form.card>
+
+                <!-- Shipping -->
+                <x-form.card label="Shipping" class="bg-transparent">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Weight -->
+                        <div>
+                            <label class="block font-semibold text-sm text-gray-700 mb-2">Weight (g)</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                        </div>
+                        <!-- Length -->
+                        <div>
+                            <label class="block font-semibold text-sm text-gray-700 mb-2">Length (cm)</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                        </div>
+                        <!-- Width -->
+                        <div>
+                            <label class="block font-semibold text-sm text-gray-700 mb-2">Width (cm)</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                        </div>
+                        <!-- Height -->
+                        <div>
+                            <label class="block font-semibold text-sm text-gray-700 mb-2">Height (cm)</label>
+                            <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                        </div>
+                    </div>
+                </x-form.card>
+
+                <!-- Attributes -->
+                <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
+                    <div class="flex justify-between items-center border-b border-gray-200 mb-4">
+                        <label class="block text-xl font-bold text-gray-800">Attributes</label>
+                        <button class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105">
+                            Add Attribute
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Adding new attributes helps the product to have many options, such as size or color.
+                    </p>
+                </div>
+
+                <!-- Product Options -->
+                <x-form.card label="Product Options" class="bg-transparent">
+                    <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option>Select Global Option</option>
+                    </select>
+                </x-form.card>
+
+                <!-- Related Products -->
+                <x-form.card label="Related Products" class="bg-transparent">
+                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search products">
+                </x-form.card>
+
+                <!-- Cross-Selling Products -->
+                <x-form.card label="Cross-Selling Products" class="bg-transparent">
+                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search products">
+                </x-form.card>
+
+                <!-- Product FAQs -->
+                <x-form.card label="Product FAQs" class="bg-transparent">
+                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search or select from existing FAQs">
+                </x-form.card>
+
+                <!-- Search Engine Optimize -->
+                <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
+                    <div class="flex justify-between items-center border-b border-gray-200 mb-4">
+                        <label class="block text-xl font-bold text-gray-800">Search Engine Optimize</label>
+                        <button class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-indigo-600 hover:to-blue-500 transition-all duration-300 ease-in-out shadow-lg hover:shadow-xl transform hover:scale-105">
+                            Edit SEO Meta
+                        </button>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Setup meta title & description to make your site easy to discover on search engines such as Google.
+                    </p>
+                </div>
+
+
+            </div>
         </div>
+        <!-- Right Column -->
+        <div class="w-full lg:w-3/12">
+            <!-- Publish Card -->
+            <div class="mb-6 bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Publish</h3>
+
+                <!-- Save Buttons -->
+                <div class="pt-4 border-t border-gray-200 flex gap-4">
+                    <button class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover-effect">
+                        Save
+                    </button>
+                    <button class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover-effect">
+                        Save & Exit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Status Card -->
+            <x-form.card label="Status" required="true">
+                <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Published</option>
+                    <option>Draft</option>
+                </select>
+            </x-form.card>
+
+            <!-- Store Card -->
+            <x-form.card label="Store">
+                <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Select a store...</option>
+                </select>
+            </x-form.card>
+
+            <!-- Is Featured? Card -->
+            <x-form.card label="Is Featured?">
+                <label class="relative inline-flex items-center cursor-pointer ml-2">
+                    <input type="checkbox" class="sr-only peer" id="featuredToggle" disabled>
+                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-disabled:bg-gray-400"></div>
+                </label>
+            </x-form.card>
+
+
+            <!-- Categories Card -->
+            <x-form.card label="Categories">
+                <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search...">
+            </x-form.card>
+
+            <!-- Brand Card -->
+            <x-form.card label="Brand">
+                <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option>Select a brand...</option>
+                </select>
+            </x-form.card>
+
+            <!-- Featured Image Card -->
+            <x-form.card label="Featured Image (Optional)">
+                <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                    <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                        <path d="M15 8h.01"></path>
+                        <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
+                        <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
+                        <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
+                        <path d="M16 19h6"></path>
+                        <path d="M19 16v6"></path>
+                    </svg>
+                    <span class="text-gray-500 text-md">Choose Image</span>
+                </div>
+            </x-form.card>
+
+            <!-- Product Collections Card -->
+            <x-form.card label="Product Collections">
+                <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="product_collections[]" value="new_arrival" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-gray-700 font-medium">New Arrival</span>
+                    </label>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="product_collections[]" value="best_sellers" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-gray-700 font-medium">Best Sellers</span>
+                    </label>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="product_collections[]" value="special_offer" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                        <span class="text-gray-700 font-medium">Special Offer</span>
+                    </label>
+                </div>
+            </x-form.card>
+
+            <!-- Labels Card -->
+            <x-form.card label="Labels">
+                <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="labels[]" value="hot" class="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500">
+                        <span class="text-gray-700 font-medium">Hot</span>
+                    </label>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="labels[]" value="new" class="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
+                        <span class="text-gray-700 font-medium">New</span>
+                    </label>
+                    <label class="flex items-center space-x-3">
+                        <input type="checkbox" name="labels[]" value="sale" class="w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500">
+                        <span class="text-gray-700 font-medium">Sale</span>
+                    </label>
+                </div>
+            </x-form.card>
+
+            <!-- Minimum Order Quantity Card -->
+            <x-form.card label="Minimum Order Quantity" required="true">
+                <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                <p class="text-sm text-gray-500 mt-2">Minimum quantity to place an order, if the value is 0, there is no limit.</p>
+            </x-form.card>
+
+            <!-- Maximum Order Quantity Card -->
+            <x-form.card label="Maximum Order Quantity" required="true">
+                <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
+                <p class="text-sm text-gray-500 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
+            </x-form.card>
+        </div>
+
+    </form>
+</div>
+
 @endsection
 @push('scripts')
-        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-        <script>
-            $(document).ready(function() {
-                function convertToSlug(name) {
-                    return name.toLowerCase()
-                        .replace(/[^a-z0-9\s-]/g, '')
-                        .trim()
-                        .replace(/\s+/g, '-')
-                        .replace(/-+/g, '-');
-                }
+    <!-- CKEditor Script -->
+    <script src="{{ asset('ckeditor/ckeditor.js') }}" defer></script>
 
-                $('#name').on('input', function() {
-                    var name = $(this).val();
-                    var slug = convertToSlug(name);
-                    $('#slug').val(slug);
-                    checkSlugAvailability(slug);
-                });
 
-                $('#slug').on('input', function() {
-                    checkSlugAvailability($(this).val());
-                });
+    <!-- Dynamic Specification Table Script -->
+    <script>
+        function updateSpecificationFields() {
+            const dropdown = document.getElementById("specificationDropdown");
+            const specFields = document.getElementById("specificationFields");
+            const specTableBody = document.getElementById("specTableBody");
 
-                function checkSlugAvailability(slug) {
-                    $.ajax({
-                        url: '{{ route('api.slug.check') }}',
-                        method: 'GET',
-                        data: { slug: slug },
-                        success: function(response) {
-                            if (response.exists) {
-                                $('#slug').val(response.suggested);
-                            }
-                        },
-                        error: function() {
-                            console.log('Error checking slug');
-                        }
-                    });
-                }
-            });
-        </script>
-            <script>
-                document.addEventListener('DOMContentLoaded', function () {
-                    const tagInput = document.getElementById('tag-input');
-                    const tagsContainer = document.getElementById('tags-container');
-                    const suggestionsContainer = document.getElementById('suggestions-container');
-                    const hiddenTagsInput = document.getElementById('tags'); // Hidden input for form submission
+            specTableBody.innerHTML = ""; // Clear previous entries
 
-                    // Timer for auto-wrapping non-existing tags
-                    let autoWrapTimer;
+            if (dropdown.value === "") {
+                specFields.classList.add("hidden"); // Hide if "None" is selected
+                return;
+            }
 
-                    // Debounce timer for suggestions
-                    let debounceTimer;
+            specFields.classList.remove("hidden");
 
-                    // Add tag
-                    function addTag(tagText) {
-                        const formattedTag = capitalizeFirstLetter(tagText); // Capitalize first letter
-                        // Create a new tag element
-                        const tag = document.createElement('span');
-                        tag.className = 'inline-flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm';
-                        tag.innerHTML = `
-                ${formattedTag}
-                <span class="ml-2 cursor-pointer" onclick="window.removeTag(this.parentElement)">×</span>
+            const specifications = {
+                general: [
+                    { group: "General", attribute: "Brand" },
+                    { group: "General", attribute: "Model" }
+                ],
+                technical: [
+                    { group: "Battery", attribute: "Battery Life" },
+                    { group: "Display", attribute: "Screen Size" },
+                    { group: "Display", attribute: "Resolution", value: "1920×1080" }
+                ]
+            };
+
+            // Add rows dynamically
+            specifications[dropdown.value].forEach(spec => {
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                <td class="border p-3">${spec.group}</td>
+                <td class="border p-3">${spec.attribute}</td>
+                <td class="border p-3">
+                    <input type="text" class="w-full border rounded p-2" value="${spec.value || ''}">
+                </td>
             `;
-                        tagsContainer.appendChild(tag);
+                specTableBody.appendChild(row);
+            });
+        }
+    </script>
 
-                        // Update the hidden input with selected tags
-                        updateHiddenTags();
-                    }
+    <!-- Ensure content is visible only after full page load -->
+    <script>
+        // Show loading spinner while the page is loading
+        document.getElementById("loading-spinner").style.display = "block";
 
-                    // Remove tag (attached to the window object for global access)
-                    window.removeTag = function (tagElement) {
-                        tagElement.remove(); // Remove the tag from the UI
-                        updateHiddenTags(); // Update the hidden input
-                    };
+        // Wait for all resources (stylesheets, scripts, etc.) to load
+        window.addEventListener("load", function () {
+            // Hide the loading spinner
+            document.getElementById("loading-spinner").style.display = "none";
 
-                    // Update the hidden input with selected tags
-                    function updateHiddenTags() {
-                        const tags = Array.from(tagsContainer.querySelectorAll('span')).map(tag =>
-                            tag.textContent.replace('×', '').trim() // Extract tag text
-                        );
-                        hiddenTagsInput.value = tags.join(','); // Update the hidden input
-                    }
+            // Make the body visible
+            document.body.style.visibility = "visible";
 
-                    // Fetch tag suggestions from the backend
-                    async function fetchTagSuggestions(query) {
-                        const response = await fetch(`{{ route('tag.suggest') }}?query=${query}`);
-                        const data = await response.json();
-                        return data;
-                    }
-
-                    // Show suggestions in the dropdown
-                    async function showSuggestions(input) {
-                        suggestionsContainer.innerHTML = ''; // Clear previous suggestions
-                        if (input) {
-                            const suggestions = await fetchTagSuggestions(input);
-
-                            // Use a Set to ensure unique suggestions
-                            const uniqueSuggestions = [...new Set(suggestions.map(suggestion => capitalizeFirstLetter(suggestion.name)))];
-
-                            uniqueSuggestions.forEach(suggestion => {
-                                const suggestionElement = document.createElement('div');
-                                suggestionElement.className = 'px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200';
-                                suggestionElement.textContent = suggestion;
-                                suggestionElement.addEventListener('click', function () {
-                                    addTag(suggestion); // Add the selected tag
-                                    tagInput.value = ''; // Clear the input field
-                                    suggestionsContainer.innerHTML = ''; // Clear the dropdown
-                                    clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
-                                });
-                                suggestionsContainer.appendChild(suggestionElement);
-                            });
+            // Initialize CKEditor after the page fully loads
+            setTimeout(() => {
+                ClassicEditor
+                    .create(document.querySelector('#description'), {
+                        toolbar: {
+                            items: [
+                                'heading', '|',
+                                'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+                                'blockQuote', 'imageUpload', 'insertTable', 'mediaEmbed', '|',
+                                'undo', 'redo', 'code', 'codeBlock', 'strikethrough', 'underline', '|',
+                                'alignment', 'fontSize', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+                                'horizontalLine', 'indent', 'outdent', 'removeFormat', '|',
+                                'selectAll', 'findAndReplace', 'sourceEditing', 'fullscreen'
+                            ],
+                            shouldNotGroupWhenFull: true
+                        },
+                        image: {
+                            toolbar: [
+                                'imageTextAlternative', 'imageStyle:full', 'imageStyle:side', 'linkImage'
+                            ]
+                        },
+                        language: 'en',
+                        table: {
+                            contentToolbar: [
+                                'tableColumn', 'tableRow', 'mergeTableCells',
+                                'insertTable', 'tableProperties', 'tableCellProperties'
+                            ]
                         }
-                    }
+                    })
+                    .then(editor => {
+                        // Ensure the editor height is set correctly
+                        editor.ui.view.editable.element.style.height = "300px";
+                        editor.ui.view.editable.element.style.minHeight = "300px";
+                    })
+                    .catch(error => console.error(error));
 
-                    // Debounce function to reduce API calls
-                    function debounce(func, delay) {
-                        clearTimeout(debounceTimer);
-                        debounceTimer = setTimeout(func, delay);
-                    }
-
-                    // Handle input events with debouncing
-                    tagInput.addEventListener('input', function () {
-                        const inputValue = tagInput.value.trim();
-
-                        // Clear the auto-wrap timer
-                        clearTimeout(autoWrapTimer);
-
-                        // Debounce the showSuggestions function
-                        debounce(() => {
-                            if (inputValue) {
-                                showSuggestions(inputValue); // Show suggestions
-                            } else {
-                                suggestionsContainer.innerHTML = ''; // Clear the dropdown if input is empty
-                            }
-                        }, 300); // 300ms delay
-
-                        // Auto-wrap non-existing tags after 3 seconds
-                        if (inputValue) {
-                            autoWrapTimer = setTimeout(async () => {
-                                const suggestions = await fetchTagSuggestions(inputValue);
-                                if (!suggestions.some(suggestion => suggestion.name === inputValue)) {
-                                    addTag(inputValue); // Add the input value as a new tag
-                                    tagInput.value = ''; // Clear the input field
-                                    suggestionsContainer.innerHTML = ''; // Clear the dropdown
-                                }
-                            }, 60000); // 60-second delay
+                // Initialize CKEditor for the content textarea
+                ClassicEditor
+                    .create(document.querySelector('#content'), {
+                        toolbar: {
+                            items: [
+                                'heading', '|',
+                                'bold', 'italic', 'link', 'bulletedList', 'numberedList', '|',
+                                'blockQuote', 'imageUpload', 'insertTable', 'mediaEmbed', '|',
+                                'undo', 'redo', 'code', 'codeBlock', 'strikethrough', 'underline', '|',
+                                'alignment', 'fontSize', 'fontColor', 'fontBackgroundColor', 'highlight', '|',
+                                'horizontalLine', 'indent', 'outdent', 'removeFormat', '|',
+                                'selectAll', 'findAndReplace', 'sourceEditing', 'fullscreen'
+                            ],
+                            shouldNotGroupWhenFull: true
+                        },
+                        image: {
+                            toolbar: [
+                                'imageTextAlternative', 'imageStyle:full', 'imageStyle:side', 'linkImage'
+                            ]
+                        },
+                        language: 'en',
+                        table: {
+                            contentToolbar: [
+                                'tableColumn', 'tableRow', 'mergeTableCells',
+                                'insertTable', 'tableProperties', 'tableCellProperties'
+                            ]
                         }
-                    });
-
-                    // Handle keydown events
-                    tagInput.addEventListener('keydown', async function (e) {
-                        const inputValue = tagInput.value.trim();
-
-                        // Auto-complete on Tab
-                        if (e.key === 'Tab' && inputValue) {
-                            e.preventDefault();
-                            const suggestions = await fetchTagSuggestions(inputValue);
-                            if (suggestions.length > 0) {
-                                const matchingTag = suggestions[0].name; // Use the first suggestion
-                                addTag(matchingTag); // Add the matching tag
-                                tagInput.value = ''; // Clear the input field
-                                suggestionsContainer.innerHTML = ''; // Clear the dropdown
-                                clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
-                            }
-                        }
-
-                        // Wrap tag on comma or space
-                        if ((e.key === ',' || e.key === ' ') && inputValue) {
-                            e.preventDefault();
-                            addTag(inputValue); // Add the input value as a tag
-                            tagInput.value = ''; // Clear the input field
-                            suggestionsContainer.innerHTML = ''; // Clear the dropdown
-                            clearTimeout(autoWrapTimer); // Clear the auto-wrap timer
-                        }
-                    });
-
-                    // Helper function to capitalize the first letter of a string
-                    function capitalizeFirstLetter(string) {
-                        return string.charAt(0).toUpperCase() + string.slice(1);
-                    }
-                });
-            </script>
-{{--            <script>--}}
-{{--                document.addEventListener('DOMContentLoaded', function () {--}}
-{{--                    const tagInput = document.getElementById('tag-input');--}}
-{{--                    const tagsContainer = document.getElementById('tags-container');--}}
-{{--                    const suggestionsContainer = document.getElementById('suggestions-container');--}}
-
-{{--                    // Timer for auto-wrapping non-existing tags--}}
-{{--                    let autoWrapTimer;--}}
-
-{{--                    // Debounce timer for suggestions--}}
-{{--                    let debounceTimer;--}}
-
-{{--                    // Add tag--}}
-{{--                    function addTag(tagText) {--}}
-{{--                        const tag = document.createElement('span');--}}
-{{--                        tag.className = 'inline-flex items-center bg-blue-100 rounded-full px-3 py-1 text-sm';--}}
-{{--                        tag.innerHTML = `--}}
-{{--                ${tagText}--}}
-{{--                <span class="ml-2 cursor-pointer" onclick="this.parentElement.remove()">×</span>--}}
-{{--            `;--}}
-{{--                        tagsContainer.appendChild(tag);--}}
-{{--                    }--}}
-
-{{--                    // Fetch tag suggestions from the backend--}}
-{{--                    async function fetchTagSuggestions(query) {--}}
-{{--                        const response = await fetch(`{{ route('tag.suggest') }}?query=${query}`);--}}
-{{--                        const data = await response.json();--}}
-{{--                        return data;--}}
-{{--                    }--}}
-
-{{--                    // Update the showSuggestions function--}}
-{{--                    async function showSuggestions(input) {--}}
-{{--                        suggestionsContainer.innerHTML = '';--}}
-{{--                        if (input) {--}}
-{{--                            const suggestions = await fetchTagSuggestions(input);--}}
-
-{{--                            // Use a Set to ensure unique suggestions--}}
-{{--                            const uniqueSuggestions = [...new Set(suggestions.map(suggestion => suggestion.name))];--}}
-
-{{--                            uniqueSuggestions.forEach(suggestion => {--}}
-{{--                                const suggestionElement = document.createElement('div');--}}
-{{--                                suggestionElement.className = 'px-3 py-2 bg-gray-100 rounded-lg cursor-pointer hover:bg-gray-200';--}}
-{{--                                suggestionElement.textContent = suggestion;--}}
-{{--                                suggestionElement.addEventListener('click', function () {--}}
-{{--                                    addTag(suggestion);--}}
-{{--                                    tagInput.value = '';--}}
-{{--                                    suggestionsContainer.innerHTML = '';--}}
-{{--                                    clearTimeout(autoWrapTimer); // Clear the timer when a suggestion is clicked--}}
-{{--                                });--}}
-{{--                                suggestionsContainer.appendChild(suggestionElement);--}}
-{{--                            });--}}
-{{--                        }--}}
-{{--                    }--}}
-
-{{--                    // Debounce function--}}
-{{--                    function debounce(func, delay) {--}}
-{{--                        clearTimeout(debounceTimer);--}}
-{{--                        debounceTimer = setTimeout(func, delay);--}}
-{{--                    }--}}
-
-{{--                    // Handle input events with debouncing--}}
-{{--                    tagInput.addEventListener('input', function () {--}}
-{{--                        const inputValue = tagInput.value.trim();--}}
-
-{{--                        // Clear the auto-wrap timer--}}
-{{--                        clearTimeout(autoWrapTimer);--}}
-
-{{--                        // Debounce the showSuggestions function--}}
-{{--                        debounce(() => {--}}
-{{--                            if (inputValue) {--}}
-{{--                                showSuggestions(inputValue);--}}
-{{--                            } else {--}}
-{{--                                suggestionsContainer.innerHTML = '';--}}
-{{--                            }--}}
-{{--                        }, 300); // 300ms delay--}}
-
-{{--                        // Auto-wrap non-existing tags after 3 seconds--}}
-{{--                        if (inputValue) {--}}
-{{--                            autoWrapTimer = setTimeout(async () => {--}}
-{{--                                const suggestions = await fetchTagSuggestions(inputValue);--}}
-{{--                                if (!suggestions.some(suggestion => suggestion.name === inputValue)) {--}}
-{{--                                    addTag(inputValue);--}}
-{{--                                    tagInput.value = '';--}}
-{{--                                    suggestionsContainer.innerHTML = '';--}}
-{{--                                }--}}
-{{--                            }, 30000);--}}
-{{--                        }--}}
-{{--                    });--}}
-
-{{--                    // Handle keydown events--}}
-{{--                    tagInput.addEventListener('keydown', async function (e) {--}}
-{{--                        const inputValue = tagInput.value.trim();--}}
-
-{{--                        // Auto-complete on Tab--}}
-{{--                        if (e.key === 'Tab' && inputValue) {--}}
-{{--                            e.preventDefault();--}}
-{{--                            const suggestions = await fetchTagSuggestions(inputValue);--}}
-{{--                            if (suggestions.length > 0) {--}}
-{{--                                const matchingTag = suggestions[0].name; // Use the first suggestion--}}
-{{--                                addTag(matchingTag);--}}
-{{--                                tagInput.value = '';--}}
-{{--                                suggestionsContainer.innerHTML = '';--}}
-{{--                                clearTimeout(autoWrapTimer); // Clear the timer when Tab is pressed--}}
-{{--                            }--}}
-{{--                        }--}}
-
-{{--                        // Wrap tag on comma or space--}}
-{{--                        if ((e.key === ',' || e.key === ' ') && inputValue) {--}}
-{{--                            e.preventDefault();--}}
-{{--                            addTag(inputValue);--}}
-{{--                            tagInput.value = '';--}}
-{{--                            suggestionsContainer.innerHTML = '';--}}
-{{--                            clearTimeout(autoWrapTimer); // Clear the timer when a tag is added manually--}}
-{{--                        }--}}
-{{--                    });--}}
-{{--                });--}}
-{{--            </script>--}}
-    @endpush
-
+                    })
+                    .then(editor => {
+                        // Ensure the editor height is set correctly
+                        editor.ui.view.editable.element.style.height = "300px";
+                        editor.ui.view.editable.element.style.minHeight = "300px";
+                    })
+                    .catch(error => console.error(error));
+            }, 100);
+        });
+    </script>
+@endpush

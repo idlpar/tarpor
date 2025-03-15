@@ -52,7 +52,7 @@
             <div class="relative group -mt-2 md:mt-0">
                 <a href="/wishlist" class="text-white hover:text-lime-500 relative" aria-label="Wishlist">
                     <i class="fas fa-heart"></i>
-                    <span class="absolute -top-4 -right-4 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+                    <span class="absolute -top-3 -right-3 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
                 </a>
                 <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-black bg-lime-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                       Wishlist
@@ -63,7 +63,7 @@
             <div class="relative group -mt-2 md:mt-0">
                 <button class="text-white hover:text-lime-500 cursor-pointer relative" aria-label="Compare">
                     <i class="fas fa-exchange-alt"></i>
-                    <span class="absolute -top-4 -right-4 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+                    <span class="absolute -top-3 -right-3 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
                 </button>
                 <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-black bg-lime-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                       Compare
@@ -74,7 +74,7 @@
             <div class="relative group -mt-2 md:mt-0">
                 <button class="text-white hover:text-lime-500 cursor-pointer relative" aria-label="Cart">
                     <i class="fas fa-cart-arrow-down"></i>
-                    <span class="absolute -top-4 -right-4 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
+                    <span class="absolute -top-3 -right-3 bg-red-500 text-white text-xs rounded-full px-2 py-1">0</span>
                 </button>
                 <span class="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 text-xs text-black bg-lime-500 rounded opacity-0 group-hover:opacity-100 transition-opacity">
                       Cart

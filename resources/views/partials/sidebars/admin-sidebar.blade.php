@@ -91,25 +91,25 @@
     ];
 @endphp
 
-
 <div class="fixed md:relative bg-gray-900 w-64 shadow-lg h-screen lg:h-auto transition-all duration-300 transform"
      :class="{ '-translate-x-full md:translate-x-0 md:w-16': $store.sidebar.isCollapsed, 'translate-x-0': !$store.sidebar.isCollapsed }"
      x-data="{ openSubmenu: null }"
      x-init="$watch('$store.sidebar.isCollapsed', (value) => { if (value) { openSubmenu = null; } })">
-    <!-- Toggle Button Inside Left Nav -->
-    <div class="flex justify-between items-center">
-        <div class="p-4">
-            <h2 class="text-xl font-bold transition-opacity duration-300 ease-in-out" :class="{ 'hidden': $store.sidebar.isCollapsed }">
-                <span class="capitalize">admin</span>&nbsp;Dashboard
-            </h2>
-        </div>
 
+    <!-- Toggle Button Inside Left Nav -->
+    <div class="flex justify-between items-center p-2 -mb-2">
+        <!-- Admin Dashboard Title -->
+        <h2 class="text-xl font-bold transition-all duration-300 ease-in-out"
+            :class="{ 'opacity-0 w-0 overflow-hidden': $store.sidebar.isCollapsed, 'opacity-100 w-auto': !$store.sidebar.isCollapsed }">
+            <span class="capitalize">admin</span>&nbsp;Dashboard
+        </h2>
+
+        <!-- Sidebar Toggle Button -->
         <button @click="$store.sidebar.isCollapsed = !$store.sidebar.isCollapsed"
-                x-show="!$store.sidebar.isCollapsed"
                 x-transition
-                class="p-2 rounded-lg text-white hover:bg-lime-700">
-                <x-icon name="icon-menu-left" class="h-8 w-8"  />
-{{--            <x-sidebar.sidebar-toggle-left-icon />--}}
+                class="p-2 rounded-lg text-white hover:bg-lime-700 transition-transform duration-300"
+                :class="{ 'rotate-180': $store.sidebar.isCollapsed, '-mr-2': !$store.sidebar.isCollapsed }">
+            <x-icon name="menu-left" class="h-8 w-8" />
         </button>
     </div>
 
@@ -123,10 +123,12 @@
                 <a href="{{ route('logout') }}" class="flex items-center p-2 text-white hover:bg-lime-700 rounded-lg group relative"
                    onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
                     <i class="fas fa-{{ $item['icon'] }} mr-2"></i>
-                    <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }" class="ml-4 lg:ml-2 transition-all duration-300 ease-in-out opacity-0 translate-x-[-10px] w-0 overflow-hidden">
+                    <span :class="{ 'opacity-0 translate-x-[-10px] w-0 overflow-hidden': $store.sidebar.isCollapsed, 'opacity-100 translate-x-0': !$store.sidebar.isCollapsed }"
+                          class="ml-4 lg:ml-2 transition-all duration-300 ease-in-out">
                         {{ $item['title'] }}
                     </span>
-                    <span x-show="$store.sidebar.isCollapsed" class="absolute ml-14 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
+                    <span x-show="$store.sidebar.isCollapsed"
+                          class="absolute ml-14 px-2 py-1 bg-gray-800 text-white text-sm rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-50">
                         {{ $item['title'] }}
                     </span>
                 </a>
