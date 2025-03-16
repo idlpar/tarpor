@@ -20,41 +20,6 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
-    <style>
-        /* Hide the body until everything is loaded */
-        body { visibility: hidden; }
-
-        /* Loading spinner */
-        #loading-spinner {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 1000;
-            display: none;
-        }
-
-        /* Smooth transitions */
-        .transition-all {
-            transition: all 0.3s ease-in-out;
-        }
-
-        /* Hover effects for buttons */
-        .hover-effect:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        /* CKEditor height */
-        .ck-editor__editable {
-            min-height: 300px !important;
-        }
-
-        /* Gradient background for the form */
-        .gradient-bg {
-            background: linear-gradient(135deg, #f9fafb, #e5e7eb);
-        }
-    </style>
     @stack('styles')
 </head>
 
