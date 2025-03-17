@@ -41,7 +41,10 @@
         .gradient-bg {
             background: linear-gradient(135deg, #f9fafb, #e5e7eb);
         }
+
+
     </style>
+
 @endpush
 
 @section('page-content')
@@ -109,6 +112,7 @@
                         <span class="text-gray-500 text-lg">Click here to add more images.</span>
                     </div>
                 </div>
+                <x-gallery />
             </div>
 
             <!-- Second Div (bg-gray-300) -->
@@ -527,4 +531,5 @@
             }, 100);
         });
     </script>
+
 @endpush

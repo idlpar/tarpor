@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
 
-class Product extends Model
+class Product extends Model implements HasMedia
 {
     use SoftDeletes;
+    use InteractsWithMedia;
 
     // Define fillable fields
     protected $fillable = [
@@ -25,6 +28,14 @@ class Product extends Model
         'related_products' => 'array', // Cast related_products to array
     ];
 
+
+    // Define media collections (e.g., gallery)
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('gallery')
+            ->useDisk('public') // Optional: Specify the disk (default is 'public')
+            ->acceptsMimeTypes(['image/jpeg', 'image/png','image/svg+xml', 'image/webp']); // Optional: Restrict file types
+    }
     // Relationships
     public function brand()
     {

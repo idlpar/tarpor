@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\GalleryController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SocialLoginController;
@@ -110,11 +111,27 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
+
+    Route::prefix('gallery')->name('gallery.')->group(function () {
+        Route::get('/', [GalleryController::class, 'index'])->name('index');
+        Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
+        Route::delete('/delete/{media}', [GalleryController::class, 'delete'])->name('delete');
+        Route::post('/restore/{media}', [GalleryController::class, 'restore'])->name('restore');
+        Route::delete('/empty-trash', [GalleryController::class, 'emptyTrash'])->name('empty-trash');
+    });
+
     Route::prefix('icons')->name('icons.')->group(function () {
         Route::get('/', [SvgController::class, 'index']);
         Route::post('/cleanup', [SvgController::class, 'cleanup'])->name('cleanup');
         Route::post('/sort', [SvgController::class, 'sortSvgSymbols'])->name('sort');
     });
+
+    // Run specific command
+    Route::get('/setup/storage-link', function () {
+        // The code inside this route will only run if the user is an admin
+        \Artisan::call('storage:link');
+        return 'Storage link created successfully.';
+    })->middleware('role:admin'); // Apply the 'role:admin' middleware to ensure only admins can access this route
 
 });
 

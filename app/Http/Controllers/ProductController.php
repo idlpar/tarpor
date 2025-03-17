@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class ProductController extends Controller
 {
@@ -433,5 +434,66 @@ class ProductController extends Controller
         $product->restore();
 
         return redirect()->route('product.index')->with('success', 'Product restored successfully!');
+    }
+    public function upload(Request $request, $productId)
+    {
+        $request->validate([
+            'gallery.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        if ($request->hasFile('gallery')) {
+            foreach ($request->file('gallery') as $file) {
+                $path = $file->store('public/gallery');
+                // Save the file path to the database or perform other actions
+            }
+        }
+
+        return response()->json(['message' => 'Files uploaded successfully!']);
+    }
+    public function getGalleryImages($productId)
+    {
+        $product = Product::findOrFail($productId); // Ensure valid product
+        $images = $product->getMedia('gallery');
+        $trashedImages = $product->media()->onlyTrashed()->where('collection_name', 'gallery')->get();
+
+        return response()->json([
+            'images' => $images->map(fn ($image) => [
+                'id' => $image->id,
+                'url' => $image->getUrl(),
+            ]),
+            'trashedImages' => $trashedImages->map(fn ($image) => [
+                'id' => $image->id,
+                'url' => $image->getUrl(),
+            ]),
+        ]);
+    }
+
+    public function uploadGalleryImages(Request $request, $productId = 1)
+    {
+        $request->validate([
+                'gallery.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate each uploaded file
+        ]);
+
+        $product = Product::findOrFail($productId);
+
+        foreach ($request->file('gallery') as $file) {
+            $product->addMedia($file)->toMediaCollection('gallery');
+        }
+
+        return response()->json(['success' => 'Images uploaded successfully.']);
+    }
+
+    public function deleteGalleryImage(Media $media)
+    {
+        $media->delete();
+        return response()->json(['success' => 'Image deleted successfully.']);
+    }
+
+    public function restoreGalleryImage($mediaId)
+    {
+        $media = Media::withTrashed()->findOrFail($mediaId);
+        $media->restore();
+
+        return response()->json(['success' => 'Image restored successfully.']);
     }
 }
