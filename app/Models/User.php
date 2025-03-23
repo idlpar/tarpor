@@ -2,24 +2,17 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class User extends Authenticatable implements HasMedia
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable;
-    use InteractsWithMedia;
+    use HasFactory, Notifiable, InteractsWithMedia;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
     protected $fillable = [
         'name',
         'email',
@@ -33,25 +26,13 @@ class User extends Authenticatable implements HasMedia
         'password_reset_otp',
         'password_reset_otp_expires_at',
         'last_password_reset_otp_sent_at',
-
     ];
 
-    /**
-     * The attributes that should be hidden for serialization.
-     *
-     * @var list<string>
-     */
     protected $hidden = [
         'password',
         'remember_token',
     ];
 
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
     protected function casts(): array
     {
         return [
@@ -62,5 +43,65 @@ class User extends Authenticatable implements HasMedia
             'password' => 'hashed',
             'is_verified' => 'boolean',
         ];
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatars')
+            ->useDisk('public')
+            ->singleFile();
+
+        $this->addMediaCollection('product_images')
+            ->useDisk('public');
+    }
+
+// Add this method to your model
+    public function getMediaDirectory(string $collectionName = ''): string
+    {
+        return match($collectionName) {
+            'avatars' => 'avatars',
+            'product_images' => 'products',
+            default => $this->getKey()
+        };
+    }
+
+    public function registerMediaConversions(Media $media = null): void
+    {
+        if ($media && $media->collection_name === 'product_images') {
+            // Product image conversions
+            $this->addMediaConversion('product_thumb')
+                ->width(150)
+                ->height(150)
+                ->sharpen(10)
+                ->queued();
+
+            $this->addMediaConversion('product_medium')
+                ->width(300)
+                ->height(300)
+                ->queued();
+
+            $this->addMediaConversion('product_large')
+                ->width(1024)
+                ->height(1024)
+                ->queued();
+        } else if ($media && $media->collection_name === 'avatars') {
+            // Avatar conversions with responsive images
+            $this->addMediaConversion('avatar_thumb')
+                ->width(150)
+                ->height(150)
+                ->sharpen(10)
+                ->queued();
+
+            $this->addMediaConversion('avatar_medium')
+                ->width(300)
+                ->height(300)
+                ->queued();
+
+            $this->addMediaConversion('avatar_large')
+                ->width(1024)
+                ->height(1024)
+                ->queued();
+
+        }
     }
 }

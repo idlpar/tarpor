@@ -27,7 +27,7 @@
         <!-- Header (Full Width) -->
         <div class="w-full flex justify-between items-center p-4 bg-gray-200 rounded-t-lg">
             <h3 class="text-2xl font-semibold text-gray-800">Manage Gallery</h3>
-            <button id="closeGalleryModal" class="text-gray-500 hover:text-gray-700">
+            <button id="closeGalleryModal" type="button" class="text-gray-500 hover:text-gray-700">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -41,19 +41,19 @@
                 <!-- Action Buttons and Search Bar -->
                 <div class="flex justify-between items-center mb-4">
                     <div class="flex gap-4">
-                        <button id="refreshFolders" class="px-4 py-2 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-600 hover:shadow-lg flex items-center transition-all">
+                        <button id="refreshFolders" type="button" class="px-4 py-2 bg-blue-700 text-white rounded-lg shadow-md hover:bg-blue-600 hover:shadow-lg flex items-center transition-all">
                             <i class="fas fa-sync-alt mr-2"></i> Refresh
                         </button>
-                        <button  type="button" id="uploadButton" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-500 hover:shadow-lg flex items-center transition-all">
+                        <button id="uploadButton" type="button" class="px-4 py-2 bg-green-600 text-white rounded-lg shadow-md hover:bg-green-500 hover:shadow-lg flex items-center transition-all">
                             <i class="fas fa-upload mr-2"></i> Upload
                         </button>
-                        <button id="newFolder" class="px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:bg-emerald-500 hover:shadow-lg flex items-center transition-all">
+                        <button id="newFolder" type="button" class="px-4 py-2 bg-emerald-600 text-white rounded-lg shadow-md hover:bg-emerald-500 hover:shadow-lg flex items-center transition-all">
                             <i class="fas fa-folder-plus mr-2"></i> New Folder
                         </button>
-                        <button id="deleteSelected" class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-500 hover:shadow-lg flex items-center transition-all">
+                        <button id="deleteSelected" type="button" class="px-4 py-2 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-500 hover:shadow-lg flex items-center transition-all">
                             <i class="fas fa-trash mr-2"></i> Delete
                         </button>
-                        <button id="trashFolder" class="px-4 py-2 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-600 hover:shadow-lg flex items-center transition-all">
+                        <button id="trashFolder" type="button" class="px-4 py-2 bg-gray-700 text-white rounded-lg shadow-md hover:bg-gray-600 hover:shadow-lg flex items-center transition-all">
                             <i class="fas fa-trash-restore mr-2"></i> Trash
                         </button>
                     </div>
@@ -67,7 +67,7 @@
                 </div>
 
                 <!-- Gallery (Fixed Height) -->
-                <div class="grid grid-cols-[repeat(auto-fill,_minmax(150px,_1fr))] gap-4 h-48 overflow-y-auto border border-gray-300 p-2 rounded-lg" id="galleryImages">
+                <div class="grid grid-cols-[repeat(auto-fill,_minmax(100px,_1fr))] gap-4 h-96 overflow-y-auto border border-gray-300 p-2 rounded-lg" id="galleryImages">
                     <!-- Images and folders will be dynamically loaded here -->
                 </div>
 
@@ -111,7 +111,7 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             const galleryModal = document.getElementById('galleryModal');
             const galleryImages = document.getElementById('galleryImages');
             let selectedMedia = null;
@@ -124,33 +124,62 @@
 
             // Close modal
             document.getElementById('closeGalleryModal').addEventListener('click', () => {
-                galleryModal.classList.add('hidden');
-                selectedMedia = null;
+                const galleryModal = document.getElementById('galleryModal');
+                galleryModal.classList.add('hidden'); // Hide the modal
             });
 
             // Load gallery images
             function loadGalleryImages() {
-                fetch("{{ route('gallery.index') }}")
-                    .then(response => response.json())
+                showLoadingSpinner();
+
+                fetch("{{ route('gallery.index') }}", {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Failed to fetch gallery images');
+                        return response.json();
+                    })
                     .then(data => {
+                        console.log('Gallery Data:', data); // Debugging
                         galleryImages.innerHTML = '';
                         data.forEach(media => {
                             const mediaElement = createMediaElement(media);
                             galleryImages.appendChild(mediaElement);
                         });
+                        lazyLoadImages(); // Reinitialize lazy loading
+                    })
+                    .catch(error => {
+                        console.error('Error loading gallery images:', error);
+                        alert('Failed to load gallery images. Please try again.');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
                     });
             }
 
             // Create media element
             function createMediaElement(media) {
                 const div = document.createElement('div');
-                div.className = 'relative cursor-pointer group';
+                div.className = 'relative cursor-pointer group flex flex-col items-center';
+
                 div.innerHTML = `
-            <img src="${media.url}" alt="${media.name}" class="w-full h-32 object-cover rounded-lg">
-            <div class="absolute inset-0 bg-black bg-opacity-50 hidden group-hover:flex items-center justify-center rounded-lg">
-                <span class="text-white text-sm">${media.name}</span>
+                <div class="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 overflow-hidden rounded-lg transition-transform duration-300 transform group-hover:scale-105 border border-gray-300 shadow-lg hover:shadow-xl">
+                <img src="${media.url}"
+                     data-src="${media.medium}?t=${new Date().getTime()}"
+                     data-full="${media.url}?t=${new Date().getTime()}"
+                     alt="${media.name}"
+                     class="w-full h-full object-cover rounded-lg lazy-load"
+                     loading="lazy"
+                     srcset="${media.thumb} 150w, ${media.medium} 300w, ${media.url} 1024w"
+                     sizes="(max-width: 600px) 150px, (max-width: 1024px) 300px, 1024px">
             </div>
-        `;
+                    <p class="mt-2 text-xs md:text-sm text-center text-gray-700 truncate w-full">${media.name}</p>
+                `;
 
                 div.addEventListener('click', () => selectMedia(media));
                 return div;
@@ -163,7 +192,7 @@
                 const noPreview = document.getElementById('noPreview');
                 const imageActions = document.getElementById('imageActions');
 
-                previewImage.src = media.url;
+                previewImage.src = media.url + '?t=' + new Date().getTime();
                 previewImage.classList.remove('hidden');
                 noPreview.classList.add('hidden');
                 imageActions.classList.remove('hidden');
@@ -182,6 +211,8 @@
                         formData.append('files[]', file);
                     });
 
+                    showLoadingSpinner();
+
                     fetch("{{ route('gallery.upload') }}", {
                         method: 'POST',
                         headers: {
@@ -189,8 +220,24 @@
                         },
                         body: formData
                     })
-                        .then(response => response.json())
-                        .then(data => loadGalleryImages());
+                        .then(response => {
+                            if (!response.ok) throw new Error('Upload failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            console.log('Uploaded Images:', data);
+                            alert('Images uploaded successfully!');
+                            setTimeout(() => {
+                                loadGalleryImages(); // Reload after 1 second
+                            }, 1000);
+                        })
+                        .catch(error => {
+                            console.error('Error uploading images:', error);
+                            alert('Failed to upload images. Please try again.');
+                        })
+                        .finally(() => {
+                            hideLoadingSpinner();
+                        });
                 };
 
                 input.click();
@@ -200,6 +247,8 @@
             document.getElementById('deleteImage').addEventListener('click', () => {
                 if (!selectedMedia) return;
 
+                showLoadingSpinner();
+
                 fetch(`/gallery/delete/${selectedMedia.id}`, {
                     method: 'DELETE',
                     headers: {
@@ -207,20 +256,67 @@
                         'Content-Type': 'application/json'
                     }
                 })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Delete request failed');
+                        return response.json();
+                    })
                     .then(() => {
                         loadGalleryImages();
                         selectedMedia = null;
                         document.getElementById('previewImage').classList.add('hidden');
                         document.getElementById('noPreview').classList.remove('hidden');
                         document.getElementById('imageActions').classList.add('hidden');
+                    })
+                    .catch(error => {
+                        console.error('Error deleting image:', error);
+                        alert('Failed to delete image. Please try again.');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
                     });
             });
 
             // Refresh handling
-            document.getElementById('refreshFolders').addEventListener('click', loadGalleryImages);
+            document.getElementById('refreshFolders').addEventListener('click', () => {
+                loadGalleryImages();
+            });
 
-            // Initialize modal
-            window.openGalleryModal();
+            // Lazy load images
+            function lazyLoadImages() {
+                const lazyImages = document.querySelectorAll('.lazy-load');
+
+                const lazyLoad = (target) => {
+                    const io = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                img.src = img.dataset.src;
+                                img.classList.remove('lazy-load');
+                                observer.unobserve(img);
+                            }
+                        });
+                    });
+
+                    lazyImages.forEach(img => lazyLoad(img));
+                }
+            }
+
+            // Loading spinner functions
+            function showLoadingSpinner() {
+                const spinner = document.createElement('div');
+                spinner.className = 'loading-spinner';
+                galleryImages.appendChild(spinner);
+            }
+
+            function hideLoadingSpinner() {
+                const spinner = document.querySelector('.loading-spinner');
+                if (spinner) spinner.remove();
+            }
+
+            // Add event listener to the upload area
+            document.querySelector('.clickable-upload-area').addEventListener('click', () => {
+                window.openGalleryModal(); // Open the gallery modal
+            });
         });
     </script>
 @endpush

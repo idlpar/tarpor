@@ -9,34 +9,40 @@ class GalleryController extends Controller
 {
     public function index()
     {
-        $media = Media::whereNull('deleted_at')
-            ->where('collection_name', 'gallery')
-            ->get()
+        $media = Media::where('collection_name', 'product_images')
+            ->latest()
+            ->whereNull('deleted_at') // Exclude trashed media
+            ->paginate(30)
             ->map(function ($item) {
                 return [
                     'id' => $item->id,
-                    'url' => $item->getFullUrl(),
+                    'url' => url("images/{$item->name}.{$item->extension}"),
+//                    'url' => url("images/{$item->file_name}"), // SEO-friendly URL
                     'name' => $item->name,
                     'size' => $item->human_readable_size,
                     'uploaded' => $item->created_at->diffForHumans(),
-                    'is_trashed' => false,
+                    'is_trashed' => $item->deleted_at !== null,
+                    'srcset' => [
+                        'thumb' => url("storage/{$item->id}/conversions/{$item->file_name}-product_thumb.jpg"),
+                        'medium' => url("storage/{$item->id}/conversions/{$item->file_name}-product_medium.jpg"),
+                        'large' => url("images/{$item->file_name}")
+                    ]
                 ];
             });
-
         return response()->json($media);
     }
 
     public function upload(Request $request)
     {
         $request->validate([
-            'files.*' => 'image|mimes:jpeg,png,jpg,gif|max:2048'
+            'files.*' => 'image|mimes:jpeg,png,jpg,gif,webp|max:5120'
         ]);
 
         $uploadedFiles = [];
 
         foreach ($request->file('files') as $file) {
             $media = auth()->user()->addMedia($file)
-                ->toMediaCollection('gallery');
+                ->toMediaCollection('product_images');
 
             $uploadedFiles[] = [
                 'id' => $media->id,

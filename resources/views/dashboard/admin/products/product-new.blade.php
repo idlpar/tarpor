@@ -99,7 +99,7 @@
                 <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg text-center">
                     <label class="block font-semibold text-left text-gray-700 mb-4">Images</label>
                     <!-- Clickable Upload Box -->
-                    <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                    <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40 clickable-upload-area">
                         <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                             <path d="M15 8h.01"></path>

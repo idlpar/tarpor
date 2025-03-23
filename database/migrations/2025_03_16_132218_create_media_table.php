@@ -27,6 +27,12 @@ return new class extends Migration
             $table->unsignedInteger('order_column')->nullable()->index();
             $table->softDeletes(); // Add this line
             $table->nullableTimestamps();
+
+            $table->index('collection_name');
+            $table->index('name');
+            $table->index('file_name');
+            $table->index('deleted_at');
+            $table->index('created_at');
         });
     }
 

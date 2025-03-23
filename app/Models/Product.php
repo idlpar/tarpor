@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\MediaLibrary\MediaCollections\Models\Media;
 
 class Product extends Model implements HasMedia
 {
@@ -29,13 +30,6 @@ class Product extends Model implements HasMedia
     ];
 
 
-    // Define media collections (e.g., gallery)
-    public function registerMediaCollections(): void
-    {
-        $this->addMediaCollection('gallery')
-            ->useDisk('public') // Optional: Specify the disk (default is 'public')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png','image/svg+xml', 'image/webp']); // Optional: Restrict file types
-    }
     // Relationships
     public function brand()
     {
@@ -60,5 +54,30 @@ class Product extends Model implements HasMedia
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'product_tag');
+    }
+
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('product_images')->useDisk('public');
+    }
+
+    public function registerMediaConversions(Media $media = null): void
+    {
+        $this->addMediaConversion('thumbnail')
+            ->width(150)
+            ->height(150)
+            ->sharpen(10);
+
+        $this->addMediaConversion('medium')
+            ->width(300)
+            ->height(300);
+
+        $this->addMediaConversion('medium_large')
+            ->width(768)
+            ->height(null); // Keeps aspect ratio
+
+        $this->addMediaConversion('large')
+            ->width(1024)
+            ->height(1024);
     }
 }
