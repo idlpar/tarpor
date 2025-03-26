@@ -1,7 +1,48 @@
 @push('styles')
     <style>
+        /* Gallery styles */
+        #galleryImages {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 1rem;
+            padding: 0.5rem;
+            overflow-y: auto;
+            max-height: 70vh;
+        }
+
+        #galleryImages .ring-2 {
+            box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        /* Loading spinner */
+        .loading-spinner {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .loading-spinner i {
+            font-size: 3rem;
+            color: #3b82f6;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* Scrollbar styles */
         #galleryImages::-webkit-scrollbar {
             width: 8px;
+            height: 8px;
         }
 
         #galleryImages::-webkit-scrollbar-track {
@@ -16,6 +57,37 @@
 
         #galleryImages::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+
+        /* Preview styles */
+        #imagePreview {
+            min-height: 200px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        #previewImage {
+            max-width: 100%;
+            max-height: 300px;
+            object-fit: contain;
+        }
+
+        /* Action buttons */
+        #imageActions button {
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        #imageActions button:hover {
+            transform: translateY(-1px);
+        }
+
+        #imageActions button i {
+            margin-right: 0.5rem;
         }
     </style>
 @endpush
@@ -114,109 +186,322 @@
         document.addEventListener('DOMContentLoaded', function () {
             const galleryModal = document.getElementById('galleryModal');
             const galleryImages = document.getElementById('galleryImages');
+            const previewImage = document.getElementById('previewImage');
+            const noPreview = document.getElementById('noPreview');
+            const imageActions = document.getElementById('imageActions');
+            const insertButton = document.getElementById('insertButton');
+            const uploadButton = document.getElementById('uploadButton');
+            const newFolderButton = document.getElementById('newFolder');
+            const deleteButton = document.getElementById('deleteImage');
+            const restoreButton = document.getElementById('restoreImage');
+            const featuredButton = document.getElementById('setAsFeatured');
+            const refreshButton = document.getElementById('refreshFolders');
+            const trashButton = document.getElementById('trashFolder');
+            const searchInput = document.getElementById('searchInput');
+            const searchButton = document.getElementById('searchButton');
+
+            let currentFolder = '';
             let selectedMedia = null;
+            let isTrashView = false;
+
+            // Add event listener to the upload area
+            document.querySelector('.clickable-upload-area').addEventListener('click', () => {
+                window.openGalleryModal(); // Open the gallery modal
+            });
 
             // Open modal and load images
-            window.openGalleryModal = () => {
+            window.openGalleryModal = (targetFolder = '', callback = null) => {
                 galleryModal.classList.remove('hidden');
-                loadGalleryImages();
+                currentFolder = targetFolder;
+                isTrashView = false;
+                loadGalleryContents();
+
+                if (callback && typeof callback === 'function') {
+                    window.galleryCallback = callback;
+                }
             };
 
             // Close modal
             document.getElementById('closeGalleryModal').addEventListener('click', () => {
-                const galleryModal = document.getElementById('galleryModal');
-                galleryModal.classList.add('hidden'); // Hide the modal
+                galleryModal.classList.add('hidden');
+                selectedMedia = null;
+                window.galleryCallback = null;
             });
 
-            // Load gallery images
-            function loadGalleryImages() {
+            // Load gallery contents (folders and files)
+            function loadGalleryContents() {
                 showLoadingSpinner();
 
-                fetch("{{ route('gallery.index') }}", {
-                    method: 'GET',
+                const url = isTrashView
+                    ? '/gallery/trash'
+                    : currentFolder
+                        ? `/gallery/folder/${encodeURIComponent(currentFolder)}`
+                        : '/gallery';
+
+                fetch(url, {
                     headers: {
-                        'Cache-Control': 'no-cache, no-store, must-revalidate',
-                        'Pragma': 'no-cache',
-                        'Expires': '0'
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
                     .then(response => {
-                        if (!response.ok) throw new Error('Failed to fetch gallery images');
+                        if (!response.ok) throw new Error('Failed to fetch gallery contents');
                         return response.json();
                     })
                     .then(data => {
-                        console.log('Gallery Data:', data); // Debugging
-                        galleryImages.innerHTML = '';
-                        data.forEach(media => {
-                            const mediaElement = createMediaElement(media);
-                            galleryImages.appendChild(mediaElement);
-                        });
-                        lazyLoadImages(); // Reinitialize lazy loading
+                        renderGalleryContents(data);
                     })
                     .catch(error => {
-                        console.error('Error loading gallery images:', error);
-                        alert('Failed to load gallery images. Please try again.');
+                        console.error('Error loading gallery:', error);
+                        showError('Failed to load gallery contents. Please try again.');
                     })
                     .finally(() => {
                         hideLoadingSpinner();
                     });
             }
 
-            // Create media element
-            function createMediaElement(media) {
+            // Render gallery contents
+            function renderGalleryContents(data) {
+                galleryImages.innerHTML = '';
+
+                // Add breadcrumbs navigation
+                if (data.breadcrumbs && !isTrashView) {
+                    const breadcrumbContainer = document.createElement('div');
+                    breadcrumbContainer.className = 'col-span-full flex items-center space-x-2 mb-4';
+
+                    // Root link
+                    const rootLink = document.createElement('button');
+                    rootLink.className = 'text-blue-600 hover:text-blue-800';
+                    rootLink.innerHTML = '<i class="fas fa-home mr-1"></i> Root';
+                    rootLink.addEventListener('click', () => {
+                        currentFolder = '';
+                        loadGalleryContents();
+                    });
+                    breadcrumbContainer.appendChild(rootLink);
+
+                    // Other breadcrumbs
+                    data.breadcrumbs.forEach((crumb, index) => {
+                        const separator = document.createElement('span');
+                        separator.className = 'text-gray-400';
+                        separator.innerHTML = '<i class="fas fa-chevron-right mx-1"></i>';
+                        breadcrumbContainer.appendChild(separator);
+
+                        const crumbLink = document.createElement('button');
+                        crumbLink.className = 'text-blue-600 hover:text-blue-800';
+                        crumbLink.textContent = crumb.name;
+                        crumbLink.addEventListener('click', () => {
+                            currentFolder = crumb.path;
+                            loadGalleryContents();
+                        });
+                        breadcrumbContainer.appendChild(crumbLink);
+                    });
+
+                    galleryImages.appendChild(breadcrumbContainer);
+                }
+
+                // Add folders
+                if (data.folders || data.subfolders) {
+                    const folders = data.folders || data.subfolders || [];
+
+                    folders.forEach(folder => {
+                        const folderElement = createFolderElement(folder);
+                        galleryImages.appendChild(folderElement);
+                    });
+                }
+
+                // Add files
+                if (data.files) {
+                    data.files.forEach(file => {
+                        const fileElement = createFileElement(file);
+                        galleryImages.appendChild(fileElement);
+                    });
+                }
+
+                // Update preview if selected media is still in the current view
+                if (selectedMedia) {
+                    const mediaStillExists = data.files?.some(f => f.id === selectedMedia.id) ||
+                        isTrashView && data.items?.some(i => i.id === selectedMedia.id);
+
+                    if (!mediaStillExists) {
+                        clearPreview();
+                    }
+                }
+            }
+
+            // Create folder element
+            function createFolderElement(folder) {
                 const div = document.createElement('div');
                 div.className = 'relative cursor-pointer group flex flex-col items-center';
+                div.dataset.type = 'folder';
+                div.dataset.id = folder.id;
 
                 div.innerHTML = `
-                <div class="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 overflow-hidden rounded-lg transition-transform duration-300 transform group-hover:scale-105 border border-gray-300 shadow-lg hover:shadow-xl">
-                <img src="${media.url}"
-                     data-src="${media.medium}?t=${new Date().getTime()}"
-                     data-full="${media.url}?t=${new Date().getTime()}"
-                     alt="${media.name}"
-                     class="w-full h-full object-cover rounded-lg lazy-load"
-                     loading="lazy"
-                     srcset="${media.thumb} 150w, ${media.medium} 300w, ${media.url} 1024w"
-                     sizes="(max-width: 600px) 150px, (max-width: 1024px) 300px, 1024px">
+            <div class="w-24 h-24 flex items-center justify-center bg-blue-50 rounded-lg transition-all duration-300 group-hover:bg-blue-100 border-2 border-blue-200 group-hover:border-blue-300">
+                <i class="fas fa-folder text-blue-400 text-4xl"></i>
             </div>
-                    <p class="mt-2 text-xs md:text-sm text-center text-gray-700 truncate w-full">${media.name}</p>
-                `;
+            <p class="mt-2 text-xs md:text-sm text-center text-gray-700 truncate w-full">${folder.name}</p>
+        `;
 
-                div.addEventListener('click', () => selectMedia(media));
+                div.addEventListener('click', () => {
+                    if (isTrashView) {
+                        selectTrashedItem(folder);
+                    } else {
+                        currentFolder = folder.path;
+                        loadGalleryContents();
+                    }
+                });
+
+                return div;
+            }
+
+            // Create file element
+            function createFileElement(file) {
+                const div = document.createElement('div');
+                div.className = 'relative cursor-pointer group flex flex-col items-center';
+                div.dataset.type = 'file';
+                div.dataset.id = file.id;
+
+                // Determine icon or thumbnail based on file type
+                let thumbnail;
+                if (file.mime_type.startsWith('image/')) {
+                    const thumbUrl = file.generated_conversions?.thumb
+                        ? `${file.disk === 'public' ? '/storage' : ''}/${file.directory ? file.directory + '/' : ''}thumb/${file.file_name}`
+                        : file.url;
+
+                    thumbnail = `<img src="${thumbUrl}" alt="${file.name}" class="w-full h-full object-cover rounded-lg">`;
+                } else if (file.mime_type.startsWith('video/')) {
+                    thumbnail = `
+                <div class="relative w-full h-full">
+                    <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg">
+                        <i class="fas fa-film text-gray-500 text-3xl"></i>
+                    </div>
+                    <div class="absolute bottom-1 right-1 bg-black bg-opacity-70 text-white text-xs px-1 rounded">
+                        ${formatDuration(file.duration)}
+                    </div>
+                </div>
+            `;
+                } else {
+                    thumbnail = `
+                <div class="w-full h-full bg-gray-200 flex items-center justify-center rounded-lg">
+                    <i class="fas fa-file text-gray-500 text-3xl"></i>
+                </div>
+            `;
+                }
+
+                div.innerHTML = `
+            <div class="w-24 h-24 md:w-28 md:h-28 lg:w-32 lg:h-32 overflow-hidden rounded-lg transition-all duration-300 group-hover:scale-105 border border-gray-300 shadow-lg hover:shadow-xl relative">
+                ${thumbnail}
+                ${file.is_featured ? '<div class="absolute top-1 left-1 text-yellow-400"><i class="fas fa-star"></i></div>' : ''}
+            </div>
+            <p class="mt-2 text-xs md:text-sm text-center text-gray-700 truncate w-full">${file.name}</p>
+        `;
+
+                div.addEventListener('click', () => {
+                    if (isTrashView) {
+                        selectTrashedItem(file);
+                    } else {
+                        selectMedia(file);
+                    }
+                });
+
                 return div;
             }
 
             // Select media for preview
             function selectMedia(media) {
                 selectedMedia = media;
-                const previewImage = document.getElementById('previewImage');
-                const noPreview = document.getElementById('noPreview');
-                const imageActions = document.getElementById('imageActions');
 
+                // Update UI
+                const allMediaElements = document.querySelectorAll('[data-type="file"], [data-type="folder"]');
+                allMediaElements.forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+
+                const selectedElement = document.querySelector(`[data-id="${media.id}"]`);
+                if (selectedElement) {
+                    selectedElement.classList.add('ring-2', 'ring-blue-500');
+                }
+
+                // Show preview
                 previewImage.src = media.url + '?t=' + new Date().getTime();
+                previewImage.alt = media.name;
                 previewImage.classList.remove('hidden');
                 noPreview.classList.add('hidden');
+
+                // Show appropriate actions
                 imageActions.classList.remove('hidden');
+                deleteButton.classList.toggle('hidden', isTrashView);
+                restoreButton.classList.toggle('hidden', !isTrashView);
+                featuredButton.classList.toggle('hidden', isTrashView || !media.mime_type.startsWith('image/'));
+            }
+
+            // Select trashed item
+            function selectTrashedItem(item) {
+                selectedMedia = item;
+
+                // Update UI
+                const allItems = document.querySelectorAll('[data-type="file"], [data-type="folder"]');
+                allItems.forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
+
+                const selectedElement = document.querySelector(`[data-id="${item.id}"]`);
+                if (selectedElement) {
+                    selectedElement.classList.add('ring-2', 'ring-blue-500');
+                }
+
+                // Show preview if it's a file
+                if (item.mime_type) {
+                    previewImage.src = item.url + '?t=' + new Date().getTime();
+                    previewImage.alt = item.name;
+                    previewImage.classList.remove('hidden');
+                    noPreview.classList.add('hidden');
+                } else {
+                    previewImage.classList.add('hidden');
+                    noPreview.classList.remove('hidden');
+                }
+
+                // Show appropriate actions
+                imageActions.classList.remove('hidden');
+                deleteButton.classList.add('hidden');
+                restoreButton.classList.remove('hidden');
+                featuredButton.classList.add('hidden');
+            }
+
+            // Clear preview
+            function clearPreview() {
+                selectedMedia = null;
+                previewImage.classList.add('hidden');
+                noPreview.classList.remove('hidden');
+                imageActions.classList.add('hidden');
+
+                const allMediaElements = document.querySelectorAll('[data-type="file"], [data-type="folder"]');
+                allMediaElements.forEach(el => el.classList.remove('ring-2', 'ring-blue-500'));
             }
 
             // Upload handling
-            document.getElementById('uploadButton').addEventListener('click', () => {
+            uploadButton.addEventListener('click', () => {
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.multiple = true;
-                input.accept = 'image/*';
+                input.accept = 'image/*,video/*';
 
                 input.onchange = e => {
+                    const files = Array.from(e.target.files);
+                    if (files.length === 0) return;
+
                     const formData = new FormData();
-                    Array.from(e.target.files).forEach(file => {
+                    files.forEach(file => {
                         formData.append('files[]', file);
                     });
 
+                    if (currentFolder) {
+                        formData.append('folder', currentFolder);
+                    }
+
                     showLoadingSpinner();
 
-                    fetch("{{ route('gallery.upload') }}", {
+                    fetch('/gallery/upload', {
                         method: 'POST',
                         headers: {
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest'
                         },
                         body: formData
                     })
@@ -225,15 +510,16 @@
                             return response.json();
                         })
                         .then(data => {
-                            console.log('Uploaded Images:', data);
-                            alert('Images uploaded successfully!');
-                            setTimeout(() => {
-                                loadGalleryImages(); // Reload after 1 second
-                            }, 1000);
+                            if (data.success) {
+                                showSuccess('Files uploaded successfully');
+                                loadGalleryContents();
+                            } else {
+                                throw new Error(data.message || 'Upload failed');
+                            }
                         })
                         .catch(error => {
-                            console.error('Error uploading images:', error);
-                            alert('Failed to upload images. Please try again.');
+                            console.error('Upload error:', error);
+                            showError(error.message || 'Failed to upload files');
                         })
                         .finally(() => {
                             hideLoadingSpinner();
@@ -243,16 +529,61 @@
                 input.click();
             });
 
-            // Delete handling
-            document.getElementById('deleteImage').addEventListener('click', () => {
-                if (!selectedMedia) return;
+            // Create new folder
+            newFolderButton.addEventListener('click', () => {
+                const folderName = prompt('Enter folder name:');
+                if (!folderName) return;
 
                 showLoadingSpinner();
 
-                fetch(`/gallery/delete/${selectedMedia.id}`, {
+                fetch('/gallery/folder', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        name: folderName,
+                        parent: currentFolder
+                    })
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Folder creation failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            showSuccess('Folder created successfully');
+                            loadGalleryContents();
+                        } else {
+                            throw new Error(data.message || 'Folder creation failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Folder creation error:', error);
+                        showError(error.message || 'Failed to create folder');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
+                    });
+            });
+
+            // Delete handling
+            deleteButton.addEventListener('click', () => {
+                if (!selectedMedia) return;
+
+                if (!confirm(`Are you sure you want to move "${selectedMedia.name}" to trash?`)) {
+                    return;
+                }
+
+                showLoadingSpinner();
+
+                fetch(`/gallery/${selectedMedia.id}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
                         'Content-Type': 'application/json'
                     }
                 })
@@ -260,63 +591,239 @@
                         if (!response.ok) throw new Error('Delete request failed');
                         return response.json();
                     })
-                    .then(() => {
-                        loadGalleryImages();
-                        selectedMedia = null;
-                        document.getElementById('previewImage').classList.add('hidden');
-                        document.getElementById('noPreview').classList.remove('hidden');
-                        document.getElementById('imageActions').classList.add('hidden');
+                    .then(data => {
+                        if (data.success) {
+                            showSuccess('Item moved to trash');
+                            clearPreview();
+                            loadGalleryContents();
+                        } else {
+                            throw new Error(data.message || 'Delete failed');
+                        }
                     })
                     .catch(error => {
-                        console.error('Error deleting image:', error);
-                        alert('Failed to delete image. Please try again.');
+                        console.error('Delete error:', error);
+                        showError(error.message || 'Failed to delete item');
                     })
                     .finally(() => {
                         hideLoadingSpinner();
                     });
             });
 
-            // Refresh handling
-            document.getElementById('refreshFolders').addEventListener('click', () => {
-                loadGalleryImages();
+            // Restore handling
+            restoreButton.addEventListener('click', () => {
+                if (!selectedMedia) return;
+
+                showLoadingSpinner();
+
+                fetch(`/gallery/restore/${selectedMedia.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Restore request failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            showSuccess('Item restored successfully');
+                            clearPreview();
+                            loadGalleryContents();
+                        } else {
+                            throw new Error(data.message || 'Restore failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Restore error:', error);
+                        showError(error.message || 'Failed to restore item');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
+                    });
             });
 
-            // Lazy load images
-            function lazyLoadImages() {
-                const lazyImages = document.querySelectorAll('.lazy-load');
+            // Set as featured
+            featuredButton.addEventListener('click', () => {
+                if (!selectedMedia) return;
 
-                const lazyLoad = (target) => {
-                    const io = new IntersectionObserver((entries, observer) => {
-                        entries.forEach(entry => {
-                            if (entry.isIntersecting) {
-                                const img = entry.target;
-                                img.src = img.dataset.src;
-                                img.classList.remove('lazy-load');
-                                observer.unobserve(img);
-                            }
-                        });
+                showLoadingSpinner();
+
+                fetch(`/gallery/set-featured/${selectedMedia.id}`, {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Featured request failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
+                            showSuccess('Item set as featured');
+                            loadGalleryContents();
+                            selectMedia(selectedMedia); // Refresh selection
+                        } else {
+                            throw new Error(data.message || 'Featured update failed');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Featured error:', error);
+                        showError(error.message || 'Failed to set as featured');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
                     });
+            });
 
-                    lazyImages.forEach(img => lazyLoad(img));
+            // View trash
+            trashButton.addEventListener('click', () => {
+                isTrashView = true;
+                loadGalleryContents();
+            });
+
+            // Refresh handling
+            refreshButton.addEventListener('click', () => {
+                loadGalleryContents();
+            });
+
+            // Search handling
+            searchButton.addEventListener('click', () => {
+                performSearch();
+            });
+
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    performSearch();
                 }
+            });
+
+            function performSearch() {
+                const query = searchInput.value.trim();
+                if (!query) {
+                    loadGalleryContents();
+                    return;
+                }
+
+                showLoadingSpinner();
+
+                fetch(`/gallery?search=${encodeURIComponent(query)}&folder=${encodeURIComponent(currentFolder)}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => {
+                        if (!response.ok) throw new Error('Search failed');
+                        return response.json();
+                    })
+                    .then(data => {
+                        renderGalleryContents(data);
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        showError('Failed to perform search');
+                    })
+                    .finally(() => {
+                        hideLoadingSpinner();
+                    });
             }
 
-            // Loading spinner functions
+            // Insert selected media
+            insertButton.addEventListener('click', () => {
+                if (!selectedMedia) {
+                    alert('Please select an item first');
+                    return;
+                }
+
+                if (window.galleryCallback) {
+                    window.galleryCallback(selectedMedia);
+                    galleryModal.classList.add('hidden');
+                } else {
+                    // Default behavior - generate URL
+                    fetch(`/gallery/generate-url/${selectedMedia.id}`, {
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
+                        .then(response => {
+                            if (!response.ok) throw new Error('URL generation failed');
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success) {
+                                copyToClipboard(data.url);
+                                showSuccess('URL copied to clipboard');
+                            } else {
+                                throw new Error(data.message || 'URL generation failed');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('URL generation error:', error);
+                            showError(error.message || 'Failed to generate URL');
+                        });
+                }
+            });
+
+            // Helper functions
+            function formatDuration(seconds) {
+                if (!seconds) return '00:00';
+                const mins = Math.floor(seconds / 60);
+                const secs = Math.floor(seconds % 60);
+                return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+            }
+
+            function copyToClipboard(text) {
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textarea);
+            }
+
             function showLoadingSpinner() {
                 const spinner = document.createElement('div');
-                spinner.className = 'loading-spinner';
+                spinner.className = 'absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10';
+                spinner.innerHTML = '<i class="fas fa-spinner fa-spin text-3xl text-blue-500"></i>';
+                spinner.id = 'loadingSpinner';
                 galleryImages.appendChild(spinner);
             }
 
             function hideLoadingSpinner() {
-                const spinner = document.querySelector('.loading-spinner');
+                const spinner = document.getElementById('loadingSpinner');
                 if (spinner) spinner.remove();
             }
 
-            // Add event listener to the upload area
-            document.querySelector('.clickable-upload-area').addEventListener('click', () => {
-                window.openGalleryModal(); // Open the gallery modal
-            });
+            function showSuccess(message) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
+                toast.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
+
+            function showError(message) {
+                const toast = document.createElement('div');
+                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
+                toast.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> ${message}`;
+                document.body.appendChild(toast);
+
+                setTimeout(() => {
+                    toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
+                    setTimeout(() => toast.remove(), 500);
+                }, 3000);
+            }
         });
     </script>
 @endpush

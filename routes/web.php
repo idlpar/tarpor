@@ -111,13 +111,35 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
-
     Route::prefix('gallery')->name('gallery.')->group(function () {
+        // Browse media
         Route::get('/', [GalleryController::class, 'index'])->name('index');
+        Route::get('/folders', [GalleryController::class, 'getFolders'])->name('folders');
+        Route::get('/folder/{folder}', [GalleryController::class, 'getFolderContents'])->name('folder.contents');
+
+        // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::delete('/delete/{media}', [GalleryController::class, 'delete'])->name('delete');
+        Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
+        Route::put('/move', [GalleryController::class, 'moveItems'])->name('move');
+
+        // Single file operations
+        Route::get('/file/{media}', [GalleryController::class, 'show'])->name('show');
+        Route::put('/file/{media}', [GalleryController::class, 'update'])->name('update');
+        Route::delete('/file/{media}', [GalleryController::class, 'destroy'])->name('destroy');
+
+        // Batch operations
+        Route::post('/batch-delete', [GalleryController::class, 'batchDestroy'])->name('batch.destroy');
+        Route::post('/batch-restore', [GalleryController::class, 'batchRestore'])->name('batch.restore');
+
+        // Trash operations
+        Route::get('/trash', [GalleryController::class, 'trash'])->name('trash');
         Route::post('/restore/{media}', [GalleryController::class, 'restore'])->name('restore');
-        Route::delete('/empty-trash', [GalleryController::class, 'emptyTrash'])->name('empty-trash');
+        Route::delete('/force-delete/{media}', [GalleryController::class, 'forceDelete'])->name('force-delete');
+
+        // Special operations
+        Route::post('/set-featured/{media}', [GalleryController::class, 'setFeatured'])->name('set-featured');
+        Route::post('/generate-url/{media}', [GalleryController::class, 'generateUrl'])->name('generate-url');
+
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {
