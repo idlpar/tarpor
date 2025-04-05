@@ -264,26 +264,26 @@
             function renderGalleryContents(data) {
                 galleryImages.innerHTML = '';
 
-                // Add breadcrumbs navigation
-                if (data.breadcrumbs && !isTrashView) {
-                    const breadcrumbContainer = document.createElement('div');
-                    breadcrumbContainer.className = 'col-span-full flex items-center space-x-2 mb-4';
+                // Always show breadcrumbs (even for root)
+                const breadcrumbContainer = document.createElement('div');
+                breadcrumbContainer.className = 'col-span-full flex items-center mb-2 gap-2';
 
-                    // Root link
-                    const rootLink = document.createElement('button');
-                    rootLink.className = 'text-blue-600 hover:text-blue-800';
-                    rootLink.innerHTML = '<i class="fas fa-home mr-1"></i> Root';
-                    rootLink.addEventListener('click', () => {
-                        currentFolder = '';
-                        loadGalleryContents();
-                    });
-                    breadcrumbContainer.appendChild(rootLink);
+                // Root link
+                const rootLink = document.createElement('button');
+                rootLink.className = 'text-blue-600 hover:text-blue-800 flex items-center';
+                rootLink.innerHTML = '<i class="fas fa-home mr-1"></i> Root';
+                rootLink.addEventListener('click', () => {
+                    currentFolder = '';
+                    loadGalleryContents();
+                });
+                breadcrumbContainer.appendChild(rootLink);
 
-                    // Other breadcrumbs
-                    data.breadcrumbs.forEach((crumb, index) => {
+                // Other breadcrumbs if they exist
+                if (data.breadcrumbs && data.breadcrumbs.length > 0) {
+                    data.breadcrumbs.forEach(crumb => {
                         const separator = document.createElement('span');
                         separator.className = 'text-gray-400';
-                        separator.innerHTML = '<i class="fas fa-chevron-right mx-1"></i>';
+                        separator.innerHTML = '<i class="fas fa-chevron-right"></i>';
                         breadcrumbContainer.appendChild(separator);
 
                         const crumbLink = document.createElement('button');
@@ -295,37 +295,79 @@
                         });
                         breadcrumbContainer.appendChild(crumbLink);
                     });
+                }
 
-                    galleryImages.appendChild(breadcrumbContainer);
+                galleryImages.appendChild(breadcrumbContainer);
+
+                // Add "Go Back" button if not in root
+                if (currentFolder) {
+                    const backButton = document.createElement('button');
+                    backButton.className = 'col-span-full flex items-center justify-center w-full h-24 bg-gray-100 rounded-lg border border-gray-300 hover:bg-gray-200 mb-4';
+                    backButton.innerHTML = '<i class="fas fa-arrow-left mr-2"></i> Go Back';
+                    backButton.addEventListener('click', () => {
+                        const parts = currentFolder.split('/');
+                        parts.pop();
+                        currentFolder = parts.join('/');
+                        loadGalleryContents();
+                    });
+                    galleryImages.appendChild(backButton);
+                }
+
+                // After adding folders and files
+                if (data.folders.length === 0 && data.files.length === 0) {
+                    const emptyState = document.createElement('div');
+                    emptyState.className = 'col-span-full flex flex-col items-center justify-center py-8';
+                    emptyState.innerHTML = `
+        <i class="fas fa-folder-open text-gray-400 text-5xl mb-4"></i>
+        <p class="text-gray-500">This folder is empty</p>
+    `;
+                    galleryImages.appendChild(emptyState);
                 }
 
                 // Add folders
-                if (data.folders || data.subfolders) {
-                    const folders = data.folders || data.subfolders || [];
-
-                    folders.forEach(folder => {
-                        const folderElement = createFolderElement(folder);
-                        galleryImages.appendChild(folderElement);
+                data.folders.forEach(folder => {
+                    const folderElement = document.createElement('div');
+                    folderElement.className = 'cursor-pointer group';
+                    folderElement.innerHTML = `
+            <div class="w-full h-24 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-200 group-hover:border-blue-300">
+                <i class="fas fa-folder text-blue-400 text-3xl"></i>
+            </div>
+            <p class="mt-1 text-sm text-center truncate">${folder.name}</p>
+        `;
+                    folderElement.addEventListener('click', () => {
+                        currentFolder = folder.path;
+                        loadGalleryContents();
                     });
-                }
+                    galleryImages.appendChild(folderElement);
+                });
 
                 // Add files
-                if (data.files) {
-                    data.files.forEach(file => {
-                        const fileElement = createFileElement(file);
-                        galleryImages.appendChild(fileElement);
-                    });
-                }
+                data.files.forEach(file => {
+                    const fileElement = document.createElement('div');
+                    fileElement.className = 'cursor-pointer group';
 
-                // Update preview if selected media is still in the current view
-                if (selectedMedia) {
-                    const mediaStillExists = data.files?.some(f => f.id === selectedMedia.id) ||
-                        isTrashView && data.items?.some(i => i.id === selectedMedia.id);
-
-                    if (!mediaStillExists) {
-                        clearPreview();
+                    let thumbContent;
+                    if (file.mime_type.startsWith('image/')) {
+                        thumbContent = `<img src="${file.url}" alt="${file.name}" class="w-full h-full object-contain rounded">`;
+                    } else {
+                        thumbContent = `
+                <div class="w-full h-full flex items-center justify-center bg-gray-100 rounded">
+                    <i class="fas fa-file text-gray-400 text-3xl"></i>
+                </div>
+            `;
                     }
-                }
+
+                    fileElement.innerHTML = `
+            <div class="w-full h-24 rounded border border-gray-200 overflow-hidden relative">
+                ${thumbContent}
+                ${file.is_featured ? '<div class="absolute top-1 left-1 text-yellow-400"><i class="fas fa-star"></i></div>' : ''}
+            </div>
+            <p class="mt-1 text-sm text-center truncate">${file.name}</p>
+        `;
+
+                    fileElement.addEventListener('click', () => selectMedia(file));
+                    galleryImages.appendChild(fileElement);
+                });
             }
 
             // Create folder element

@@ -51,35 +51,52 @@ class GalleryController extends Controller
     public function index(Request $request)
     {
         $currentFolder = $request->get('folder', '');
-        $searchTerm = $request->get('search', '');
 
-        // Get folders and files for the current directory
-        $folders = MediaFolder::where('path', 'like', $currentFolder . '%')
+        // Get immediate subfolders
+        $folders = MediaFolder::query()
+            ->where('parent_id', function($query) use ($currentFolder) {
+                $query->select('id')
+                    ->from('media_folders')
+                    ->where('path', $currentFolder)
+                    ->when(empty($currentFolder), fn($q) => $q->whereNull('path'));
+            })
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->get();
 
-        $files = Media::where('directory', $currentFolder)
-            ->when($searchTerm, function($query) use ($searchTerm) {
-                return $query->where('file_name', 'like', "%{$searchTerm}%")
-                    ->orWhere('name', 'like', "%{$searchTerm}%");
-            })
+        // Get files in current folder
+        $files = Media::query()
+            ->where('directory', $currentFolder)
             ->whereNull('deleted_at')
             ->orderByDesc('is_featured')
             ->orderBy('created_at', 'desc')
-            ->paginate(48);
+            ->get();
 
-        $breadcrumbs = $this->getBreadcrumbs($currentFolder);
+        // Build breadcrumbs
+        $breadcrumbs = [];
+        if (!empty($currentFolder)) {
+            $parts = explode('/', $currentFolder);
+            $accumulatedPath = '';
+
+            foreach ($parts as $part) {
+                $accumulatedPath = $accumulatedPath ? "$accumulatedPath/$part" : $part;
+                $folder = MediaFolder::where('path', $accumulatedPath)->first();
+                if ($folder) {
+                    $breadcrumbs[] = [
+                        'name' => $folder->name,
+                        'path' => $folder->path
+                    ];
+                }
+            }
+        }
 
         return response()->json([
             'folders' => $folders,
             'files' => $files,
             'breadcrumbs' => $breadcrumbs,
-            'current_folder' => $currentFolder,
-            'storage_url' => Storage::disk($this->disk)->url('')
+            'current_folder' => $currentFolder
         ]);
     }
-
     /**
      * Upload files to the gallery
      */
@@ -97,17 +114,26 @@ class GalleryController extends Controller
         }
 
         $folder = $request->input('folder', '');
+        $folderPath = $folder ? "gallery/{$folder}" : "gallery";
         $uploadedFiles = [];
         $currentMaxOrder = Media::max('order_column') ?? 0;
+
+        // Ensure folder exists in database
+//        if ($folder) {
+//            $this->ensureFolderExists($folder);
+//        }
+
+        // Ensure folder exists in database (fixed version)
+        $folderRecord = $this->ensureFolderRecordExists($folder);
 
         DB::beginTransaction();
 
         try {
             foreach ($request->file('files') as $file) {
-                // Sanitize filename (convert "Red Car.jpg" to "red-car.jpg")
                 $originalName = $file->getClientOriginalName();
+                $originalBaseName = pathinfo($originalName, PATHINFO_FILENAME); // Keep original name for display
                 $extension = strtolower($file->getClientOriginalExtension());
-                $baseName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME));
+                $baseName = Str::slug($originalBaseName); // Slugged version for filename
                 $fileName = $this->generateUniqueFilename($folder, $baseName, $extension);
 
                 $mimeType = $file->getMimeType();
@@ -120,20 +146,20 @@ class GalleryController extends Controller
                     continue;
                 }
 
-                // Store the original file
+                // Store the file with proper path
                 $path = $file->storeAs(
-                    $this->rootPath . ($folder ? '/' . $folder : ''),
+                    $folderPath, // This now includes 'gallery/' prefix
                     $fileName,
                     $this->disk
                 );
 
-                // Create complete media record with ALL fields
+                // Create media record with original name for display
                 $media = new Media([
-                    'model_type' => $request->input('model_type', 'App\Models\User'), // Nullable
-                    'model_id' => $request->input('model_id', auth()->id()),     // Nullable
+                    'model_type' => $request->input('model_type', 'App\Models\User'),
+                    'model_id' => $request->input('model_id', auth()->id()),
                     'uuid' => Str::uuid(),
                     'collection_name' => 'gallery',
-                    'name' => $baseName,
+                    'name' => $originalBaseName, // Store original name here and slugged basename available if use $baseName
                     'file_name' => $fileName,
                     'mime_type' => $mimeType,
                     'size' => $fileSize,
@@ -146,7 +172,7 @@ class GalleryController extends Controller
                     'responsive_images' => [],
                     'order_column' => ++$currentMaxOrder,
                     'is_featured' => false,
-                    'alt_text' => null,
+                    'alt_text' => $originalBaseName,
                     'caption' => null,
                     'title' => null,
                     'duration' => null,
@@ -180,6 +206,41 @@ class GalleryController extends Controller
                 'message' => 'File upload failed: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Ensure folder exists in database
+     */
+    protected function ensureFolderRecordExists($folderPath)
+    {
+        if (empty($folderPath)) return null;
+
+        // Split the path into parts
+        $parts = explode('/', $folderPath);
+        $currentPath = '';
+        $parentId = null;
+
+        foreach ($parts as $part) {
+            $currentPath = $currentPath ? "$currentPath/$part" : $part;
+
+            $folder = MediaFolder::firstOrCreate(
+                ['path' => $currentPath],
+                [
+                    'name' => $part,
+                    'parent_id' => $parentId,
+                    'lft' => 0, // Temporary - you should rebuild tree after
+                    'rgt' => 0,
+                    'depth' => substr_count($currentPath, '/')
+                ]
+            );
+
+            $parentId = $folder->id;
+        }
+
+        // Rebuild the nested set tree
+        MediaFolder::fixTree();
+
+        return $folder;
     }
 
     /**
