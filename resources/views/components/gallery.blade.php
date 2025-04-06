@@ -7,11 +7,46 @@
             gap: 1rem;
             padding: 0.5rem;
             overflow-y: auto;
-            max-height: 70vh;
+            max-height: 60vh;
         }
 
         #galleryImages .ring-2 {
             box-shadow: 0 0 0 2px #3b82f6;
+        }
+
+        /* Breadcrumb styles */
+        .breadcrumb-container {
+            display: flex;
+            align-items: center;
+            overflow-x: auto;
+            white-space: nowrap;
+            padding: 0.5rem 0;
+            margin-bottom: 0.5em;
+            scrollbar-width: thin;
+        }
+
+        .breadcrumb-container::-webkit-scrollbar {
+            height: 4px;
+        }
+
+        .breadcrumb-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .breadcrumb-container::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 2px;
+        }
+
+        .breadcrumb-item {
+            display: inline-flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .breadcrumb-separator {
+            margin: 0 0.5rem;
+            color: #6b7280;
         }
 
         /* Loading spinner */
@@ -89,6 +124,9 @@
         #imageActions button i {
             margin-right: 0.5rem;
         }
+        .fa-level-up-alt {
+            transform: rotate(90deg);
+        }
     </style>
 @endpush
 
@@ -138,8 +176,13 @@
                     </div>
                 </div>
 
-                <!-- Gallery (Fixed Height) -->
-                <div class="grid grid-cols-[repeat(auto-fill,_minmax(100px,_1fr))] gap-4 h-96 overflow-y-auto border border-gray-300 p-2 rounded-lg" id="galleryImages">
+                <!-- Breadcrumb Navigation (separate row) -->
+                <div id="breadcrumbContainer" class="breadcrumb-container">
+                    <!-- Breadcrumbs will be dynamically inserted here -->
+                </div>
+
+                <!-- Gallery (separate row below breadcrumb) -->
+                <div class="grid grid-cols-[repeat(auto-fill,_minmax(100px,_1fr))] gap-4 max-h-[60vh] overflow-y-auto border border-gray-300 p-2 rounded-lg" id="galleryImages">
                     <!-- Images and folders will be dynamically loaded here -->
                 </div>
 
@@ -179,13 +222,12 @@
     </div>
 </div>
 
-
-
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const galleryModal = document.getElementById('galleryModal');
             const galleryImages = document.getElementById('galleryImages');
+            const breadcrumbContainer = document.getElementById('breadcrumbContainer');
             const previewImage = document.getElementById('previewImage');
             const noPreview = document.getElementById('noPreview');
             const imageActions = document.getElementById('imageActions');
@@ -232,11 +274,7 @@
             function loadGalleryContents() {
                 showLoadingSpinner();
 
-                const url = isTrashView
-                    ? '/gallery/trash'
-                    : currentFolder
-                        ? `/gallery/folder/${encodeURIComponent(currentFolder)}`
-                        : '/gallery';
+                const url = '/gallery' + (currentFolder ? `?folder=${encodeURIComponent(currentFolder)}` : '');
 
                 fetch(url, {
                     headers: {
@@ -245,32 +283,30 @@
                     }
                 })
                     .then(response => {
-                        if (!response.ok) throw new Error('Failed to fetch gallery contents');
+                        if (!response.ok) throw new Error('Failed to fetch contents');
                         return response.json();
                     })
                     .then(data => {
+                        renderBreadcrumbs(data.breadcrumbs || []);
                         renderGalleryContents(data);
                     })
                     .catch(error => {
-                        console.error('Error loading gallery:', error);
-                        showError('Failed to load gallery contents. Please try again.');
+                        console.error('Error:', error);
+                        showError('Failed to load contents. Please try again.');
                     })
                     .finally(() => {
                         hideLoadingSpinner();
                     });
             }
 
-            // Render gallery contents
-            function renderGalleryContents(data) {
-                galleryImages.innerHTML = '';
-
-                // Always show breadcrumbs (even for root)
-                const breadcrumbContainer = document.createElement('div');
-                breadcrumbContainer.className = 'col-span-full flex items-center mb-2 gap-2';
+            // Render breadcrumbs
+            function renderBreadcrumbs(breadcrumbs) {
+                breadcrumbContainer.innerHTML = '';
 
                 // Root link
                 const rootLink = document.createElement('button');
-                rootLink.className = 'text-blue-600 hover:text-blue-800 flex items-center';
+                rootLink.type = 'button';
+                rootLink.className = 'breadcrumb-item text-blue-600 hover:text-blue-800';
                 rootLink.innerHTML = '<i class="fas fa-home mr-1"></i> Root';
                 rootLink.addEventListener('click', () => {
                     currentFolder = '';
@@ -278,95 +314,184 @@
                 });
                 breadcrumbContainer.appendChild(rootLink);
 
-                // Other breadcrumbs if they exist
-                if (data.breadcrumbs && data.breadcrumbs.length > 0) {
-                    data.breadcrumbs.forEach(crumb => {
-                        const separator = document.createElement('span');
-                        separator.className = 'text-gray-400';
-                        separator.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                        breadcrumbContainer.appendChild(separator);
+                // Show ellipsis if more than 5 breadcrumbs
+                if (breadcrumbs.length > 5) {
+                    const ellipsis = document.createElement('span');
+                    ellipsis.className = 'breadcrumb-item text-gray-500 mx-1';
+                    ellipsis.textContent = '...';
+                    breadcrumbContainer.appendChild(ellipsis);
 
-                        const crumbLink = document.createElement('button');
-                        crumbLink.className = 'text-blue-600 hover:text-blue-800';
-                        crumbLink.textContent = crumb.name;
-                        crumbLink.addEventListener('click', () => {
-                            currentFolder = crumb.path;
-                            loadGalleryContents();
-                        });
-                        breadcrumbContainer.appendChild(crumbLink);
-                    });
+                    // Only show last 4 breadcrumbs
+                    breadcrumbs = breadcrumbs.slice(-4);
                 }
 
-                galleryImages.appendChild(breadcrumbContainer);
+                // Other breadcrumbs
+                breadcrumbs.forEach(crumb => {
+                    const separator = document.createElement('span');
+                    separator.className = 'breadcrumb-separator';
+                    separator.innerHTML = '<i class="fas fa-chevron-right"></i>';
+                    breadcrumbContainer.appendChild(separator);
 
-                // Add "Go Back" button if not in root
-                if (currentFolder) {
-                    const backButton = document.createElement('button');
-                    backButton.className = 'col-span-full flex items-center justify-center w-full h-24 bg-gray-100 rounded-lg border border-gray-300 hover:bg-gray-200 mb-4';
-                    backButton.innerHTML = '<i class="fas fa-arrow-left mr-2"></i> Go Back';
-                    backButton.addEventListener('click', () => {
-                        const parts = currentFolder.split('/');
+                    const crumbLink = document.createElement('button');
+                    crumbLink.type = 'button';
+                    crumbLink.className = 'breadcrumb-item text-blue-600 hover:text-blue-800';
+                    crumbLink.textContent = crumb.name;
+                    crumbLink.addEventListener('click', () => {
+                        currentFolder = crumb.path;
+                        loadGalleryContents();
+                    });
+                    breadcrumbContainer.appendChild(crumbLink);
+                });
+            }
+
+            // Render gallery contents
+            function renderGalleryContents(data) {
+                galleryImages.innerHTML = '';
+
+                // Set fixed grid layout with no overflow
+                galleryImages.style.overflow = 'visible';
+                galleryImages.style.gridTemplateColumns = 'repeat(auto-fill, minmax(80px, 1fr))';
+                galleryImages.style.autoRows = 'minmax(80px, auto)'; // Minimum row height
+
+                // Render "Go Up" folder if not in the root directory
+                if (data.current_folder) {
+                    const goUpElement = document.createElement('div');
+                    goUpElement.className = 'cursor-pointer group gallery-item';
+                    goUpElement.dataset.type = 'folder';
+                    goUpElement.dataset.id = 'go-up';
+
+                    goUpElement.innerHTML = `
+            <div class="w-full h-20 flex items-center justify-center bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl border border-teal-200 hover:border-teal-300 transition group-hover:scale-105">
+                <i class="fas fa-arrow-up text-blue-500 text-2xl group-hover:text-blue-700"></i>
+            </div>
+            <p class="mt-1 text-xs text-center text-gray-600 group-hover:text-gray-800 truncate px-1">
+                Go Up
+            </p>
+        `;
+
+                    goUpElement.addEventListener('click', () => {
+                        const parts = data.current_folder.split('/');
                         parts.pop();
                         currentFolder = parts.join('/');
                         loadGalleryContents();
                     });
-                    galleryImages.appendChild(backButton);
+
+                    galleryImages.appendChild(goUpElement);
                 }
 
-                // After adding folders and files
-                if (data.folders.length === 0 && data.files.length === 0) {
+                // Show empty state if no content
+                if (data.folders.length === 0 && data.files.length === 0 && !data.current_folder) {
                     const emptyState = document.createElement('div');
                     emptyState.className = 'col-span-full flex flex-col items-center justify-center py-8';
                     emptyState.innerHTML = `
-        <i class="fas fa-folder-open text-gray-400 text-5xl mb-4"></i>
-        <p class="text-gray-500">This folder is empty</p>
-    `;
+            <i class="fas fa-folder-open text-gray-400 text-5xl mb-4"></i>
+            <p class="text-gray-500">This folder is empty</p>
+        `;
                     galleryImages.appendChild(emptyState);
+                    return;
                 }
 
                 // Add folders
                 data.folders.forEach(folder => {
                     const folderElement = document.createElement('div');
-                    folderElement.className = 'cursor-pointer group';
+                    folderElement.className = 'cursor-pointer group gallery-item';
+                    folderElement.dataset.type = 'folder';
+                    folderElement.dataset.id = folder.id;
+
                     folderElement.innerHTML = `
-            <div class="w-full h-24 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-200 group-hover:border-blue-300">
-                <i class="fas fa-folder text-blue-400 text-3xl"></i>
+            <div class="w-full h-20 flex items-center justify-center bg-blue-50 rounded-lg border-2 border-blue-200 group-hover:border-blue-300 transition group-hover:scale-105 relative">
+                <i class="fas fa-folder text-blue-400 text-2xl"></i>
+                <div class="absolute inset-0 bg-blue-100 opacity-0 group-hover:opacity-20 transition-opacity rounded-lg"></div>
             </div>
-            <p class="mt-1 text-sm text-center truncate">${folder.name}</p>
+            <p class="mt-1 text-xs text-center text-gray-700 group-hover:text-blue-600 truncate px-1">${folder.name}</p>
+            <div class="absolute top-1 right-1 hidden group-hover:block">
+                <input type="checkbox" class="item-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            </div>
         `;
-                    folderElement.addEventListener('click', () => {
+
+                    folderElement.addEventListener('click', (e) => {
+                        // Don't navigate if clicking on checkbox
+                        if (e.target.classList.contains('item-checkbox')) {
+                            e.stopPropagation();
+                            return;
+                        }
                         currentFolder = folder.path;
                         loadGalleryContents();
                     });
+
                     galleryImages.appendChild(folderElement);
                 });
 
                 // Add files
                 data.files.forEach(file => {
                     const fileElement = document.createElement('div');
-                    fileElement.className = 'cursor-pointer group';
+                    fileElement.className = 'cursor-pointer group gallery-item relative';
+                    fileElement.dataset.type = 'file';
+                    fileElement.dataset.id = file.id;
 
                     let thumbContent;
                     if (file.mime_type.startsWith('image/')) {
-                        thumbContent = `<img src="${file.url}" alt="${file.name}" class="w-full h-full object-contain rounded">`;
+                        thumbContent = `<img src="${file.url}" alt="${file.name}" class="w-full h-full object-cover rounded">`;
                     } else {
+                        let iconClass = 'fa-file';
+                        if (file.mime_type.startsWith('video/')) iconClass = 'fa-film';
+                        if (file.mime_type.startsWith('audio/')) iconClass = 'fa-music';
+                        if (file.mime_type.includes('pdf')) iconClass = 'fa-file-pdf';
+                        if (file.mime_type.includes('zip')) iconClass = 'fa-file-archive';
+
                         thumbContent = `
                 <div class="w-full h-full flex items-center justify-center bg-gray-100 rounded">
-                    <i class="fas fa-file text-gray-400 text-3xl"></i>
+                    <i class="fas ${iconClass} text-gray-400 text-2xl"></i>
                 </div>
             `;
                     }
 
                     fileElement.innerHTML = `
-            <div class="w-full h-24 rounded border border-gray-200 overflow-hidden relative">
+            <div class="w-full h-20 rounded border border-gray-200 overflow-hidden relative group-hover:shadow-md transition group-hover:scale-105">
                 ${thumbContent}
-                ${file.is_featured ? '<div class="absolute top-1 left-1 text-yellow-400"><i class="fas fa-star"></i></div>' : ''}
+                <div class="absolute inset-0 bg-black opacity-0 group-hover:opacity-10 transition-opacity"></div>
             </div>
-            <p class="mt-1 text-sm text-center truncate">${file.name}</p>
+            <p class="mt-1 text-xs text-center text-gray-700 group-hover:text-blue-600 truncate px-1">${file.name}</p>
+            <div class="absolute top-1 right-1 hidden group-hover:block">
+                <input type="checkbox" class="item-checkbox h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+            </div>
         `;
 
-                    fileElement.addEventListener('click', () => selectMedia(file));
+                    fileElement.addEventListener('click', (e) => {
+                        // Don't select if clicking on checkbox
+                        if (e.target.classList.contains('item-checkbox')) {
+                            e.stopPropagation();
+                            return;
+                        }
+
+                        // Set selected file for preview
+                        selectedMedia = file;
+                        previewImage.src = file.url;
+                        previewImage.alt = file.name;
+                        previewImage.classList.remove('hidden');
+                        noPreview.classList.add('hidden');
+                        imageActions.classList.remove('hidden');
+
+                        // Highlight selected item
+                        document.querySelectorAll('.gallery-item').forEach(item => {
+                            item.classList.remove('ring-2', 'ring-blue-500');
+                        });
+                        fileElement.classList.add('ring-2', 'ring-blue-500');
+                    });
+
                     galleryImages.appendChild(fileElement);
+                });
+
+                // Add event listeners for checkboxes
+                document.querySelectorAll('.item-checkbox').forEach(checkbox => {
+                    checkbox.addEventListener('change', function() {
+                        const item = this.closest('.gallery-item');
+                        if (this.checked) {
+                            item.classList.add('ring-2', 'ring-blue-500');
+                        } else {
+                            item.classList.remove('ring-2', 'ring-blue-500');
+                        }
+                    });
                 });
             }
 
@@ -587,7 +712,7 @@
                     },
                     body: JSON.stringify({
                         name: folderName,
-                        parent: currentFolder
+                        parent: currentFolder // Send current folder as parent
                     })
                 })
                     .then(response => {

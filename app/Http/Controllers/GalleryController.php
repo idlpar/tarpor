@@ -51,28 +51,39 @@ class GalleryController extends Controller
     public function index(Request $request)
     {
         $currentFolder = $request->get('folder', '');
+        $disk = Storage::disk('public');
 
-        // Get immediate subfolders
-        $folders = MediaFolder::query()
-            ->where('parent_id', function($query) use ($currentFolder) {
-                $query->select('id')
-                    ->from('media_folders')
-                    ->where('path', $currentFolder)
-                    ->when(empty($currentFolder), fn($q) => $q->whereNull('path'));
-            })
-            ->whereNull('deleted_at')
-            ->orderBy('name')
-            ->get();
+        // Get all directories in current path
+        $directories = $disk->directories($currentFolder);
 
-        // Get files in current folder
-        $files = Media::query()
-            ->where('directory', $currentFolder)
-            ->whereNull('deleted_at')
-            ->orderByDesc('is_featured')
-            ->orderBy('created_at', 'desc')
-            ->get();
+        // Get all files in current path
+        $files = $disk->files($currentFolder);
 
-        // Build breadcrumbs
+        // Build folder data for response
+        $folders = array_map(function($dir) use ($currentFolder) {
+            $name = basename($dir);
+            return [
+                'name' => $name,
+                'path' => $currentFolder ? "$currentFolder/$name" : $name,
+                'type' => 'folder'
+            ];
+        }, $directories);
+
+        // Build file data for response
+        $fileItems = [];
+        foreach ($files as $file) {
+            $fileItems[] = [
+                'name' => basename($file),
+                'path' => $file,
+                'url' => $disk->url($file),
+                'type' => 'file',
+                'mime_type' => $disk->mimeType($file),
+                'size' => $disk->size($file),
+                'last_modified' => $disk->lastModified($file)
+            ];
+        }
+
+        // Build breadcrumbs with capitalized names
         $breadcrumbs = [];
         if (!empty($currentFolder)) {
             $parts = explode('/', $currentFolder);
@@ -80,23 +91,22 @@ class GalleryController extends Controller
 
             foreach ($parts as $part) {
                 $accumulatedPath = $accumulatedPath ? "$accumulatedPath/$part" : $part;
-                $folder = MediaFolder::where('path', $accumulatedPath)->first();
-                if ($folder) {
-                    $breadcrumbs[] = [
-                        'name' => $folder->name,
-                        'path' => $folder->path
-                    ];
-                }
+                $breadcrumbs[] = [
+                    'name' => ucfirst($part), // Capitalize the first letter
+                    'path' => $accumulatedPath,
+                    'original_name' => $part // Keep original for navigation
+                ];
             }
         }
 
         return response()->json([
             'folders' => $folders,
-            'files' => $files,
+            'files' => $fileItems,
             'breadcrumbs' => $breadcrumbs,
             'current_folder' => $currentFolder
         ]);
     }
+
     /**
      * Upload files to the gallery
      */
@@ -344,30 +354,29 @@ class GalleryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9-_ ]+$/',
-            'parent' => 'nullable|string',
+            'parent' => 'nullable|string', // e.g., "new", "gallery/images", etc.
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $parent = $request->input('parent', '');
-        $folderName = Str::slug($request->input('name'));
-        $fullPath = $this->rootPath . ($parent ? '/' . $parent : '') . '/' . $folderName;
+        $parent = trim($request->input('parent', ''), '/'); // e.g. "new/pizu"
+        $folderName = Str::slug($request->input('name'));   // e.g. "dragon"
 
-        // Check if folder already exists
+        // ✅ Final path relative to Laravel disk root
+        $fullPath = $parent ? "$parent/$folderName" : $folderName;
+
         if (Storage::disk($this->disk)->exists($fullPath)) {
             return response()->json(['error' => 'Folder already exists'], 409);
         }
 
         try {
-            // Create physical folder
             Storage::disk($this->disk)->makeDirectory($fullPath);
 
-            // Create database record
             $folder = MediaFolder::create([
                 'name' => $request->input('name'),
-                'path' => ($parent ? $parent . '/' : '') . $folderName,
+                'path' => $fullPath,
                 'parent_id' => $this->getParentFolderId($parent),
             ]);
 
@@ -384,6 +393,8 @@ class GalleryController extends Controller
             ], 500);
         }
     }
+
+
 
     /**
      * Get parent folder ID from path
