@@ -111,21 +111,32 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
+
+
     Route::prefix('gallery')->name('gallery.')->group(function () {
-        // Browse media
+        // Main browsing
         Route::get('/', [GalleryController::class, 'index'])->name('index');
-        Route::get('/folders', [GalleryController::class, 'getFolders'])->name('folders');
-        Route::get('/folder/{folder}', [GalleryController::class, 'getFolderContents'])->name('folder.contents');
+        Route::get('/folder/{path}', [GalleryController::class, 'getFolderContents'])->name('folder.contents')->where('path', '.*');
 
         // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
-        Route::put('/move', [GalleryController::class, 'moveItems'])->name('move');
-
-        // Single file operations
         Route::get('/file/{media}', [GalleryController::class, 'show'])->name('show');
         Route::put('/file/{media}', [GalleryController::class, 'update'])->name('update');
         Route::delete('/file/{media}', [GalleryController::class, 'destroy'])->name('destroy');
+
+        // Folder operations
+        Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
+        Route::put('/folder/{folder}', [GalleryController::class, 'updateFolder'])->name('folder.update');
+        Route::delete('/folder/{folder}', [GalleryController::class, 'destroyFolder'])->name('folder.destroy');
+
+        // Clipboard operations
+        Route::post('/copy', [GalleryController::class, 'copyItems'])->name('copy');
+        Route::post('/cut', [GalleryController::class, 'cutItems'])->name('cut');
+        Route::post('/paste', [GalleryController::class, 'pasteItems'])->name('paste');
+
+        // Move/rename operations
+        Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
+        Route::post('/rename', [GalleryController::class, 'renameItem'])->name('rename');
 
         // Batch operations
         Route::post('/batch-delete', [GalleryController::class, 'batchDestroy'])->name('batch.destroy');
@@ -133,13 +144,23 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Trash operations
         Route::get('/trash', [GalleryController::class, 'trash'])->name('trash');
-        Route::post('/restore/{media}', [GalleryController::class, 'restore'])->name('restore');
-        Route::delete('/force-delete/{media}', [GalleryController::class, 'forceDelete'])->name('force-delete');
+        Route::post('/trash/empty', [GalleryController::class, 'emptyTrash'])->name('empty-trash'); // This was missing
+        Route::post('/restore/{id}', [GalleryController::class, 'restore'])->name('restore');
+        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
 
-        // Special operations
+        // Featured items
         Route::post('/set-featured/{media}', [GalleryController::class, 'setFeatured'])->name('set-featured');
-        Route::post('/generate-url/{media}', [GalleryController::class, 'generateUrl'])->name('generate-url');
+        Route::delete('/remove-featured/{media}', [GalleryController::class, 'removeFeatured'])->name('remove-featured');
 
+        // Properties and URLs
+        Route::get('/properties/{type}/{id}', [GalleryController::class, 'getProperties'])->name('properties');
+        Route::get('/generate-url/{media}', [GalleryController::class, 'generateUrl'])->name('generate-url');
+
+        // Search
+        Route::get('/search', [GalleryController::class, 'searchItems'])->name('search');
+
+        // Context menu
+        Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {

@@ -400,7 +400,12 @@
 @push('scripts')
     <!-- CKEditor Script -->
     <script src="{{ asset('ckeditor/ckeditor.js') }}" defer></script>
-
+    <script>
+        // Add event listener to the upload area
+        document.querySelector('.clickable-upload-area').addEventListener('click', () => {
+            window.openGalleryModal(); // Open the gallery modal
+        });
+    </script>
 
     <!-- Dynamic Specification Table Script -->
     <script>
