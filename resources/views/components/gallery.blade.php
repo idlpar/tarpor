@@ -658,12 +658,13 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
+
             // Explicitly hide progress modal on load
             document.getElementById('progressModal').classList.remove('show');
 
             // DOM Elements
             const galleryModal = document.getElementById('galleryModal');
-            const closeGalleryBtn  = document.getElementById('closeGalleryModal');
+            const closeGalleryBtn = document.getElementById('closeGalleryModal');
             const galleryImages = document.getElementById('galleryImages');
             const breadcrumbContainer = document.getElementById('breadcrumbContainer');
             const previewImage = document.getElementById('previewImage');
@@ -689,6 +690,7 @@
 
             // State variables
             let currentPath = '';
+            let currentFolderId = null;
             let selectedItems = [];
             let isTrashView = false;
             let clipboard = null;
@@ -697,6 +699,24 @@
             // Initialize the gallery
             function initGallery() {
                 setupEventListeners();
+            }
+
+            // Modify the folder click handler
+            function handleFolderClick(folderElement) {
+                // Remove active class from all folders
+                document.querySelectorAll('.gallery-item[data-type="folder"]').forEach(el => {
+                    el.classList.remove('folder-active');
+                });
+
+                // Add active class to clicked folder
+                folderElement.classList.add('folder-active');
+
+                // Update current folder ID and path
+                currentFolderId = folderElement.dataset.id;
+                currentPath = folderElement.dataset.path;
+
+                // Load contents
+                loadGalleryContents();
             }
 
             // Setup event listeners
@@ -739,7 +759,6 @@
 
             // Show progress modal
             function showProgress(title) {
-                console.trace("showProgress called with title:", title);
                 progressTitle.textContent = title;
                 progressBar.style.width = '0%';
                 progressStatus.textContent = '0% Complete';
@@ -790,6 +809,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            currentPath = data.currentPath || '';
                             renderBreadcrumbs(data.breadcrumbs);
                             renderGalleryContents(data.contents);
                         } else {
@@ -818,18 +838,20 @@
                     const button = document.createElement('button');
                     button.className = 'breadcrumb-button';
                     button.innerHTML = `
-                        ${crumb.icon ? `<i class="fas fa-${crumb.icon}"></i>` : ''}
-                        <span>${crumb.name}</span>
-                    `;
+            ${crumb.icon ? `<i class="fas fa-${crumb.icon}"></i>` : ''}
+            <span>${crumb.name}</span>
+        `;
                     button.addEventListener('click', () => {
                         event.preventDefault();
                         currentPath = crumb.path;
+                        currentFolderId = crumb.id || null;
                         loadGalleryContents();
                     });
 
                     breadcrumbContainer.appendChild(button);
                 });
             }
+
 
             // Render gallery contents
             function renderGalleryContents(contents) {
@@ -841,9 +863,9 @@
                     const emptyState = document.createElement('div');
                     emptyState.className = 'empty-state';
                     emptyState.innerHTML = `
-                        <i class="fas fa-folder-open text-5xl mb-4"></i>
-                        <p>${isTrashView ? 'Trash is empty' : 'This folder is empty'}</p>
-                    `;
+            <i class="fas fa-folder-open text-5xl mb-4"></i>
+            <p>${isTrashView ? 'Trash is empty' : 'This folder is empty'}</p>
+        `;
                     galleryImages.appendChild(emptyState);
                     return;
                 }
@@ -862,6 +884,7 @@
                         const parts = currentPath.split('/');
                         parts.pop();
                         currentPath = parts.join('/');
+                        currentFolderId = null; // Reset current folder ID
                         loadGalleryContents();
                     });
 
@@ -876,6 +899,8 @@
                             name: folder.name,
                             type: 'folder',
                             icon: 'folder',
+                            path: folder.path,
+                            parent_id: folder.parent_id,
                             itemCount: folder.item_count,
                             createdAt: folder.created_at,
                             isSelected: selectedItems.some(item => item.id === folder.id && item.type === 'folder')
@@ -883,12 +908,10 @@
 
                         folderItem.addEventListener('click', (e) => {
                             if (e.target.closest('.item-checkbox')) return;
-
                             if (isTrashView) {
                                 toggleItemSelection(folder.id, 'folder', folderItem);
                             } else {
-                                currentPath = folder.path;
-                                loadGalleryContents();
+                                handleFolderClick(folderItem);
                             }
                         });
 
@@ -913,7 +936,6 @@
 
                         fileItem.addEventListener('click', (e) => {
                             if (e.target.closest('.item-checkbox')) return;
-
                             toggleItemSelection(file.id, 'file', fileItem);
                             updatePreview(file);
                         });
@@ -925,12 +947,15 @@
                 updateSelectionDisplay();
             }
 
+
             // Create a gallery item element
             function createGalleryItem(options) {
                 const item = document.createElement('div');
                 item.className = `gallery-item ${options.isSelected ? 'selected' : ''}`;
                 item.dataset.id = options.id;
                 item.dataset.type = options.type;
+                if (options.path) item.dataset.path = options.path;
+                if (options.parent_id) item.dataset.parent_id = options.parent_id;
 
                 let thumbnailContent = '';
                 if (options.thumbnail && options.type === 'file') {
@@ -938,47 +963,44 @@
                 } else {
                     const icon = options.icon || 'file';
                     thumbnailContent = `
-                        <div class="${options.isSpecial ? 'bg-teal-50' : 'bg-gray-100'}">
-                            <i class="fas fa-${icon} folder-icon"></i>
-                        </div>
-                    `;
+            <div class="${options.isSpecial ? 'bg-teal-50' : 'bg-gray-100'}">
+                <i class="fas fa-${icon} folder-icon"></i>
+            </div>
+        `;
                 }
 
                 item.innerHTML = `
-                    <div class="item-thumbnail relative">
-                        ${thumbnailContent}
+        <div class="item-thumbnail relative">
+            ${thumbnailContent}
 
-                        ${options.type === 'folder' && options.itemCount !== undefined ? `
-                            <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
-                                ${options.itemCount} items
-                            </div>` : ''}
+            ${options.type === 'folder' && options.itemCount !== undefined ? `
+                <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
+                    ${options.itemCount} items
+                </div>` : ''}
 
+            ${options.isFeatured ? '<i class="fas fa-star item-featured"></i>' : ''}
 
-                        ${options.isFeatured ? '<i class="fas fa-star item-featured"></i>' : ''}
+            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                ${formatDate(options.createdAt)}
+            </div>
 
-                        <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                            ${formatDate(options.createdAt)}
-                        </div>
+            ${options.type === 'file' ? `
+                <div class="absolute bottom-1 right-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                    ${formatFileSize(options.size)}
+                </div>` : ''}
 
-                        ${options.type === 'file' ? `
-                            <div class="absolute bottom-1 right-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                                ${formatFileSize(options.size)}
-                            </div>` : ''}
+            <div class="item-checkbox absolute top-1 right-1">
+                <input type="checkbox" ${options.isSelected ? 'checked' : ''}>
+            </div>
+        </div>
 
-                        <div class="item-checkbox absolute top-1 right-1">
-                            <input type="checkbox" ${options.isSelected ? 'checked' : ''}>
-                        </div>
-                    </div>
-
-                    <div class="item-info">
-                        <div class="item-name">${options.name}</div>
-                        <div class="item-meta">
-                            <span></span>
-                        </div>
-                    </div>
-                `;
-
-
+        <div class="item-info">
+            <div class="item-name">${options.name}</div>
+            <div class="item-meta">
+                <span>${options.type === 'folder' && options.parent_id ? 'Subfolder' : ''}</span>
+            </div>
+        </div>
+    `;
 
                 // Add checkbox event listener
                 const checkbox = item.querySelector('.item-checkbox input');
@@ -989,7 +1011,6 @@
 
                 return item;
             }
-
 
 
             // Toggle item selection
@@ -1163,8 +1184,13 @@
                 const folderName = prompt('Enter folder name:');
                 if (!folderName) return;
 
+                // Validate folder name
+                if (!/^[a-zA-Z0-9\-_ ]+$/.test(folderName)) {
+                    showError('Folder name can only contain letters, numbers, spaces, hyphens and underscores');
+                    return;
+                }
+
                 showProgress('Creating Folder');
-                updateProgress(30, 'Creating folder...');
 
                 fetch('{{ route("gallery.folder.create") }}', {
                     method: 'POST',
@@ -1175,28 +1201,25 @@
                     },
                     body: JSON.stringify({
                         name: folderName,
-                        parent: currentPath
+                        parent_id: currentFolderId ? parseInt(currentFolderId) : null
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Folder created');
-                            setTimeout(() => {
-                                hideProgress();
-                                showSuccess('Folder created successfully');
-                                loadGalleryContents();
-                            }, 500);
+                            showSuccess('Folder created successfully');
+                            loadGalleryContents();
                         } else {
                             throw new Error(data.message || 'Folder creation failed');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
-                        console.error('Folder creation error:', error);
+                        console.error('Error:', error);
                         showError(error.message);
-                    });
+                    })
+                    .finally(() => hideProgress());
             }
+
 
             // Delete selected items
             function deleteSelectedItems() {
@@ -1444,10 +1467,10 @@
                         const button = document.createElement('div');
                         button.className = `context-menu-item ${menuItem.danger ? 'danger' : ''}`;
                         button.innerHTML = `
-                            <i class="fas fa-${menuItem.icon}"></i>
-                            <span>${menuItem.label}</span>
-                            ${menuItem.shortcut ? `<span class="ml-auto">${menuItem.shortcut}</span>` : ''}
-                        `;
+                        <i class="fas fa-${menuItem.icon}"></i>
+                        <span>${menuItem.label}</span>
+                        ${menuItem.shortcut ? `<span class="ml-auto">${menuItem.shortcut}</span>` : ''}
+                    `;
                         button.addEventListener('click', () => {
                             executeContextMenuAction(menuItem.action);
                             closeContextMenu();
@@ -1774,13 +1797,13 @@
                 const header = document.createElement('div');
                 header.className = 'px-6 py-4 border-b border-gray-200 flex justify-between items-center';
                 header.innerHTML = `
-                    <h3 class="text-lg font-medium text-gray-900">
-                        ${type === 'file' ? 'File' : 'Folder'} Properties
-                    </h3>
-                    <button type="button" class="text-gray-400 hover:text-gray-500">
-                        <i class="fas fa-times"></i>
-                    </button>
-                `;
+                <h3 class="text-lg font-medium text-gray-900">
+                    ${type === 'file' ? 'File' : 'Folder'} Properties
+                </h3>
+                <button type="button" class="text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
 
                 const body = document.createElement('div');
                 body.className = 'px-6 py-4';
@@ -1788,11 +1811,11 @@
                 let propertiesHTML = '';
                 for (const [key, value] of Object.entries(properties)) {
                     propertiesHTML += `
-                        <div class="mb-3">
-                            <div class="text-sm font-medium text-gray-500 capitalize">${key.replace('_', ' ')}</div>
-                            <div class="mt-1 text-sm text-gray-900">${value || 'N/A'}</div>
-                        </div>
-                    `;
+                    <div class="mb-3">
+                        <div class="text-sm font-medium text-gray-500 capitalize">${key.replace('_', ' ')}</div>
+                        <div class="mt-1 text-sm text-gray-900">${value || 'N/A'}</div>
+                    </div>
+                `;
                 }
 
                 body.innerHTML = propertiesHTML;
@@ -1800,10 +1823,10 @@
                 const footer = document.createElement('div');
                 footer.className = 'px-6 py-3 border-t border-gray-200 flex justify-end';
                 footer.innerHTML = `
-                    <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        OK
-                    </button>
-                `;
+                <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
+                    OK
+                </button>
+            `;
 
                 content.appendChild(header);
                 content.appendChild(body);
@@ -1874,7 +1897,6 @@
                 return `${day}-${month}-${year}`;
             }
 
-
             function copyToClipboard(text) {
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
@@ -1922,10 +1944,6 @@
 
             // Initialize the gallery
             initGallery();
-
-
-            // Debugging: Make sure the open function is properly exposed
-            console.log('Gallery initialized. Use window.openGalleryModal() to open the gallery');
         });
     </script>
 @endpush

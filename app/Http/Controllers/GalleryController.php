@@ -11,15 +11,12 @@ use App\Models\Media;
 use App\Models\MediaFolder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
-use FFMpeg\FFMpeg;
-use FFMpeg\Coordinate\TimeCode;
-use FFMpeg\Coordinate\Dimension;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GalleryController extends Controller
 {
     protected $disk = 'public';
-    protected $rootPath = ''; // Empty for root
+    protected $rootPath = '';
     protected $conversions = [
         'thumb' => ['width' => 150, 'height' => 150, 'quality' => 70],
         'small' => ['width' => 300, 'height' => 300, 'quality' => 75],
@@ -36,19 +33,10 @@ class GalleryController extends Controller
     public function __construct()
     {
         $this->imageManager = new ImageManager(new Driver());
-
-        // Ensure root folder exists using proper nested set method
-        if (!MediaFolder::root()->exists()) {
-            MediaFolder::create([
-                'name' => 'Root',
-                'path' => '',
-                'parent_id' => null
-            ])->saveAsRoot();
-        }
     }
 
     /**
-     * Get folder contents with parent/child relationships
+     * Get folder contents
      */
     public function index(Request $request)
     {
@@ -76,8 +64,9 @@ class GalleryController extends Controller
     }
 
     /**
-     * Get detailed folder contents
+     * Get folder contents
      */
+
     protected function getFolderContents($path = '')
     {
         $contents = [
@@ -85,158 +74,69 @@ class GalleryController extends Controller
             'files' => []
         ];
 
-        // Normalize the path (remove leading/trailing slashes)
-        $path = trim($path, '/');
+        // Get current folder with parent relationship
+        $currentFolder = $path ? MediaFolder::with('parent')->where('path', $path)->first() : null;
 
-        // 1. Get files from storage (filesystem)
-        $storagePath = $path === '' ? '' : $path.'/';
-        $storageFolders = [];
-
-        try {
-            $storageFiles = Storage::disk('public')->files($storagePath);
-            $storageFolders = Storage::disk('public')->directories($storagePath);
-        } catch (\Exception $e) {
-            \Log::error("Error accessing storage path {$storagePath}: " . $e->getMessage());
-        }
-
-        // 2. Get folders from database that match this path structure
-        $dbFolders = MediaFolder::query()
-            ->where(function($query) use ($path) {
-                // Folders directly in this path
-                if ($path === '') {
-                    $query->whereNull('parent_id');
-                } else {
-                    $parent = MediaFolder::where('path', $path)->first();
-                    $query->where('parent_id', $parent ? $parent->id : -1);
-                }
-            })
+        // Get child folders (direct children only)
+        $childFolders = MediaFolder::withCount(['children', 'media'])
+            ->where('parent_id', $currentFolder ? $currentFolder->id : null)
             ->whereNull('deleted_at')
             ->orderBy('name')
             ->get();
 
-        // 3. Merge filesystem folders with database folders
-        $allFolders = collect();
-
-        // Add database folders first
-        foreach ($dbFolders as $folder) {
-            $allFolders->push([
-                'type' => 'folder',
+        foreach ($childFolders as $folder) {
+            $contents['folders'][] = [
                 'id' => $folder->id,
                 'name' => $folder->name,
                 'path' => $folder->path,
-                'source' => 'database'
-            ]);
-        }
-
-        // Add filesystem folders that aren't in database
-        foreach ($storageFolders as $folderPath) {
-            $folderName = basename($folderPath);
-
-            if (!$allFolders->where('name', $folderName)->first()) {
-                $allFolders->push([
-                    'type' => 'folder',
-                    'id' => null, // No database ID
-                    'name' => $folderName,
-                    'path' => $folderPath,
-                    'source' => 'filesystem'
-                ]);
-            }
-        }
-
-        // 4. Build the folders array for response
-        foreach ($allFolders as $folder) {
-            $contents['folders'][] = [
-                'id' => $folder['id'],
-                'name' => $folder['name'],
-                'path' => $folder['path'],
+                'parent_id' => $folder->parent_id,
                 'type' => 'folder',
-                'has_children' => $this->folderHasContents($folder['path']),
-                'created_at' => $folder['source'] === 'database' ? $dbFolders->firstWhere('path', $folder['path'])->created_at : null,
-                'updated_at' => $folder['source'] === 'database' ? $dbFolders->firstWhere('path', $folder['path'])->updated_at : null,
-                'item_count' => $this->getFolderItemCount($folder['path'])
+                'has_children' => $folder->children_count > 0,
+                'created_at' => $folder->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $folder->updated_at->format('Y-m-d H:i:s'),
+                'item_count' => $folder->media_count + $folder->children_count
             ];
         }
 
-        // 5. Get files from both database and filesystem
-        $dbFiles = Media::where('directory', $path)
+        // Get files in current directory
+        $files = Media::where('directory', $path)
             ->whereNull('deleted_at')
+            ->orderBy('name')
             ->get();
 
-        foreach ($dbFiles as $file) {
+        foreach ($files as $file) {
             $contents['files'][] = [
                 'id' => $file->id,
                 'name' => $file->name,
                 'file_name' => $file->file_name,
                 'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                'url' => $file->url,
-                'thumb_url' => $file->thumb_url,
+                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                'thumb_url' => $this->getThumbUrl($file),
                 'type' => 'file',
                 'mime_type' => $file->mime_type,
                 'size' => $file->size,
                 'dimensions' => $file->dimensions,
-                'is_featured' => $file->is_featured,
-                'created_at' => $file->created_at,
-                'updated_at' => $file->updated_at
+                'created_at' => $file->created_at->format('Y-m-d H:i:s'),
+                'updated_at' => $file->updated_at->format('Y-m-d H:i:s')
             ];
-        }
-
-        // Add files from filesystem that aren't in database
-        foreach ($storageFiles as $filePath) {
-            $fileName = basename($filePath);
-
-            if (!$dbFiles->where('file_name', $fileName)->first()) {
-                $contents['files'][] = [
-                    'id' => null,
-                    'name' => pathinfo($fileName, PATHINFO_FILENAME),
-                    'file_name' => $fileName,
-                    'path' => $filePath,
-                    'url' => Storage::disk('public')->url($filePath),
-                    'type' => 'file',
-                    'mime_type' => Storage::disk('public')->mimeType($filePath),
-                    'size' => Storage::disk('public')->size($filePath),
-                    'created_at' => null,
-                    'updated_at' => null
-                ];
-            }
         }
 
         return $contents;
     }
 
-    protected function folderHasContents($path)
-    {
-        // Check database
-        $hasDbChildren = MediaFolder::where('parent_id', function($query) use ($path) {
-            $query->select('id')
-                ->from('media_folders')
-                ->where('path', $path);
-        })->exists();
-
-        // Check filesystem
-        try {
-            $hasFsChildren = count(Storage::disk('public')->directories($path)) > 0 ||
-                count(Storage::disk('public')->files($path)) > 0;
-        } catch (\Exception $e) {
-            $hasFsChildren = false;
-        }
-
-        return $hasDbChildren || $hasFsChildren;
-    }
 
     /**
-     * Get parent folder ID from path
+     * Get thumbnail URL for a file
      */
-    protected function getParentIdFromPath($path)
+    protected function getThumbUrl($file)
     {
-        if (empty($path)) {
-            return null;
+        if (Str::startsWith($file->mime_type, 'image/')) {
+            $thumbPath = $file->directory ? $file->directory.'/thumb/'.$file->file_name : 'thumb/'.$file->file_name;
+            return Storage::disk($this->disk)->exists($thumbPath) ?
+                Storage::disk($this->disk)->url($thumbPath) :
+                Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name);
         }
-
-        $parts = explode('/', $path);
-        $parentPath = implode('/', array_slice($parts, 0, -1));
-
-        $folder = MediaFolder::where('path', $parentPath)->first();
-        return $folder ? $folder->id : null;
+        return null;
     }
 
     /**
@@ -245,26 +145,27 @@ class GalleryController extends Controller
     protected function getFolderItemCount($path)
     {
         $fileCount = Media::where('directory', $path)->count();
-        $folderCount = MediaFolder::where('path', 'like', $path.'/%')
-            ->whereRaw("path NOT LIKE ?", [$path.'/%/%']) // Only direct children
-            ->count();
+        $folderCount = MediaFolder::where('parent_id', function($query) use ($path) {
+            $query->select('id')
+                ->from('media_folders')
+                ->where('path', $path);
+        })->count();
 
         return $fileCount + $folderCount;
     }
 
     /**
-     * Generate breadcrumbs for navigation
+     * Generate breadcrumbs
      */
+    // Update the breadcrumb generation
     protected function getBreadcrumbs($currentPath)
     {
-        $breadcrumbs = [];
-
-        // Root breadcrumb
-        $breadcrumbs[] = [
+        $breadcrumbs = [[
+            'id' => null,
             'name' => 'Root',
             'path' => '',
             'icon' => 'home'
-        ];
+        ]];
 
         if (empty($currentPath)) {
             return $breadcrumbs;
@@ -279,6 +180,7 @@ class GalleryController extends Controller
 
             if ($folder) {
                 $breadcrumbs[] = [
+                    'id' => $folder->id,
                     'name' => $folder->name,
                     'path' => $accumulatedPath,
                     'icon' => 'folder'
@@ -289,15 +191,16 @@ class GalleryController extends Controller
         return $breadcrumbs;
     }
 
+
     /**
-     * Get context menu options based on current path and selection
+     * Get context menu options
      */
     protected function getContextMenuOptions($currentPath = '', $selectedItems = [])
     {
         $hasSelection = !empty($selectedItems);
         $isRoot = empty($currentPath);
 
-        $options = [
+        return [
             'newFolder' => [
                 'label' => 'New Folder',
                 'icon' => 'folder-plus',
@@ -327,57 +230,34 @@ class GalleryController extends Controller
                 'label' => 'Cut',
                 'icon' => 'cut',
                 'action' => 'cutItems',
-                'available' => $hasSelection,
-                'shortcut' => 'Ctrl+X'
+                'available' => $hasSelection
             ],
             'copy' => [
                 'label' => 'Copy',
                 'icon' => 'copy',
                 'action' => 'copyItems',
-                'available' => $hasSelection,
-                'shortcut' => 'Ctrl+C'
+                'available' => $hasSelection
             ],
             'paste' => [
                 'label' => 'Paste',
                 'icon' => 'paste',
                 'action' => 'pasteItems',
-                'available' => session()->has('clipboard'),
-                'shortcut' => 'Ctrl+V'
+                'available' => session()->has('clipboard')
             ],
             'separator2' => ['type' => 'separator'],
             'rename' => [
                 'label' => 'Rename',
                 'icon' => 'i-cursor',
                 'action' => 'renameItem',
-                'available' => $hasSelection && count($selectedItems) === 1,
-                'shortcut' => 'F2'
+                'available' => $hasSelection && count($selectedItems) === 1
             ],
             'delete' => [
                 'label' => 'Delete',
                 'icon' => 'trash',
                 'action' => 'deleteItems',
-                'available' => $hasSelection,
-                'shortcut' => 'Del'
-            ],
-            'separator3' => ['type' => 'separator'],
-            'selectAll' => [
-                'label' => 'Select All',
-                'icon' => 'check-square',
-                'action' => 'selectAll',
-                'available' => true,
-                'shortcut' => 'Ctrl+A'
-            ],
-            'properties' => [
-                'label' => 'Properties',
-                'icon' => 'info-circle',
-                'action' => 'showProperties',
-                'available' => $hasSelection && count($selectedItems) === 1
+                'available' => $hasSelection
             ]
         ];
-
-        return array_filter($options, function($option) {
-            return !isset($option['available']) || $option['available'];
-        });
     }
 
     /**
@@ -386,68 +266,44 @@ class GalleryController extends Controller
     public function createFolder(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9-_ ]+$/',
-            'parent' => 'nullable|string',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\-_ ]+$/',
+            'parent_id' => 'nullable|exists:media_folders,id'
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $parentPath = $request->input('parent', '');
-        $folderName = Str::slug($request->input('name'));
-        $fullPath = $parentPath ? "$parentPath/$folderName" : $folderName;
-
-        if (MediaFolder::where('path', $fullPath)->exists()) {
-            return response()->json(['error' => 'Folder already exists'], 409);
-        }
-
-        DB::beginTransaction();
-
         try {
-            $parentId = $this->getParentIdFromPath($parentPath);
-            $parent = $parentId ? MediaFolder::find($parentId) : null;
-
-            // Create the folder using proper nested set methods
-            $folder = new MediaFolder([
-                'name' => $request->input('name'),
-                'path' => $fullPath,
-            ]);
-
-            if ($parent) {
-                $folder->appendToNode($parent)->save();
-            } else {
-                $folder->saveAsRoot();
-            }
-
-            // Create physical folder
-            Storage::disk($this->disk)->makeDirectory($this->rootPath.'/'.$fullPath);
-
-            DB::commit();
+            $folder = MediaFolder::createWithPath($request->name, $request->parent_id);
 
             return response()->json([
                 'success' => true,
-                'folder' => $folder,
+                'folder' => [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'path' => $folder->path,
+                    'parent_id' => $folder->parent_id,
+                    'depth' => $folder->depth
+                ],
                 'message' => 'Folder created successfully'
             ]);
-
         } catch (\Exception $e) {
-            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Folder creation failed: ' . $e->getMessage()
+                'message' => 'Folder creation failed: '.$e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Upload files to the gallery
+     * Upload files
      */
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'files.*' => 'required|file|max:' . (1024 * 20), // 20MB max
-            'path' => 'nullable|string',
+            'files.*' => 'required|file|max:'.(1024 * 20), // 20MB max
+            'path' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
@@ -455,63 +311,37 @@ class GalleryController extends Controller
         }
 
         $path = $request->input('path', '');
-        $folder = $request->input('folder', '');
-        $folderRecord = $this->ensureFolderRecordExists($folder); // This creates folder if needed
-        $folderPath = $this->rootPath . ($path ? '/' . $path : '');
         $uploadedFiles = [];
-        $currentMaxOrder = Media::max('order_column') ?? 0;
 
         DB::beginTransaction();
 
         try {
             foreach ($request->file('files') as $file) {
                 $originalName = $file->getClientOriginalName();
-                $originalBaseName = pathinfo($originalName, PATHINFO_FILENAME);
+                $baseName = pathinfo($originalName, PATHINFO_FILENAME);
                 $extension = strtolower($file->getClientOriginalExtension());
-                $baseName = Str::slug($originalBaseName);
-                $fileName = $this->generateUniqueFilename($path, $baseName, $extension);
+                $fileName = $this->generateUniqueFilename($path, Str::slug($baseName), $extension);
 
-                $mimeType = $file->getMimeType();
-                $fileSize = $file->getSize();
-                $fileHash = md5_file($file->getRealPath());
-
-                // Check for duplicates
-                if ($existingFile = Media::where('file_hash', $fileHash)->first()) {
-                    $uploadedFiles[] = $existingFile;
-                    continue;
-                }
-
-                // Store the file
+                // Store file
                 $storedPath = $file->storeAs(
-                    $folderPath,
+                    $path,
                     $fileName,
                     $this->disk
                 );
 
                 // Create media record
                 $media = new Media([
-                    'uuid' => Str::uuid(),
-                    'collection_name' => 'gallery',
-                    'name' => $originalBaseName,
+                    'name' => $baseName,
                     'file_name' => $fileName,
-                    'mime_type' => $mimeType,
-                    'size' => $fileSize,
-                    'disk' => $this->disk,
-                    'conversions_disk' => $this->disk,
-                    'directory' => $folder,
-                    'file_hash' => $fileHash,
-                    'manipulations' => [],
-                    'custom_properties' => [],
-                    'responsive_images' => [],
-                    'order_column' => ++$currentMaxOrder,
-                    'alt_text' => $originalBaseName,
+                    'mime_type' => $file->getMimeType(),
+                    'size' => $file->getSize(),
+                    'directory' => $path,
+                    'disk' => $this->disk
                 ]);
 
-                // Process image/video
-                if (Str::startsWith($mimeType, 'image/')) {
+                // Process image if needed
+                if (Str::startsWith($media->mime_type, 'image/')) {
                     $this->processImage($file, $path, $fileName, $media);
-                } elseif (Str::startsWith($mimeType, 'video/')) {
-                    $this->processVideo($file, $path, $fileName, $media);
                 }
 
                 $media->save();
@@ -530,126 +360,51 @@ class GalleryController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'File upload failed: ' . $e->getMessage()
+                'message' => 'File upload failed: '.$e->getMessage()
             ], 500);
         }
     }
 
-    protected function ensureFolderRecordExists($folderPath)
-    {
-        if (empty($folderPath)) {
-            return MediaFolder::firstOrCreate(
-                ['path' => ''],
-                ['name' => 'Root', 'parent_id' => null]
-            );
-        }
-
-        $parts = explode('/', $folderPath);
-        $currentPath = '';
-        $parentId = null;
-
-        foreach ($parts as $part) {
-            $currentPath = $currentPath ? "$currentPath/$part" : $part;
-
-            $folder = MediaFolder::firstOrCreate(
-                ['path' => $currentPath],
-                [
-                    'name' => $part,
-                    'parent_id' => $parentId,
-                    'lft' => 0,
-                    'rgt' => 0,
-                    'depth' => substr_count($currentPath, '/')
-                ]
-            );
-
-            $parentId = $folder->id;
-        }
-
-        MediaFolder::fixTree();
-        return $folder;
-    }
-
     /**
-     * Process image files and create conversions
+     * Process image and create conversions
      */
     protected function processImage($file, $path, $fileName, $media)
     {
         try {
             $image = $this->imageManager->read($file->getRealPath());
-            $dimensions = ['width' => $image->width(), 'height' => $image->height()];
-            $media->dimensions = $dimensions;
-
-            $conversions = [];
-            $extension = strtolower($file->getClientOriginalExtension());
+            $media->dimensions = ['width' => $image->width(), 'height' => $image->height()];
 
             foreach ($this->conversions as $conversionName => $settings) {
-                $conversionPath = $this->rootPath . ($path ? '/' . $path : '') . '/' . $conversionName;
-
-                if (!Storage::disk($this->disk)->exists($conversionPath)) {
-                    Storage::disk($this->disk)->makeDirectory($conversionPath);
-                }
+                $conversionPath = $path.'/'.$conversionName;
+                Storage::disk($this->disk)->makeDirectory($conversionPath);
 
                 $conversionImage = $image->scaleDown($settings['width'], $settings['height']);
-                $encodedImage = $conversionImage->encodeByExtension($extension, $settings['quality']);
+                $encodedImage = $conversionImage->encodeByExtension(pathinfo($fileName, PATHINFO_EXTENSION), $settings['quality']);
 
                 Storage::disk($this->disk)->put(
-                    $conversionPath . '/' . $fileName,
+                    $conversionPath.'/'.$fileName,
                     $encodedImage
                 );
-
-                $conversions[$conversionName] = true;
             }
 
-            $media->generated_conversions = $conversions;
-
         } catch (\Exception $e) {
-            throw new \Exception("Image processing failed: " . $e->getMessage());
+            throw new \Exception("Image processing failed: ".$e->getMessage());
         }
     }
 
     /**
-     * Process video files
-     */
-    protected function processVideo($file, $path, $fileName, $media)
-    {
-        // Placeholder for video processing
-        $media->duration = $this->getVideoDuration($file);
-        $media->generated_conversions = ['thumb' => true];
-        $media->dimensions = $this->getVideoDimensions($file);
-    }
-
-    /**
-     * Get video duration
-     */
-    protected function getVideoDuration($file)
-    {
-        // Implement using FFMpeg or other library
-        return null;
-    }
-
-    /**
-     * Get video dimensions
-     */
-    protected function getVideoDimensions($file)
-    {
-        // Implement using FFMpeg or other library
-        return null;
-    }
-
-    /**
-     * Generate a unique filename
+     * Generate unique filename
      */
     protected function generateUniqueFilename($path, $baseName, $extension)
     {
         $counter = 1;
-        $originalFileName = "{$baseName}.{$extension}";
-        $fileName = $originalFileName;
+        $fileName = "{$baseName}.{$extension}";
 
         while (
             Media::where('file_name', $fileName)
                 ->where('directory', $path)
                 ->exists() ||
-            Storage::disk($this->disk)->exists($this->rootPath . ($path ? '/' . $path : '') . '/' . $fileName)
+            Storage::disk($this->disk)->exists($path.'/'.$fileName)
         ) {
             $fileName = "{$baseName}-{$counter}.{$extension}";
             $counter++;
@@ -659,7 +414,7 @@ class GalleryController extends Controller
     }
 
     /**
-     * Move items between folders
+     * Move items
      */
     public function moveItems(Request $request)
     {
@@ -667,7 +422,7 @@ class GalleryController extends Controller
             'items' => 'required|array',
             'items.*.type' => 'required|in:file,folder',
             'items.*.id' => 'required',
-            'target_path' => 'required|string',
+            'target_path' => 'required|string'
         ]);
 
         if ($validator->fails()) {
@@ -696,13 +451,13 @@ class GalleryController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to move items: ' . $e->getMessage()
+                'message' => 'Failed to move items: '.$e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Move a file to a new folder
+     * Move a file
      */
     protected function moveFile($fileId, $targetPath)
     {
@@ -712,43 +467,39 @@ class GalleryController extends Controller
             return;
         }
 
-        $oldPath = $this->rootPath . ($media->directory ? '/' . $media->directory : '') . '/' . $media->file_name;
-        $newPath = $this->rootPath . ($targetPath ? '/' . $targetPath : '') . '/' . $media->file_name;
+        $oldPath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
+        $newPath = $targetPath ? $targetPath.'/'.$media->file_name : $media->file_name;
 
         if (Storage::disk($this->disk)->exists($newPath)) {
             throw new \Exception("A file with this name already exists in the target folder");
         }
 
-        // Move the original file
+        // Move original file
         Storage::disk($this->disk)->move($oldPath, $newPath);
 
-        // Move all conversions
-        foreach ($media->generated_conversions as $conversion => $generated) {
-            if ($generated) {
-                $oldConversionPath = $this->rootPath .
-                    ($media->directory ? '/' . $media->directory : '') .
-                    '/' . $conversion . '/' . $media->file_name;
-                $newConversionPath = $this->rootPath .
-                    ($targetPath ? '/' . $targetPath : '') .
-                    '/' . $conversion . '/' . $media->file_name;
+        // Move conversions
+        foreach ($this->conversions as $conversion => $settings) {
+            $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
+            $newConversionPath = ($targetPath ? $targetPath.'/'.$conversion : $conversion).'/'.$media->file_name;
 
+            if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                 Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
             }
         }
 
-        // Update database record
+        // Update record
         $media->directory = $targetPath;
         $media->save();
     }
 
     /**
-     * Move a folder to a new location
+     * Move a folder
      */
     protected function moveFolder($folderId, $targetPath)
     {
         $folder = MediaFolder::findOrFail($folderId);
         $oldPath = $folder->path;
-        $newPath = ($targetPath ? $targetPath . '/' : '') . basename($oldPath);
+        $newPath = $targetPath ? $targetPath.'/'.basename($oldPath) : basename($oldPath);
 
         if ($oldPath === $newPath) {
             return;
@@ -763,27 +514,21 @@ class GalleryController extends Controller
         $folder->parent_id = $this->getParentIdFromPath($targetPath);
         $folder->save();
 
-        // Move all files in the folder
-        Media::where('directory', $oldPath)->update(['directory' => $newPath]);
+        // Update all files in this folder
+        Media::where('directory', $oldPath)
+            ->update(['directory' => $newPath]);
 
-        // Move all subfolders
-        $subfolders = MediaFolder::where('path', 'like', $oldPath . '/%')->get();
-        foreach ($subfolders as $subfolder) {
-            $subfolderNewPath = str_replace($oldPath, $newPath, $subfolder->path);
-            $subfolder->path = $subfolderNewPath;
-            $subfolder->save();
-        }
+        // Update all subfolders
+        MediaFolder::where('path', 'like', $oldPath.'/%')
+            ->update(['path' => DB::raw("REPLACE(path, '$oldPath', '$newPath')")]);
 
-        // Move physical folder and contents
-        $oldFullPath = $this->rootPath . '/' . $oldPath;
-        $newFullPath = $this->rootPath . '/' . $newPath;
+        // Move physical folder
+        Storage::disk($this->disk)->move($oldPath, $newPath);
 
-        Storage::disk($this->disk)->move($oldFullPath, $newFullPath);
-
-        // Move all conversion folders
-        foreach (array_keys($this->conversions) as $conversion) {
-            $oldConversionPath = $this->rootPath . '/' . $oldPath . '/' . $conversion;
-            $newConversionPath = $this->rootPath . '/' . $newPath . '/' . $conversion;
+        // Move conversions
+        foreach ($this->conversions as $conversion => $settings) {
+            $oldConversionPath = $oldPath.'/'.$conversion;
+            $newConversionPath = $newPath.'/'.$conversion;
 
             if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                 Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
@@ -795,6 +540,25 @@ class GalleryController extends Controller
     }
 
     /**
+     * Get parent folder ID from path
+     */
+    protected function getParentIdFromPath($path)
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        $parts = explode('/', $path);
+        if (count($parts) === 1) {
+            return null;
+        }
+
+        $parentPath = implode('/', array_slice($parts, 0, -1));
+        $folder = MediaFolder::where('path', $parentPath)->first();
+        return $folder ? $folder->id : null;
+    }
+
+    /**
      * Rename an item
      */
     public function renameItem(Request $request)
@@ -802,7 +566,7 @@ class GalleryController extends Controller
         $validator = Validator::make($request->all(), [
             'type' => 'required|in:file,folder',
             'id' => 'required',
-            'new_name' => 'required|string|max:255',
+            'new_name' => 'required|string|max:255'
         ]);
 
         if ($validator->fails()) {
@@ -818,7 +582,7 @@ class GalleryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to rename item: ' . $e->getMessage()
+                'message' => 'Failed to rename item: '.$e->getMessage()
             ], 500);
         }
     }
@@ -831,14 +595,14 @@ class GalleryController extends Controller
         $media = Media::findOrFail($fileId);
         $newBaseName = Str::slug(pathinfo($newName, PATHINFO_FILENAME));
         $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
-        $newFileName = $newBaseName . '.' . $extension;
+        $newFileName = $newBaseName.'.'.$extension;
 
         if ($media->file_name === $newFileName) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
         }
 
-        $oldPath = $this->rootPath . ($media->directory ? '/' . $media->directory : '') . '/' . $media->file_name;
-        $newPath = $this->rootPath . ($media->directory ? '/' . $media->directory : '') . '/' . $newFileName;
+        $oldPath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
+        $newPath = $media->directory ? $media->directory.'/'.$newFileName : $newFileName;
 
         if (Storage::disk($this->disk)->exists($newPath)) {
             throw new \Exception("A file with this name already exists in the folder");
@@ -850,21 +614,17 @@ class GalleryController extends Controller
             // Rename original file
             Storage::disk($this->disk)->move($oldPath, $newPath);
 
-            // Rename all conversions
-            foreach ($media->generated_conversions as $conversion => $generated) {
-                if ($generated) {
-                    $oldConversionPath = $this->rootPath .
-                        ($media->directory ? '/' . $media->directory : '') .
-                        '/' . $conversion . '/' . $media->file_name;
-                    $newConversionPath = $this->rootPath .
-                        ($media->directory ? '/' . $media->directory : '') .
-                        '/' . $conversion . '/' . $newFileName;
+            // Rename conversions
+            foreach ($this->conversions as $conversion => $settings) {
+                $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
+                $newConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$newFileName;
 
+                if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                     Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
                 }
             }
 
-            // Update database record
+            // Update record
             $media->name = pathinfo($newName, PATHINFO_FILENAME);
             $media->file_name = $newFileName;
             $media->save();
@@ -893,7 +653,7 @@ class GalleryController extends Controller
 
         $oldPath = $folder->path;
         $parentPath = dirname($oldPath);
-        $newPath = ($parentPath !== '.' ? $parentPath . '/' : '') . $newFolderName;
+        $newPath = ($parentPath !== '.' ? $parentPath.'/' : '').$newFolderName;
 
         if ($folder->path === $newPath) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
@@ -907,15 +667,13 @@ class GalleryController extends Controller
 
         try {
             // Rename physical folder
-            $oldFullPath = $this->rootPath . '/' . $oldPath;
-            $newFullPath = $this->rootPath . '/' . $newPath;
-            Storage::disk($this->disk)->move($oldFullPath, $newFullPath);
+            Storage::disk($this->disk)->move($oldPath, $newPath);
 
             // Update folder and all its children in database
             $this->updateFolderPaths($oldPath, $newPath);
 
             // Update all media records in this folder and subfolders
-            Media::where('directory', 'like', $oldPath . '%')
+            Media::where('directory', 'like', $oldPath.'%')
                 ->update([
                     'directory' => DB::raw("REPLACE(directory, '$oldPath', '$newPath')")
                 ]);
@@ -938,11 +696,11 @@ class GalleryController extends Controller
     }
 
     /**
-     * Update folder paths recursively after rename/move
+     * Update folder paths after rename/move
      */
     protected function updateFolderPaths($oldPath, $newPath)
     {
-        $folders = MediaFolder::where('path', 'like', $oldPath . '%')->get();
+        $folders = MediaFolder::where('path', 'like', $oldPath.'%')->get();
 
         foreach ($folders as $folder) {
             $folder->path = str_replace($oldPath, $newPath, $folder->path);
@@ -992,7 +750,7 @@ class GalleryController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete items: ' . $e->getMessage()
+                'message' => 'Failed to delete items: '.$e->getMessage()
             ], 500);
         }
     }
@@ -1005,26 +763,19 @@ class GalleryController extends Controller
         $media = Media::withTrashed()->findOrFail($fileId);
 
         if ($permanent) {
-            // Delete all file conversions
-            foreach ($media->generated_conversions as $conversion => $generated) {
-                if ($generated) {
-                    $path = $this->rootPath .
-                        ($media->directory ? '/' . $media->directory : '') .
-                        '/' . $conversion . '/' . $media->file_name;
-                    Storage::disk($this->disk)->delete($path);
-                }
+            // Delete original file
+            $path = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
+            Storage::disk($this->disk)->delete($path);
+
+            // Delete conversions
+            foreach ($this->conversions as $conversion => $settings) {
+                $conversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
+                Storage::disk($this->disk)->delete($conversionPath);
             }
 
-            // Delete original file
-            $originalPath = $this->rootPath .
-                ($media->directory ? '/' . $media->directory : '') .
-                '/' . $media->file_name;
-            Storage::disk($this->disk)->delete($originalPath);
-
-            // Delete database record
+            // Delete record
             $media->forceDelete();
         } else {
-            // Soft delete
             if ($media->trashed()) {
                 throw new \Exception('File is already in trash');
             }
@@ -1043,30 +794,109 @@ class GalleryController extends Controller
 
         if ($permanent) {
             // Delete all files in the folder and subfolders
-            $files = Media::where('directory', 'like', $folder->path . '%')->get();
+            $files = Media::where('directory', 'like', $folder->path.'%')->get();
             foreach ($files as $file) {
                 $this->deleteFile($file->id, true);
             }
 
             // Delete the folder and all subfolders from database
-            MediaFolder::where('path', 'like', $folder->path . '%')->forceDelete();
+            MediaFolder::where('path', 'like', $folder->path.'%')->forceDelete();
 
             // Delete physical folder
-            Storage::disk($this->disk)->deleteDirectory($this->rootPath . '/' . $folder->path);
+            Storage::disk($this->disk)->deleteDirectory($folder->path);
         } else {
-            // Soft delete
             if ($folder->trashed()) {
                 throw new \Exception('Folder is already in trash');
             }
 
             // Soft delete all files in the folder and subfolders
-            Media::where('directory', 'like', $folder->path . '%')->delete();
+            Media::where('directory', 'like', $folder->path.'%')->delete();
 
             // Soft delete the folder and all subfolders
-            MediaFolder::where('path', 'like', $folder->path . '%')->delete();
+            MediaFolder::where('path', 'like', $folder->path.'%')->delete();
         }
 
         return $folder;
+    }
+
+    /**
+     * Get trashed items
+     */
+    protected function getTrashedItems()
+    {
+        $trashedFiles = Media::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->get()
+            ->map(function($file) {
+                return [
+                    'id' => $file->id,
+                    'name' => $file->name,
+                    'type' => 'file',
+                    'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
+                    'mime_type' => $file->mime_type,
+                    'size' => $file->size,
+                    'deleted_at' => $file->deleted_at,
+                    'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name)
+                ];
+            });
+
+        $trashedFolders = MediaFolder::onlyTrashed()
+            ->orderBy('deleted_at', 'desc')
+            ->get()
+            ->map(function($folder) {
+                return [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'type' => 'folder',
+                    'path' => $folder->path,
+                    'deleted_at' => $folder->deleted_at
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'contents' => [
+                'files' => $trashedFolders,
+                'folders' => $trashedFolders
+            ],
+            'contextMenu' => $this->getTrashContextMenuOptions()
+        ]);
+    }
+
+    /**
+     * Get trash context menu options
+     */
+    protected function getTrashContextMenuOptions()
+    {
+        return [
+            'restore' => [
+                'label' => 'Restore',
+                'icon' => 'trash-restore',
+                'action' => 'restoreItems',
+                'available' => true
+            ],
+            'delete' => [
+                'label' => 'Delete Permanently',
+                'icon' => 'trash-alt',
+                'action' => 'deleteItems',
+                'available' => true,
+                'permanent' => true
+            ],
+            'separator1' => ['type' => 'separator'],
+            'emptyTrash' => [
+                'label' => 'Empty Trash',
+                'icon' => 'broom',
+                'action' => 'emptyTrash',
+                'available' => true
+            ],
+            'separator2' => ['type' => 'separator'],
+            'refresh' => [
+                'label' => 'Refresh',
+                'icon' => 'sync',
+                'action' => 'refresh',
+                'available' => true
+            ]
+        ];
     }
 
     /**
@@ -1109,13 +939,13 @@ class GalleryController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to restore items: ' . $e->getMessage()
+                'message' => 'Failed to restore items: '.$e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Restore a file from trash
+     * Restore a file
      */
     protected function restoreFile($fileId)
     {
@@ -1125,7 +955,7 @@ class GalleryController extends Controller
     }
 
     /**
-     * Restore a folder from trash
+     * Restore a folder
      */
     protected function restoreFolder($folderId)
     {
@@ -1139,7 +969,7 @@ class GalleryController extends Controller
 
         // Restore all subfolders
         $subfolders = MediaFolder::onlyTrashed()
-            ->where('path', 'like', $folder->path . '/%')
+            ->where('path', 'like', $folder->path.'/%')
             ->get();
 
         foreach ($subfolders as $subfolder) {
@@ -1147,86 +977,6 @@ class GalleryController extends Controller
         }
 
         return $folder;
-    }
-
-    /**
-     * Get trashed items
-     */
-    protected function getTrashedItems()
-    {
-        $trashedFiles = Media::onlyTrashed()
-            ->orderBy('deleted_at', 'desc')
-            ->get()
-            ->map(function($file) {
-                return [
-                    'id' => $file->id,
-                    'name' => $file->name,
-                    'type' => 'file',
-                    'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                    'mime_type' => $file->mime_type,
-                    'size' => $file->size,
-                    'deleted_at' => $file->deleted_at,
-                    'url' => $file->url
-                ];
-            });
-
-        $trashedFolders = MediaFolder::onlyTrashed()
-            ->orderBy('deleted_at', 'desc')
-            ->get()
-            ->map(function($folder) {
-                return [
-                    'id' => $folder->id,
-                    'name' => $folder->name,
-                    'type' => 'folder',
-                    'path' => $folder->path,
-                    'deleted_at' => $folder->deleted_at
-                ];
-            });
-
-        return response()->json([
-            'success' => true,
-            'contents' => [
-                'files' => $trashedFiles,
-                'folders' => $trashedFolders
-            ],
-            'contextMenu' => $this->getTrashContextMenuOptions()
-        ]);
-    }
-
-    /**
-     * Get context menu options for trash view
-     */
-    protected function getTrashContextMenuOptions()
-    {
-        return [
-            'restore' => [
-                'label' => 'Restore',
-                'icon' => 'trash-restore',
-                'action' => 'restoreItems',
-                'available' => true
-            ],
-            'delete' => [
-                'label' => 'Delete Permanently',
-                'icon' => 'trash-alt',
-                'action' => 'deleteItems',
-                'available' => true,
-                'permanent' => true
-            ],
-            'separator1' => ['type' => 'separator'],
-            'emptyTrash' => [
-                'label' => 'Empty Trash',
-                'icon' => 'broom',
-                'action' => 'emptyTrash',
-                'available' => true
-            ],
-            'separator2' => ['type' => 'separator'],
-            'refresh' => [
-                'label' => 'Refresh',
-                'icon' => 'sync',
-                'action' => 'refresh',
-                'available' => true
-            ]
-        ];
     }
 
     /**
@@ -1260,13 +1010,13 @@ class GalleryController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to empty trash: ' . $e->getMessage()
+                'message' => 'Failed to empty trash: '.$e->getMessage()
             ], 500);
         }
     }
 
     /**
-     * Search for items
+     * Search items
      */
     protected function searchItems($searchTerm, $currentPath = '')
     {
@@ -1308,8 +1058,8 @@ class GalleryController extends Controller
                 'name' => $file->name,
                 'file_name' => $file->file_name,
                 'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                'url' => $file->url,
-                'thumb_url' => $file->thumb_url,
+                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                'thumb_url' => $this->getThumbUrl($file),
                 'type' => 'file',
                 'mime_type' => $file->mime_type,
                 'size' => $file->size,
@@ -1327,33 +1077,196 @@ class GalleryController extends Controller
     }
 
     /**
-     * Set a media item as featured
+     * Copy items to clipboard
      */
-    public function setFeatured(Request $request, $mediaId)
+    public function copyItems(Request $request)
     {
-        $media = Media::findOrFail($mediaId);
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array',
+            'items.*.type' => 'required|in:file,folder',
+            'items.*.id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        session(['clipboard' => [
+            'action' => 'copy',
+            'items' => $request->input('items'),
+            'timestamp' => now()
+        ]]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Items copied to clipboard'
+        ]);
+    }
+
+    /**
+     * Cut items to clipboard
+     */
+    public function cutItems(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'items' => 'required|array',
+            'items.*.type' => 'required|in:file,folder',
+            'items.*.id' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        session(['clipboard' => [
+            'action' => 'cut',
+            'items' => $request->input('items'),
+            'timestamp' => now()
+        ]]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Items cut to clipboard'
+        ]);
+    }
+
+    /**
+     * Paste items from clipboard
+     */
+    public function pasteItems(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'target_path' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $clipboard = session('clipboard');
+        if (!$clipboard) {
+            return response()->json(['error' => 'Clipboard is empty'], 400);
+        }
+
+        $targetPath = $request->input('target_path');
+
+        DB::beginTransaction();
 
         try {
-            // Remove featured status from all other media in the same directory
-            Media::where('directory', $media->directory)
-                ->where('id', '!=', $media->id)
-                ->update(['is_featured' => false]);
+            if ($clipboard['action'] === 'copy') {
+                foreach ($clipboard['items'] as $item) {
+                    if ($item['type'] === 'file') {
+                        $this->copyFile($item['id'], $targetPath);
+                    } else {
+                        $this->copyFolder($item['id'], $targetPath);
+                    }
+                }
+                $message = 'Items copied successfully';
+            } else { // cut
+                foreach ($clipboard['items'] as $item) {
+                    if ($item['type'] === 'file') {
+                        $this->moveFile($item['id'], $targetPath);
+                    } else {
+                        $this->moveFolder($item['id'], $targetPath);
+                    }
+                }
+                session()->forget('clipboard');
+                $message = 'Items moved successfully';
+            }
 
-            // Set this media as featured
-            $media->is_featured = true;
-            $media->save();
+            DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Media set as featured'
+                'message' => $message
             ]);
 
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to set featured: ' . $e->getMessage()
+                'message' => 'Failed to paste items: '.$e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Copy a file
+     */
+    protected function copyFile($fileId, $targetPath)
+    {
+        $media = Media::findOrFail($fileId);
+        $newBaseName = pathinfo($media->file_name, PATHINFO_FILENAME);
+        $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
+        $newFileName = $this->generateUniqueFilename($targetPath, $newBaseName, $extension);
+
+        // Copy original file
+        Storage::disk($this->disk)->copy(
+            $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name,
+            $targetPath ? $targetPath.'/'.$newFileName : $newFileName
+        );
+
+        // Copy conversions
+        foreach ($this->conversions as $conversion => $settings) {
+            $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
+            $newConversionPath = ($targetPath ? $targetPath.'/'.$conversion : $conversion).'/'.$newFileName;
+
+            if (Storage::disk($this->disk)->exists($oldConversionPath)) {
+                Storage::disk($this->disk)->copy($oldConversionPath, $newConversionPath);
+            }
+        }
+
+        // Create new media record
+        $newMedia = $media->replicate();
+        $newMedia->file_name = $newFileName;
+        $newMedia->directory = $targetPath;
+        $newMedia->save();
+
+        return $newMedia;
+    }
+
+    /**
+     * Copy a folder
+     */
+    protected function copyFolder($folderId, $targetPath)
+    {
+        $folder = MediaFolder::findOrFail($folderId);
+        $newFolderName = $folder->name;
+        $newPath = $targetPath ? "$targetPath/$newFolderName" : $newFolderName;
+
+        if (MediaFolder::where('path', $newPath)->exists()) {
+            throw new \Exception("A folder with this name already exists in the target location");
+        }
+
+        // Create physical folder
+        Storage::disk($this->disk)->makeDirectory($newPath);
+
+        // Create folder record
+        $newFolder = new MediaFolder([
+            'name' => $folder->name,
+            'path' => $newPath,
+            'parent_id' => $this->getParentIdFromPath($targetPath)
+        ]);
+
+        if ($newFolder->parent_id) {
+            $newFolder->appendToNode(MediaFolder::find($newFolder->parent_id))->save();
+        } else {
+            $newFolder->saveAsRoot();
+        }
+
+        // Copy all files in the folder
+        $files = Media::where('directory', $folder->path)->get();
+        foreach ($files as $file) {
+            $this->copyFile($file->id, $newPath);
+        }
+
+        // Copy all subfolders
+        $subfolders = MediaFolder::where('parent_id', $folder->id)->get();
+        foreach ($subfolders as $subfolder) {
+            $this->copyFolder($subfolder->id, $newPath);
+        }
+
+        return $newFolder;
     }
 
     /**
@@ -1400,7 +1313,7 @@ class GalleryController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get properties: ' . $e->getMessage()
+                'message' => 'Failed to get properties: '.$e->getMessage()
             ], 500);
         }
     }
@@ -1410,7 +1323,7 @@ class GalleryController extends Controller
      */
     protected function getFolderSize($path)
     {
-        $files = Media::where('directory', 'like', $path . '%')->get();
+        $files = Media::where('directory', 'like', $path.'%')->get();
         return $files->sum('size');
     }
 
@@ -1426,223 +1339,6 @@ class GalleryController extends Controller
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
 
-        return round($bytes, $precision) . ' ' . $units[$pow];
-    }
-
-    /**
-     * Copy items to clipboard
-     */
-    public function copyItems(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array',
-            'items.*.type' => 'required|in:file,folder',
-            'items.*.id' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $clipboard = [
-            'action' => 'copy',
-            'items' => $request->input('items'),
-            'timestamp' => now()
-        ];
-
-        session(['gallery_clipboard' => $clipboard]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Items copied to clipboard'
-        ]);
-    }
-
-    /**
-     * Cut items to clipboard
-     */
-    public function cutItems(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'items' => 'required|array',
-            'items.*.type' => 'required|in:file,folder',
-            'items.*.id' => 'required',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $clipboard = [
-            'action' => 'cut',
-            'items' => $request->input('items'),
-            'timestamp' => now()
-        ];
-
-        session(['gallery_clipboard' => $clipboard]);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Items cut to clipboard'
-        ]);
-    }
-
-    /**
-     * Paste items from clipboard
-     */
-    public function pasteItems(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'target_path' => 'required|string',
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $clipboard = session('gallery_clipboard');
-        if (!$clipboard) {
-            return response()->json(['error' => 'Clipboard is empty'], 400);
-        }
-
-        $targetPath = $request->input('target_path');
-
-        DB::beginTransaction();
-
-        try {
-            if ($clipboard['action'] === 'copy') {
-                foreach ($clipboard['items'] as $item) {
-                    if ($item['type'] === 'file') {
-                        $this->copyFile($item['id'], $targetPath);
-                    } else {
-                        $this->copyFolder($item['id'], $targetPath);
-                    }
-                }
-                $message = 'Items copied successfully';
-            } else { // cut
-                foreach ($clipboard['items'] as $item) {
-                    if ($item['type'] === 'file') {
-                        $this->moveFile($item['id'], $targetPath);
-                    } else {
-                        $this->moveFolder($item['id'], $targetPath);
-                    }
-                }
-                session()->forget('gallery_clipboard');
-                $message = 'Items moved successfully';
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => $message
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to paste items: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Copy a file
-     */
-    protected function copyFile($fileId, $targetPath)
-    {
-        $media = Media::findOrFail($fileId);
-        $newBaseName = pathinfo($media->file_name, PATHINFO_FILENAME);
-        $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
-        $newFileName = $this->generateUniqueFilename($targetPath, $newBaseName, $extension);
-
-        // Copy original file
-        Storage::disk($this->disk)->copy(
-            $this->rootPath . ($media->directory ? '/' . $media->directory : '') . '/' . $media->file_name,
-            $this->rootPath . ($targetPath ? '/' . $targetPath : '') . '/' . $newFileName
-        );
-
-        // Copy all conversions
-        foreach ($media->generated_conversions as $conversion => $generated) {
-            if ($generated) {
-                Storage::disk($this->disk)->copy(
-                    $this->rootPath . ($media->directory ? '/' . $media->directory : '') . '/' . $conversion . '/' . $media->file_name,
-                    $this->rootPath . ($targetPath ? '/' . $targetPath : '') . '/' . $conversion . '/' . $newFileName
-                );
-            }
-        }
-
-        // Create new media record
-        $newMedia = $media->replicate();
-        $newMedia->file_name = $newFileName;
-        $newMedia->directory = $targetPath;
-        $newMedia->file_hash = md5_file(
-            Storage::disk($this->disk)->path($this->rootPath . ($targetPath ? '/' . $targetPath : '') . '/' . $newFileName)
-        );
-        $newMedia->save();
-
-        return $newMedia;
-    }
-
-    /**
-     * Copy a folder
-     */
-    protected function copyFolder($folderId, $targetPath)
-    {
-        $folder = MediaFolder::findOrFail($folderId);
-        $newFolderName = $folder->name;
-        $newPath = $targetPath ? "$targetPath/$newFolderName" : $newFolderName;
-
-        if (MediaFolder::where('path', $newPath)->exists()) {
-            throw new \Exception("A folder with this name already exists in the target location");
-        }
-
-        // Create new folder
-        Storage::disk($this->disk)->makeDirectory($this->rootPath.'/'.$newPath);
-
-        // Create database record
-        $newFolder = MediaFolder::create([
-            'name' => $folder->name,
-            'path' => $newPath,
-            'parent_id' => $this->getParentIdFromPath($targetPath),
-        ]);
-
-        // Copy all files in the folder
-        $files = Media::where('directory', $folder->path)->get();
-        foreach ($files as $file) {
-            $this->copyFile($file->id, $newPath);
-        }
-
-        // Copy all subfolders
-        $subfolders = MediaFolder::where('path', 'like', $folder->path.'/%')
-            ->whereRaw("path NOT LIKE ?", [$folder->path.'/%/%']) // Only direct children
-            ->get();
-
-        foreach ($subfolders as $subfolder) {
-            $this->copyFolder($subfolder->id, $newPath);
-        }
-
-        // Fix tree structure
-        MediaFolder::fixTree();
-
-        return $newFolder;
-    }
-
-    /**
-     * Generate a URL for a media item
-     */
-    public function generateUrl($mediaId)
-    {
-        $media = Media::findOrFail($mediaId);
-        $url = $media->url;
-
-        return response()->json([
-            'success' => true,
-            'url' => $url,
-            'html' => $media->isImage()
-                ? '<img src="'.$url.'" alt="'.htmlspecialchars($media->alt_text ?? $media->name).'">'
-                : '<a href="'.$url.'" target="_blank">'.$media->name.'</a>'
-        ]);
+        return round($bytes, $precision).' '.$units[$pow];
     }
 }

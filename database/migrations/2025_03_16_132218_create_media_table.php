@@ -60,11 +60,11 @@ return new class extends Migration
         Schema::create('media_folders', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('path')->unique();
+            $table->string('path')->nullable();
             $table->unsignedBigInteger('parent_id')->nullable();
             $table->unsignedBigInteger('lft')->nullable()->index();
             $table->unsignedBigInteger('rgt')->nullable()->index();
-            $table->unsignedBigInteger('depth')->nullable();
+            $table->unsignedBigInteger('depth')->default(0)->nullable();
             $table->softDeletes();
             $table->timestamps();
 
