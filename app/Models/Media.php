@@ -86,9 +86,7 @@ class Media extends Model
     // In Media model
     public function getFullUrl(string $conversion = '')
     {
-        $basePath = 'gallery/'; // Add this
-
-        $path = $basePath . ($this->directory ? $this->directory . '/' : '');
+        $path = $this->directory ? $this->directory.'/' : '';
 
         if ($conversion && isset($this->generated_conversions[$conversion])) {
             $path .= "{$conversion}/{$this->file_name}";

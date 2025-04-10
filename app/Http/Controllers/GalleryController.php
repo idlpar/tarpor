@@ -80,7 +80,7 @@ class GalleryController extends Controller
         // Get child folders (direct children only)
         $childFolders = MediaFolder::withCount(['children', 'media'])
             ->where('parent_id', $currentFolder ? $currentFolder->id : null)
-            ->whereNull('deleted_at')
+            ->whereNull('deleted_at') // Only non-deleted folders
             ->orderBy('name')
             ->get();
 
@@ -100,7 +100,7 @@ class GalleryController extends Controller
 
         // Get files in current directory
         $files = Media::where('directory', $path)
-            ->whereNull('deleted_at')
+            ->whereNull('deleted_at') // Only non-deleted files
             ->orderBy('name')
             ->get();
 
@@ -297,7 +297,7 @@ class GalleryController extends Controller
     }
 
     /**
-     * Upload files
+     * Upload files with all fields populated
      */
     public function upload(Request $request)
     {
@@ -321,6 +321,9 @@ class GalleryController extends Controller
                 $baseName = pathinfo($originalName, PATHINFO_FILENAME);
                 $extension = strtolower($file->getClientOriginalExtension());
                 $fileName = $this->generateUniqueFilename($path, Str::slug($baseName), $extension);
+                $fileHash = md5_file($file->getRealPath());
+                $mimeType = $file->getMimeType();
+                $size = $file->getSize();
 
                 // Store file
                 $storedPath = $file->storeAs(
@@ -329,19 +332,35 @@ class GalleryController extends Controller
                     $this->disk
                 );
 
-                // Create media record
+                // Create media record with all fields
                 $media = new Media([
+                    'model_type' => null, // Set to your model if applicable
+                    'model_id' => null,   // Set to your model ID if applicable
+                    'uuid' => Str::uuid(),
+                    'collection_name' => 'default',
                     'name' => $baseName,
                     'file_name' => $fileName,
-                    'mime_type' => $file->getMimeType(),
-                    'size' => $file->getSize(),
+                    'file_hash' => $fileHash,
+                    'mime_type' => $mimeType,
+                    'disk' => $this->disk,
+                    'conversions_disk' => $this->disk,
+                    'size' => $size,
                     'directory' => $path,
-                    'disk' => $this->disk
+                    'order_column' => Media::max('order_column') + 1,
+                    'alt_text' => $baseName,
+                    'caption' => $baseName,
+                    'title' => $baseName,
+                    'custom_properties' => [
+                        'original_name' => $originalName,
+                        'uploaded_by' => auth()->id() ?? null
+                    ]
                 ]);
 
-                // Process image if needed
-                if (Str::startsWith($media->mime_type, 'image/')) {
+                // Process image/video if needed
+                if (Str::startsWith($mimeType, 'image/')) {
                     $this->processImage($file, $path, $fileName, $media);
+                } elseif (Str::startsWith($mimeType, 'video/')) {
+                    $this->processVideo($file, $media);
                 }
 
                 $media->save();
@@ -366,29 +385,93 @@ class GalleryController extends Controller
     }
 
     /**
-     * Process image and create conversions
+     * Process image and create conversions with all metadata
      */
     protected function processImage($file, $path, $fileName, $media)
     {
         try {
             $image = $this->imageManager->read($file->getRealPath());
-            $media->dimensions = ['width' => $image->width(), 'height' => $image->height()];
+
+            // Set dimensions
+            $media->dimensions = [
+                'width' => $image->width(),
+                'height' => $image->height(),
+                'aspect_ratio' => $image->width() / $image->height()
+            ];
+
+            $generatedConversions = [];
+            $manipulations = [];
+            $responsiveImages = [];
 
             foreach ($this->conversions as $conversionName => $settings) {
                 $conversionPath = $path.'/'.$conversionName;
                 Storage::disk($this->disk)->makeDirectory($conversionPath);
 
                 $conversionImage = $image->scaleDown($settings['width'], $settings['height']);
-                $encodedImage = $conversionImage->encodeByExtension(pathinfo($fileName, PATHINFO_EXTENSION), $settings['quality']);
+                $encodedImage = $conversionImage->encodeByExtension(
+                    pathinfo($fileName, PATHINFO_EXTENSION),
+                    $settings['quality']
+                );
 
                 Storage::disk($this->disk)->put(
                     $conversionPath.'/'.$fileName,
                     $encodedImage
                 );
+
+                // Record conversion details
+                $generatedConversions[$conversionName] = true;
+                $manipulations[$conversionName] = [
+                    'width' => $settings['width'],
+                    'height' => $settings['height'],
+                    'quality' => $settings['quality'],
+                    'format' => pathinfo($fileName, PATHINFO_EXTENSION),
+                    'created_at' => now()->toDateTimeString()
+                ];
+
+                // Generate responsive images data
+                $responsiveImages[$conversionName] = [
+                    'urls' => [
+                        Storage::disk($this->disk)->url($conversionPath.'/'.$fileName)
+                    ],
+                    'base64svg' => '', // Can be filled with placeholder SVG if needed
+                    'width' => $settings['width'],
+                    'height' => $settings['height']
+                ];
             }
+
+            // Save all processing data
+            $media->manipulations = $manipulations;
+            $media->generated_conversions = $generatedConversions;
+            $media->responsive_images = $responsiveImages;
 
         } catch (\Exception $e) {
             throw new \Exception("Image processing failed: ".$e->getMessage());
+        }
+    }
+
+    /**
+     * Process video file metadata
+     */
+    protected function processVideo($file, $media)
+    {
+        try {
+            $duration = FFMpeg::fromDisk($this->disk)
+                ->open($media->directory.'/'.$media->file_name)
+                ->getDurationInSeconds();
+
+            $media->duration = $duration;
+            $media->custom_properties = array_merge(
+                $media->custom_properties ?? [],
+                [
+                    'type' => 'video',
+                    'duration_formatted' => gmdate('H:i:s', $duration),
+                    'frame_rate' => null, // Can be extracted similarly
+                    'bitrate' => null     // Can be extracted similarly
+                ]
+            );
+        } catch (\Exception $e) {
+            // Fallback if FFmpeg not available
+            $media->duration = 0;
         }
     }
 
@@ -708,9 +791,6 @@ class GalleryController extends Controller
         }
     }
 
-    /**
-     * Delete items
-     */
     public function deleteItems(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -756,64 +836,54 @@ class GalleryController extends Controller
     }
 
     /**
-     * Delete a file
+     * Delete a file (soft delete)
      */
     protected function deleteFile($fileId, $permanent = false)
     {
         $media = Media::withTrashed()->findOrFail($fileId);
 
         if ($permanent) {
-            // Delete original file
-            $path = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
-            Storage::disk($this->disk)->delete($path);
-
-            // Delete conversions
-            foreach ($this->conversions as $conversion => $settings) {
-                $conversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
-                Storage::disk($this->disk)->delete($conversionPath);
-            }
-
-            // Delete record
+            // Permanently delete the file record
             $media->forceDelete();
         } else {
             if ($media->trashed()) {
                 throw new \Exception('File is already in trash');
             }
-            $media->delete();
+
+            // Soft delete by setting deleted_at timestamp
+            $media->deleted_at = now();
+            $media->save();
         }
 
         return $media;
     }
 
+
+
     /**
-     * Delete a folder
+     * Delete a folder (soft delete)
      */
     protected function deleteFolder($folderId, $permanent = false)
     {
         $folder = MediaFolder::withTrashed()->findOrFail($folderId);
 
         if ($permanent) {
-            // Delete all files in the folder and subfolders
-            $files = Media::where('directory', 'like', $folder->path.'%')->get();
+            // Permanently delete all files in the folder and subfolders
+            $files = Media::where('directory', 'like', $folder->path.'%')->withTrashed()->get();
             foreach ($files as $file) {
                 $this->deleteFile($file->id, true);
             }
 
             // Delete the folder and all subfolders from database
             MediaFolder::where('path', 'like', $folder->path.'%')->forceDelete();
-
-            // Delete physical folder
-            Storage::disk($this->disk)->deleteDirectory($folder->path);
         } else {
             if ($folder->trashed()) {
                 throw new \Exception('Folder is already in trash');
             }
 
-            // Soft delete all files in the folder and subfolders
-            Media::where('directory', 'like', $folder->path.'%')->delete();
-
-            // Soft delete the folder and all subfolders
-            MediaFolder::where('path', 'like', $folder->path.'%')->delete();
+            // Soft delete the folder and all subfolders by setting deleted_at timestamp
+            MediaFolder::where('path', 'like', $folder->path.'%')
+                ->update(['deleted_at' => now()]);
         }
 
         return $folder;
@@ -835,7 +905,7 @@ class GalleryController extends Controller
                     'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
                     'mime_type' => $file->mime_type,
                     'size' => $file->size,
-                    'deleted_at' => $file->deleted_at,
+                    'deleted_at' => $file->deleted_at->format('Y-m-d H:i:s'),
                     'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name)
                 ];
             });
@@ -849,14 +919,14 @@ class GalleryController extends Controller
                     'name' => $folder->name,
                     'type' => 'folder',
                     'path' => $folder->path,
-                    'deleted_at' => $folder->deleted_at
+                    'deleted_at' => $folder->deleted_at->format('Y-m-d H:i:s')
                 ];
             });
 
         return response()->json([
             'success' => true,
             'contents' => [
-                'files' => $trashedFolders,
+                'files' => $trashedFiles,
                 'folders' => $trashedFolders
             ],
             'contextMenu' => $this->getTrashContextMenuOptions()
@@ -945,49 +1015,47 @@ class GalleryController extends Controller
     }
 
     /**
-     * Restore a file
+     * Restore a file from trash
      */
     protected function restoreFile($fileId)
     {
         $media = Media::onlyTrashed()->findOrFail($fileId);
-        $media->restore();
+        $media->deleted_at = null;
+        $media->save();
         return $media;
     }
 
     /**
-     * Restore a folder
+     * Restore a folder from trash
      */
     protected function restoreFolder($folderId)
     {
         $folder = MediaFolder::onlyTrashed()->findOrFail($folderId);
-        $folder->restore();
+        $folder->deleted_at = null;
+        $folder->save();
 
         // Restore all files in this folder
         Media::onlyTrashed()
             ->where('directory', $folder->path)
-            ->restore();
+            ->update(['deleted_at' => null]);
 
         // Restore all subfolders
-        $subfolders = MediaFolder::onlyTrashed()
+        MediaFolder::onlyTrashed()
             ->where('path', 'like', $folder->path.'/%')
-            ->get();
-
-        foreach ($subfolders as $subfolder) {
-            $this->restoreFolder($subfolder->id);
-        }
+            ->update(['deleted_at' => null]);
 
         return $folder;
     }
 
     /**
-     * Empty the trash
+     * Empty the trash (permanently delete all trashed items)
      */
     public function emptyTrash()
     {
         DB::beginTransaction();
 
         try {
-            // Permanently delete all trashed files
+            // Permanently delete all trashed files and their conversions
             $files = Media::onlyTrashed()->get();
             foreach ($files as $file) {
                 $this->deleteFile($file->id, true);
@@ -998,6 +1066,10 @@ class GalleryController extends Controller
             foreach ($folders as $folder) {
                 $this->deleteFolder($folder->id, true);
             }
+
+            // Clean up trash directories
+            Storage::disk($this->disk)->deleteDirectory('trash/files');
+            Storage::disk($this->disk)->deleteDirectory('trash/conversions');
 
             DB::commit();
 
@@ -1014,6 +1086,7 @@ class GalleryController extends Controller
             ], 500);
         }
     }
+
 
     /**
      * Search items
@@ -1341,4 +1414,211 @@ class GalleryController extends Controller
 
         return round($bytes, $precision).' '.$units[$pow];
     }
+
+    // In GalleryController.php
+    public function show($id)
+    {
+        $file = MediaFolder::findOrFail($id);
+        return response()->json([
+            'success' => true,
+            'file' => $file
+        ]);
+    }
+
+    /**
+     * Generate a public URL for a media item
+     */
+    public function generateUrl($id)
+    {
+        $media = Media::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'url' => Storage::disk($this->disk)->url(
+                $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name
+            )
+        ]);
+    }
+
+    /**
+     * Set a media item as featured
+     */
+    public function setFeatured($id)
+    {
+        // First remove featured status from any other items
+        Media::where('is_featured', true)->update(['is_featured' => false]);
+
+        // Set the selected item as featured
+        $media = Media::findOrFail($id);
+        $media->is_featured = true;
+        $media->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Media set as featured',
+            'media' => $media
+        ]);
+    }
+
+    /**
+     * Remove featured status from a media item
+     */
+    public function removeFeatured($id)
+    {
+        $media = Media::findOrFail($id);
+        $media->is_featured = false;
+        $media->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Featured status removed',
+            'media' => $media
+        ]);
+    }
+
+    /**
+     * Build context menu options based on current state
+     */
+    protected function buildContextMenuOptions($currentPath, $selectedItems, $isTrash)
+    {
+        $hasSelection = !empty($selectedItems);
+        $isRoot = empty($currentPath);
+
+        $options = [
+            'newFolder' => [
+                'label' => 'New Folder',
+                'icon' => 'folder-plus',
+                'action' => 'createFolder',
+                'available' => !$isTrash
+            ],
+            'upload' => [
+                'label' => 'Upload Files',
+                'icon' => 'upload',
+                'action' => 'uploadFiles',
+                'available' => !$isTrash
+            ],
+            'goUp' => [
+                'label' => 'Go Up',
+                'icon' => 'level-up-alt',
+                'action' => 'navigateUp',
+                'available' => !$isRoot && !$isTrash
+            ],
+            'separator1' => ['type' => 'separator'],
+            'cut' => [
+                'label' => 'Cut',
+                'icon' => 'cut',
+                'action' => 'cutItems',
+                'available' => $hasSelection && !$isTrash,
+                'shortcut' => 'Ctrl+X'
+            ],
+            'copy' => [
+                'label' => 'Copy',
+                'icon' => 'copy',
+                'action' => 'copyItems',
+                'available' => $hasSelection && !$isTrash,
+                'shortcut' => 'Ctrl+C'
+            ],
+            'paste' => [
+                'label' => 'Paste',
+                'icon' => 'paste',
+                'action' => 'pasteItems',
+                'available' => session()->has('clipboard') && !$isTrash,
+                'shortcut' => 'Ctrl+V'
+            ],
+            'separator2' => ['type' => 'separator'],
+            'rename' => [
+                'label' => 'Rename',
+                'icon' => 'i-cursor',
+                'action' => 'renameItem',
+                'available' => $hasSelection && count($selectedItems) === 1,
+                'shortcut' => 'F2'
+            ],
+            'delete' => [
+                'label' => $isTrash ? 'Delete Permanently' : 'Delete',
+                'icon' => 'trash',
+                'action' => 'deleteItems',
+                'available' => $hasSelection,
+                'danger' => true,
+                'shortcut' => 'Del'
+            ],
+            'restore' => [
+                'label' => 'Restore',
+                'icon' => 'trash-restore',
+                'action' => 'restoreItems',
+                'available' => $isTrash && $hasSelection
+            ],
+            'separator3' => ['type' => 'separator'],
+            'selectAll' => [
+                'label' => 'Select All',
+                'icon' => 'check-square',
+                'action' => 'selectAll',
+                'available' => true,
+                'shortcut' => 'Ctrl+A'
+            ],
+            'properties' => [
+                'label' => 'Properties',
+                'icon' => 'info-circle',
+                'action' => 'showProperties',
+                'available' => $hasSelection && count($selectedItems) === 1
+            ]
+        ];
+
+        return array_filter($options, function($option) {
+            return !isset($option['available']) || $option['available'];
+        });
+    }
+
+    /**
+     * Force delete an item (bypass soft delete)
+     */
+    public function forceDelete($id)
+    {
+        $item = Media::withTrashed()->findOrFail($id);
+
+        // Delete the actual file
+        Storage::disk($this->disk)->delete(
+            $item->directory ? $item->directory.'/'.$item->file_name : $item->file_name
+        );
+
+        // Delete conversions if they exist
+        foreach ($this->conversions as $conversion => $settings) {
+            $path = ($item->directory ? $item->directory.'/'.$conversion : $conversion).'/'.$item->file_name;
+            if (Storage::disk($this->disk)->exists($path)) {
+                Storage::disk($this->disk)->delete($path);
+            }
+        }
+
+        // Permanently delete the record
+        $item->forceDelete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Item permanently deleted'
+        ]);
+    }
+
+    /**
+     * Dedicated method for folder rename
+     */
+    public function updateFolder(Request $request, $id)
+    {
+        return $this->renameItem(new Request([
+            'type' => 'folder',
+            'id' => $id,
+            'new_name' => $request->input('name')
+        ]));
+    }
+
+    /**
+     * Dedicated method for file rename
+     */
+    public function update(Request $request, $id)
+    {
+        return $this->renameItem(new Request([
+            'type' => 'file',
+            'id' => $id,
+            'new_name' => $request->input('name')
+        ]));
+    }
+
 }

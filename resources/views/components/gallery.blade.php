@@ -1,527 +1,634 @@
-@push('styles')
-    <style>
-        /* Modern Gallery Styles */
-        .gallery-container {
-            display: grid;
-            grid-template-rows: auto auto auto 1fr auto;
-            height: 80vh;
-            max-height: 800px;
-            background-color: #f8fafc;
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            overflow: hidden;
-        }
+<style>
+    /* Context Menu */
+    .context-menu {
+        position: fixed;
+        z-index: 99999;
+        background: white;
+        border: 1px solid #e2e8f0;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        min-width: 200px;
+        padding: 0.5rem 0;
+    }
 
-        /* Header Section */
-        .gallery-header {
-            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            color: white;
-            padding: 0.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
+    .context-menu-item {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-align: left;
+        background: none;
+        border: none;
+        font-size: 0.875rem;
+    }
+    .context-menu-item[disabled] {
+        opacity: 0.5;
+        pointer-events: none;
+    }
 
-        .gallery-title {
-            font-size: 1.5rem;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
+    .context-menu-item:not([disabled]):hover {
+        background-color: #f1f5f9;
+    }
 
-        .gallery-close {
-            background: rgba(190, 18, 60, 0.1); /* Subtle rose tone */
-            border: 2px solid rgba(190, 18, 60, 0.2); /* Matching soft border */
-            border-radius: 50%;
-            width: 2.5rem;
-            height: 2.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #be123c; /* Tailwind's rose-600 */
-            cursor: pointer;
-            transition: all 0.2s ease-in-out;
-        }
+    .context-menu-item:hover {
+        background-color: #f8fafc;
+    }
 
-        .gallery-close:hover {
-            background: #be123c; /* Solid rose on hover */
-            color: white;
-            border-color: #be123c;
-            transform: scale(1.05);
-        }
-        .item-thumbnail {
-            position: relative;
-        }
+    .context-menu-item.danger {
+        color: #ef4444;
+    }
 
+    .context-menu-item.danger:hover {
+        background-color: #fee2e2;
+    }
 
+    .context-menu-separator {
+        height: 1px;
+        background-color: #e2e8f0;
+        margin: 0.25rem 0;
+    }
 
+    .shortcut {
+        margin-left: auto;
+        color: #94a3b8;
+        font-size: 0.75rem;
+    }
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 40;
+    }
 
-        /* Toolbar Section */
-        .gallery-toolbar {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 1.25rem;
-            background-color: white;
-            border-bottom: 1px solid #e2e8f0;
-        }
+    .loading-spinner {
+        animation: spin 1s linear infinite;
+        color: #4f46e5;
+        font-size: 2rem;
+    }
 
-        .toolbar-group {
-            display: flex;
-            gap: 0.5rem;
-        }
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
 
-        .toolbar-button {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 8px;
-            font-size: 0.875rem;
-            font-weight: 500;
-            transition: all 0.2s;
-            cursor: pointer;
-            border: 1px solid transparent;
-        }
+    /* Modern Gallery Styles */
+    .gallery-container {
+        display: grid;
+        grid-template-rows: auto auto auto 1fr auto;
+        height: 80vh;
+        max-height: 800px;
+        background-color: #f8fafc;
+        border-radius: 12px;
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
 
-        .toolbar-button.primary {
-            background-color: #4f46e5;
-            color: white;
-        }
+    /* Header Section */
+    .gallery-header {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+        color: white;
+        padding: 0.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
 
-        .toolbar-button.primary:hover {
-            background-color: #4338ca;
-        }
+    .gallery-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
 
-        .toolbar-button.secondary {
-            background-color: white;
-            border-color: #e2e8f0;
-            color: #4f46e5;
-        }
+    .gallery-close {
+        background: rgba(190, 18, 60, 0.1);
+        border: 2px solid rgba(190, 18, 60, 0.2);
+        border-radius: 50%;
+        width: 2.5rem;
+        height: 2.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #be123c;
+        cursor: pointer;
+        transition: all 0.2s ease-in-out;
+    }
 
-        .toolbar-button.secondary:hover {
-            background-color: #f8fafc;
-        }
+    .gallery-close:hover {
+        background: #be123c;
+        color: white;
+        border-color: #be123c;
+        transform: scale(1.05);
+    }
 
-        .toolbar-button.danger {
-            background-color: #ef4444;
-            color: white;
-        }
+    /* Trash view specific styles */
+    .trash-view .breadcrumb-container {
+        justify-content: flex-end;
+    }
 
-        .toolbar-button.danger:hover {
-            background-color: #dc2626;
-        }
+    .empty-trash-btn {
+        background-color: #ef4444;
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        transition: all 0.2s;
+    }
 
-        .search-container {
-            position: relative;
-            width: 250px;
-        }
+    .empty-trash-btn:hover {
+        background-color: #dc2626;
+    }
 
-        .search-input {
-            width: 100%;
-            padding: 0.5rem 2rem 0.5rem 1rem;
-            border-radius: 8px;
-            border: 1px solid #e2e8f0;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-        }
+    .deleted-item {
+        opacity: 0.8;
+        position: relative;
+    }
 
-        .search-input:focus {
-            outline: none;
-            border-color: #a5b4fc;
-            box-shadow: 0 0 0 3px rgba(199, 210, 254, 0.5);
-        }
+    .deleted-item::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            45deg,
+            rgba(239, 68, 68, 0.1),
+            rgba(239, 68, 68, 0.1) 10px,
+            transparent 10px,
+            transparent 20px
+        );
+        pointer-events: none;
+    }
 
-        .search-icon {
-            position: absolute;
-            right: 0.75rem;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-        }
+    /* Toolbar Section */
+    .gallery-toolbar {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 1.25rem;
+        background-color: white;
+        border-bottom: 1px solid #e2e8f0;
+    }
 
-        /* Breadcrumb Navigation */
-        .breadcrumb-container {
-            display: flex;
-            align-items: center;
-            padding: 0.75rem 1.25rem;
-            background-color: white;
-            border-bottom: 1px solid #e2e8f0;
-            overflow-x: auto;
-            scrollbar-width: thin;
-        }
+    .toolbar-group {
+        display: flex;
+        gap: 0.5rem;
+    }
 
-        .breadcrumb-item {
-            display: flex;
-            align-items: center;
-            flex-shrink: 0;
-        }
+    .toolbar-button {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-size: 0.875rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        cursor: pointer;
+        border: 1px solid transparent;
+    }
 
-        .breadcrumb-button {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
-            padding: 0.25rem 0.5rem;
-            border-radius: 6px;
-            font-size: 0.875rem;
-            transition: all 0.2s;
-        }
+    .toolbar-button.primary {
+        background-color: #4f46e5;
+        color: white;
+    }
 
-        .breadcrumb-button:hover {
-            background-color: #f1f5f9;
-        }
+    .toolbar-button.primary:hover {
+        background-color: #4338ca;
+    }
 
-        .breadcrumb-separator {
-            margin: 0 0.5rem;
-            color: #cbd5e1;
-        }
+    .toolbar-button.secondary {
+        background-color: white;
+        border-color: #e2e8f0;
+        color: #4f46e5;
+    }
 
-        /* Main Content Area */
+    .toolbar-button.secondary:hover {
+        background-color: #f8fafc;
+    }
+
+    .toolbar-button.danger {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .toolbar-button.danger:hover {
+        background-color: #dc2626;
+    }
+
+    .search-container {
+        position: relative;
+        width: 250px;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 0.5rem 2rem 0.5rem 1rem;
+        border-radius: 8px;
+        border: 1px solid #e2e8f0;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #a5b4fc;
+        box-shadow: 0 0 0 3px rgba(199, 210, 254, 0.5);
+    }
+
+    .search-icon {
+        position: absolute;
+        right: 0.75rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #94a3b8;
+    }
+
+    /* Breadcrumb Navigation */
+    .breadcrumb-container {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1.25rem;
+        background-color: white;
+        border-bottom: 1px solid #e2e8f0;
+        overflow-x: auto;
+        scrollbar-width: thin;
+    }
+
+    .breadcrumb-item {
+        display: flex;
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .breadcrumb-button {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 6px;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        background: none;
+        border: none;
+        cursor: pointer;
+    }
+
+    .breadcrumb-button:hover {
+        background-color: #f1f5f9;
+    }
+
+    .breadcrumb-separator {
+        margin: 0 0.5rem;
+        color: #cbd5e1;
+    }
+
+    /* Main Content Area */
+    .gallery-content {
+        display: grid;
+        grid-template-columns: 75% 25%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    /* Items Grid */
+    .items-grid {
+        padding: 1rem;
+        overflow-y: auto;
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 1rem;
+        align-content: start;
+    }
+
+    .empty-state {
+        grid-column: 1 / -1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        color: #64748b;
+    }
+
+    /* Gallery Item */
+    .gallery-item {
+        position: relative;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.2s;
+        border: 1px solid #e2e8f0;
+        background-color: white;
+        cursor: pointer;
+    }
+    /* For cut items */
+    .gallery-item.cut {
+        opacity: 0.6;
+        position: relative;
+    }
+
+    .gallery-item.cut::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: repeating-linear-gradient(
+            45deg,
+            rgba(0,0,0,0.1),
+            rgba(0,0,0,0.1) 10px,
+            transparent 10px,
+            transparent 20px
+        );
+    }
+
+    .gallery-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    }
+
+    .gallery-item.selected {
+        border: 2px solid #4f46e5;
+    }
+
+    .item-thumbnail {
+        width: 100%;
+        height: 80px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+        position: relative;
+    }
+
+    .item-thumbnail img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+    }
+
+    .folder-icon {
+        font-size: 2.5rem;
+        color: #94a3b8;
+    }
+
+    .item-checkbox {
+        position: absolute;
+        top: 0.5rem;
+        right: 0.5rem;
+        z-index: 10;
+    }
+
+    .item-featured {
+        position: absolute;
+        top: 0.5rem;
+        left: 0.5rem;
+        color: #f59e0b;
+        z-index: 10;
+    }
+
+    .item-info {
+        padding: 0.25rem 0.50rem;
+    }
+
+    .item-name {
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: #1e293b;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .item-meta {
+        font-size: 0.75rem;
+        color: #64748b;
+        margin-top: 0.25rem;
+        display: flex;
+        justify-content: space-between;
+    }
+
+    /* Preview Panel */
+    .preview-panel {
+        border-left: 1px solid #e2e8f0;
+        padding: 1.5rem;
+        overflow-y: auto;
+        background-color: white;
+    }
+
+    .preview-header {
+        font-size: 1.125rem;
+        font-weight: 600;
+        margin-bottom: 1.5rem;
+        color: #1e293b;
+    }
+
+    .preview-content {
+        margin-bottom: 1.5rem;
+    }
+
+    .preview-image {
+        width: 100%;
+        max-height: 300px;
+        object-fit: contain;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+
+    .preview-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 200px;
+        color: #94a3b8;
+    }
+
+    .preview-details {
+        margin-top: 1.5rem;
+    }
+
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .detail-label {
+        font-weight: 500;
+        color: #64748b;
+    }
+
+    .detail-value {
+        color: #1e293b;
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .action-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+    }
+
+    .action-button.primary {
+        background-color: #4f46e5;
+        color: white;
+    }
+
+    .action-button.primary:hover {
+        background-color: #4338ca;
+    }
+
+    .action-button.danger {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .action-button.danger:hover {
+        background-color: #dc2626;
+    }
+
+    .action-button.secondary {
+        background-color: #e2e8f0;
+        color: #1e293b;
+    }
+
+    .action-button.secondary:hover {
+        background-color: #cbd5e1;
+    }
+
+    /* Footer */
+    .gallery-footer {
+        padding: 1rem 1.25rem;
+        border-top: 1px solid #e2e8f0;
+        display: flex;
+        justify-content: flex-end;
+        background-color: white;
+    }
+
+    /* Loading State */
+    .loading-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 40;
+    }
+
+    .loading-spinner {
+        animation: spin 1s linear infinite;
+        color: #4f46e5;
+        font-size: 2rem;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Progress Modal Styles */
+    .progress-modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+    }
+
+    .progress-modal.show {
+        display: flex;
+    }
+
+    .progress-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 8px;
+        width: 400px;
+        max-width: 90%;
+    }
+
+    .progress-header {
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+
+    .progress-bar-container {
+        height: 8px;
+        background-color: #e2e8f0;
+        border-radius: 4px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+
+    .progress-bar {
+        height: 100%;
+        background-color: #4f46e5;
+        width: 0%;
+        transition: width 0.3s ease;
+    }
+
+    .progress-status {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+    /* Responsive Adjustments */
+    @media (max-width: 1024px) {
         .gallery-content {
-            display: grid;
-            grid-template-columns: 75% 25%;
-            height: 100%;
-            overflow: hidden;
+            grid-template-columns: 65% 35%;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .gallery-content {
+            grid-template-columns: 100%;
         }
 
-        /* Items Grid */
-        .items-grid {
-            padding: 1rem;
-            overflow-y: auto;
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 1rem;
-            align-content: start;
-        }
-
-        .empty-state {
-            grid-column: 1 / -1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 2rem;
-            color: #64748b;
-        }
-
-        /* Gallery Item */
-        .gallery-item {
-            position: relative;
-            border-radius: 8px;
-            overflow: hidden;
-            transition: all 0.2s;
-            border: 1px solid #e2e8f0;
-            background-color: white;
-        }
-
-        .gallery-item:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-        }
-
-        .gallery-item.selected {
-            border: 2px solid #4f46e5;
-        }
-
-        .item-thumbnail {
-            width: 100%;
-            height: 80px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background-color: #f8fafc;
-            position: relative;
-        }
-
-        .item-thumbnail img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        .folder-icon {
-            font-size: 2.5rem;
-            color: #94a3b8;
-        }
-
-        .item-checkbox {
-            position: absolute;
-            top: 0.5rem;
-            right: 0.5rem;
-            z-index: 10;
-        }
-
-        .item-featured {
-            position: absolute;
-            top: 0.5rem;
-            left: 0.5rem;
-            color: #f59e0b;
-            z-index: 10;
-        }
-
-        .item-info {
-            padding: 0.25rem 0.50rem;
-        }
-
-        .item-name {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #1e293b;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .item-meta {
-            font-size: 0.75rem;
-            color: #64748b;
-            margin-top: 0.25rem;
-            display: flex;
-            justify-content: space-between;
-        }
-
-        /* Preview Panel */
         .preview-panel {
-            border-left: 1px solid #e2e8f0;
-            padding: 1.5rem;
-            overflow-y: auto;
-            background-color: white;
+            display: none;
         }
-
-        .preview-header {
-            font-size: 1.125rem;
-            font-weight: 600;
-            margin-bottom: 1.5rem;
-            color: #1e293b;
-        }
-
-        .preview-content {
-            margin-bottom: 1.5rem;
-        }
-
-        .preview-image {
-            width: 100%;
-            max-height: 300px;
-            object-fit: contain;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-        }
-
-        .preview-empty {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 200px;
-            color: #94a3b8;
-        }
-
-        .preview-details {
-            margin-top: 1.5rem;
-        }
-
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 0.75rem 0;
-            border-bottom: 1px solid #f1f5f9;
-        }
-
-        .detail-label {
-            font-weight: 500;
-            color: #64748b;
-        }
-
-        .detail-value {
-            color: #1e293b;
-        }
-
-        /* Action Buttons */
-        .action-buttons {
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem;
-            margin-top: 1.5rem;
-        }
-
-        .action-button {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            padding: 0.75rem;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .action-button.primary {
-            background-color: #4f46e5;
-            color: white;
-        }
-
-        .action-button.primary:hover {
-            background-color: #4338ca;
-        }
-
-        .action-button.danger {
-            background-color: #ef4444;
-            color: white;
-        }
-
-        .action-button.danger:hover {
-            background-color: #dc2626;
-        }
-
-        .action-button.secondary {
-            background-color: #e2e8f0;
-            color: #1e293b;
-        }
-
-        .action-button.secondary:hover {
-            background-color: #cbd5e1;
-        }
-
-        /* Footer */
-        .gallery-footer {
-            padding: 1rem 1.25rem;
-            border-top: 1px solid #e2e8f0;
-            display: flex;
-            justify-content: flex-end;
-            background-color: white;
-        }
-
-        /* Context Menu */
-        .context-menu {
-            position: absolute;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-            z-index: 50;
-            min-width: 200px;
-            overflow: hidden;
-        }
-
-        .context-menu-item {
-            padding: 0.75rem 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .context-menu-item:hover {
-            background-color: #f8fafc;
-        }
-
-        .context-menu-item.danger {
-            color: #ef4444;
-        }
-
-        .context-menu-separator {
-            height: 1px;
-            background-color: #e2e8f0;
-            margin: 0.25rem 0;
-        }
-
-        /* Loading State */
-        .loading-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 40;
-        }
-
-        .loading-spinner {
-            animation: spin 1s linear infinite;
-            color: #4f46e5;
-            font-size: 2rem;
-        }
-
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
-        /* Progress Modal Styles */
-        .progress-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: rgba(0, 0, 0, 0.5);
-            display: none; /* Hidden by default */
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .progress-modal.show {
-            display: flex; /* Only show when 'show' class is added */
-        }
-
-        .progress-content {
-            background-color: white;
-            padding: 2rem;
-            border-radius: 8px;
-            width: 400px;
-            max-width: 90%;
-        }
-
-        .progress-header {
-            font-size: 1.25rem;
-            font-weight: 600;
-            margin-bottom: 1rem;
-        }
-
-        .progress-bar-container {
-            height: 8px;
-            background-color: #e2e8f0;
-            border-radius: 4px;
-            margin-bottom: 1rem;
-            overflow: hidden;
-        }
-
-        .progress-bar {
-            height: 100%;
-            background-color: #4f46e5;
-            width: 0%;
-            transition: width 0.3s ease;
-        }
-
-        .progress-status {
-            font-size: 0.875rem;
-            color: #64748b;
-        }
-
-        /* Responsive Adjustments */
-        @media (max-width: 1024px) {
-            .gallery-content {
-                grid-template-columns: 65% 35%;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .gallery-content {
-                grid-template-columns: 100%;
-            }
-
-            .preview-panel {
-                display: none;
-            }
-        }
-    </style>
-@endpush
+    }
+</style>
 
 <!-- Gallery Modal -->
 <div id="galleryModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 flex justify-center items-center p-4">
@@ -556,18 +663,17 @@
                     <i class="fas fa-trash"></i>
                     <span>Delete</span>
                 </button>
-                <button type="button" id="trashFolder" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-300 rounded hover:bg-red-900">
+                <button type="button" id="toggleTrashView" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded hover:bg-purple-700">
                     <i class="fas fa-trash-restore"></i>
-                    <span>Trash</span>
+                    <span id="trashButtonText">Trash</span>
                 </button>
             </div>
 
             <div class="relative w-full sm:w-auto sm:flex-1 max-w-sm">
-                <input type="text" id="searchInput" class="w-full px-4 py-2 pr-10 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search...">
+                <input type="text" id="searchInput" class="search-container w-full px-4 py-2 pr-10 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search...">
                 <i class="fas fa-search absolute top-1/2 right-3 transform -translate-y-1/2 text-gray-400"></i>
             </div>
         </div>
-
 
         <!-- Breadcrumbs -->
         <div id="breadcrumbContainer" class="breadcrumb-container">
@@ -645,7 +751,7 @@
 </div>
 
 <!-- Progress Modal -->
-<div id="progressModal" class="progress-modal show">
+<div id="progressModal" class="progress-modal">
     <div class="progress-content">
         <div class="progress-header" id="progressTitle">Processing Files</div>
         <div class="progress-bar-container">
@@ -655,150 +761,193 @@
     </div>
 </div>
 
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-
-            // Explicitly hide progress modal on load
-            document.getElementById('progressModal').classList.remove('show');
-
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // ======================
+        // 1. CORE INITIALIZATION
+        // ======================
+        const gallery = {
             // DOM Elements
-            const galleryModal = document.getElementById('galleryModal');
-            const closeGalleryBtn = document.getElementById('closeGalleryModal');
-            const galleryImages = document.getElementById('galleryImages');
-            const breadcrumbContainer = document.getElementById('breadcrumbContainer');
-            const previewImage = document.getElementById('previewImage');
-            const previewEmpty = document.querySelector('.preview-empty');
-            const previewDetails = document.getElementById('previewDetails');
-            const imageActions = document.getElementById('imageActions');
-            const insertButton = document.getElementById('insertButton');
-            const uploadButton = document.getElementById('uploadButton');
-            const newFolderButton = document.getElementById('newFolder');
-            const deleteImageButton = document.getElementById('deleteImage');
-            const restoreImageButton = document.getElementById('restoreImage');
-            const featuredButton = document.getElementById('setAsFeatured');
-            const refreshButton = document.getElementById('refreshFolders');
-            const trashButton = document.getElementById('trashFolder');
-            const searchInput = document.getElementById('searchInput');
-            const searchIcon = document.querySelector('.search-icon');
+            elements: {
+                modal: document.getElementById('galleryModal'),
+                closeBtn: document.getElementById('closeGalleryModal'),
+                imagesContainer: document.getElementById('galleryImages'),
+                breadcrumbs: document.getElementById('breadcrumbContainer'),
+                previewImage: document.getElementById('previewImage'),
+                previewEmpty: document.querySelector('.preview-empty'),
+                previewDetails: document.getElementById('previewDetails'),
+                imageActions: document.getElementById('imageActions'),
+                deleteButton: document.getElementById('deleteImage'),
+                restoreButton: document.getElementById('restoreImage'),
+                featuredButton: document.getElementById('setAsFeatured'),
+                insertButton: document.getElementById('insertButton'),
+                uploadButton: document.getElementById('uploadButton'),
+                newFolderButton: document.getElementById('newFolder'),
+                refreshButton: document.getElementById('refreshFolders'),
+                trashButton: document.getElementById('toggleTrashView'),
+                searchInput: document.getElementById('searchInput'),
+                progressModal: document.getElementById('progressModal'),
+                progressTitle: document.getElementById('progressTitle'),
+                progressBar: document.getElementById('progressBar'),
+                progressStatus: document.getElementById('progressStatus')
+            },
 
-            // Progress modal elements
-            const progressModal = document.getElementById('progressModal');
-            const progressTitle = document.getElementById('progressTitle');
-            const progressBar = document.getElementById('progressBar');
-            const progressStatus = document.getElementById('progressStatus');
-
-            // State variables
-            let currentPath = '';
-            let currentFolderId = null;
-            let selectedItems = [];
-            let isTrashView = false;
-            let clipboard = null;
-            let galleryCallback = null;
+            // State
+            state: {
+                currentPath: '',
+                currentFolderId: null,
+                selectedItems: [],
+                isTrashView: false,
+                clipboard: null,
+                callback: null
+            },
 
             // Initialize the gallery
-            function initGallery() {
-                setupEventListeners();
-            }
+            init() {
+                this.setupEventListeners();
+                this.setupAccessibility();
+            },
 
-            // Modify the folder click handler
-            function handleFolderClick(folderElement) {
-                // Remove active class from all folders
-                document.querySelectorAll('.gallery-item[data-type="folder"]').forEach(el => {
-                    el.classList.remove('folder-active');
-                });
-
-                // Add active class to clicked folder
-                folderElement.classList.add('folder-active');
-
-                // Update current folder ID and path
-                currentFolderId = folderElement.dataset.id;
-                currentPath = folderElement.dataset.path;
-
-                // Load contents
-                loadGalleryContents();
-            }
-
-            // Setup event listeners
-            function setupEventListeners() {
+            // ======================
+            // 2. EVENT HANDLING
+            // ======================
+            setupEventListeners() {
                 // Modal controls
-                closeGalleryBtn.addEventListener('click', closeGalleryModal);
+                this.elements.closeBtn.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.closeModal();
+                });
 
                 // Navigation
-                refreshButton.addEventListener('click', loadGalleryContents);
-                trashButton.addEventListener('click', toggleTrashView);
-
-                // File operations
-                uploadButton.addEventListener('click', showUploadDialog);
-                newFolderButton.addEventListener('click', createNewFolder);
-
-                // Item actions
-                deleteImageButton.addEventListener('click', deleteSelectedItems);
-                restoreImageButton.addEventListener('click', restoreSelectedItems);
-                featuredButton.addEventListener('click', setAsFeatured);
-                insertButton.addEventListener('click', insertSelectedItem);
-
-                // Search
-                searchIcon.addEventListener('click', performSearch);
-                searchInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') performSearch();
+                this.elements.refreshButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.loadContents();
                 });
 
-                // Context menu
-                document.addEventListener('click', closeContextMenu);
-                galleryImages.addEventListener('contextmenu', (e) => {
-                    if (e.target.closest('.gallery-item')) {
+                this.elements.trashButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.toggleTrashView();
+                });
+
+                // File operations
+                this.elements.uploadButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.showUploadDialog();
+                });
+
+                this.elements.newFolderButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.createNewFolder();
+                });
+
+                // Item actions
+                this.elements.deleteButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.deleteSelected();
+                });
+
+                this.elements.restoreButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.restoreSelected();
+                });
+
+                this.elements.featuredButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.setAsFeatured();
+                });
+
+                this.elements.insertButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.insertSelected();
+                });
+
+                // Search
+                this.elements.searchInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
                         e.preventDefault();
-                        showContextMenu(e);
+                        this.performSearch();
                     }
                 });
 
-                // Keyboard shortcuts
-                document.addEventListener('keydown', handleKeyboardShortcuts);
-            }
+                // Context menu with proper event prevention
+                this.elements.imagesContainer.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    this.handleContextMenu(e);
+                });
 
-            // Show progress modal
-            function showProgress(title) {
-                progressTitle.textContent = title;
-                progressBar.style.width = '0%';
-                progressStatus.textContent = '0% Complete';
-                progressModal.classList.add('show');
-            }
+                document.addEventListener('click', (e) => {
+                    if (!e.target.closest('.context-menu')) {
+                        this.closeContextMenu();
+                    }
+                });
 
-            // Update progress
-            function updateProgress(percent, status) {
-                progressBar.style.width = `${percent}%`;
-                progressStatus.textContent = status || `${percent}% Complete`;
-            }
+                document.addEventListener('keydown', (e) => {
+                    this.handleKeyboardShortcuts(e);
+                });
 
-            // Hide progress modal
-            function hideProgress() {
-                progressModal.classList.remove('show');
-            }
+                // Breadcrumb navigation with event prevention
+                this.elements.breadcrumbs.addEventListener('click', (e) => {
+                    const breadcrumb = e.target.closest('.breadcrumb-button');
+                    if (breadcrumb) {
+                        e.preventDefault();
+                        const path = breadcrumb.dataset.path;
+                        this.navigateToPath(path);
+                    }
+                });
 
-            // Open gallery modal
-            window.openGalleryModal = function(targetPath = '', callback = null) {
-                galleryModal.classList.remove('hidden');
-                currentPath = targetPath;
-                isTrashView = false;
-                selectedItems = [];
-                galleryCallback = callback;
-                loadGalleryContents();
-            };
+                // Item selection with event delegation
+                this.elements.imagesContainer.addEventListener('click', (e) => {
+                    const item = e.target.closest('.gallery-item');
+                    if (item) {
+                        e.preventDefault();
+                        this.handleItemClick(item, e);
+                    }
 
-            // Close gallery modal
-            function closeGalleryModal() {
-                galleryModal.classList.add('hidden');
-                galleryCallback = null;
-            }
+                    const checkbox = e.target.closest('.item-checkbox input');
+                    if (checkbox) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const item = checkbox.closest('.gallery-item');
+                        const id = item.dataset.id;
+                        const type = item.dataset.type;
+                        this.toggleItemSelection(id, type, item);
+                    }
+                });
+            },
 
-            // Load gallery contents
-            function loadGalleryContents() {
-                showLoading();
+            setupAccessibility() {
+                // Add ARIA attributes
+                this.elements.modal.setAttribute('aria-modal', 'true');
+                this.elements.modal.setAttribute('role', 'dialog');
+                this.elements.modal.setAttribute('aria-labelledby', 'galleryTitle');
+
+                // Set tabindex for better keyboard navigation
+                this.elements.imagesContainer.setAttribute('tabindex', '0');
+
+                // Add keyboard navigation for items
+                this.elements.imagesContainer.addEventListener('keydown', (e) => {
+                    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft' ||
+                        e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                        e.preventDefault();
+                        this.handleKeyboardNavigation(e);
+                    }
+                });
+            },
+
+            // ======================
+            // 3. NAVIGATION & DISPLAY
+            // ======================
+            navigateToPath(path) {
+                this.state.currentPath = path;
+                this.loadContents();
+            },
+
+            loadContents() {
+                this.showLoading();
 
                 const url = new URL('{{ route("gallery.index") }}');
-                url.searchParams.append('path', currentPath);
-                if (isTrashView) url.searchParams.append('trash', 'true');
+                url.searchParams.append('path', this.state.currentPath);
+                if (this.state.isTrashView) url.searchParams.append('trash', 'true');
 
                 fetch(url, {
                     headers: {
@@ -809,280 +958,491 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            currentPath = data.currentPath || '';
-                            renderBreadcrumbs(data.breadcrumbs);
-                            renderGalleryContents(data.contents);
+                            this.state.currentPath = data.currentPath || '';
+                            this.renderBreadcrumbs(data.breadcrumbs);
+                            this.renderContents(data.contents);
                         } else {
                             throw new Error(data.message || 'Failed to load contents');
                         }
                     })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        showError(error.message);
-                    })
-                    .finally(hideLoading);
-            }
+                    .catch(error => this.showError(error.message))
+                    .finally(() => this.hideLoading());
+            },
 
-            // Render breadcrumbs
-            function renderBreadcrumbs(breadcrumbs) {
-                breadcrumbContainer.innerHTML = '';
+
+
+            renderBreadcrumbs(breadcrumbs) {
+                this.elements.breadcrumbs.innerHTML = '';
 
                 breadcrumbs.forEach((crumb, index) => {
                     if (index > 0) {
                         const separator = document.createElement('span');
                         separator.className = 'breadcrumb-separator';
                         separator.innerHTML = '<i class="fas fa-chevron-right"></i>';
-                        breadcrumbContainer.appendChild(separator);
+                        this.elements.breadcrumbs.appendChild(separator);
                     }
 
                     const button = document.createElement('button');
                     button.className = 'breadcrumb-button';
+                    button.dataset.path = crumb.path;
                     button.innerHTML = `
-            ${crumb.icon ? `<i class="fas fa-${crumb.icon}"></i>` : ''}
-            <span>${crumb.name}</span>
-        `;
-                    button.addEventListener('click', () => {
-                        event.preventDefault();
-                        currentPath = crumb.path;
-                        currentFolderId = crumb.id || null;
-                        loadGalleryContents();
-                    });
-
-                    breadcrumbContainer.appendChild(button);
+                    ${crumb.icon ? `<i class="fas fa-${crumb.icon}"></i>` : ''}
+                    <span>${crumb.name}</span>
+                `;
+                    this.elements.breadcrumbs.appendChild(button);
                 });
-            }
+            },
 
+            renderContents(contents) {
+                this.elements.imagesContainer.innerHTML = '';
 
-            // Render gallery contents
-            function renderGalleryContents(contents) {
-                galleryImages.innerHTML = '';
+                if (this.state.isTrashView) {
+                    this.renderTrashView(contents);
+                } else {
+                    this.renderNormalView(contents);
+                }
 
-                // Empty state
+                this.updateSelectionDisplay();
+            },
+
+            renderTrashView(contents) {
                 if ((!contents.folders || contents.folders.length === 0) &&
                     (!contents.files || contents.files.length === 0)) {
-                    const emptyState = document.createElement('div');
-                    emptyState.className = 'empty-state';
-                    emptyState.innerHTML = `
-            <i class="fas fa-folder-open text-5xl mb-4"></i>
-            <p>${isTrashView ? 'Trash is empty' : 'This folder is empty'}</p>
-        `;
-                    galleryImages.appendChild(emptyState);
+                    this.showEmptyState('Trash is empty', 'fa-trash-alt');
                     return;
                 }
 
-                // Add "Go Up" button if not in root
-                if (!isTrashView && currentPath) {
-                    const goUpItem = createGalleryItem({
-                        id: 'go-up',
-                        name: 'Go Up',
-                        type: 'folder',
-                        icon: 'level-up-alt',
-                        isSpecial: true
-                    });
-
-                    goUpItem.addEventListener('click', () => {
-                        const parts = currentPath.split('/');
-                        parts.pop();
-                        currentPath = parts.join('/');
-                        currentFolderId = null; // Reset current folder ID
-                        loadGalleryContents();
-                    });
-
-                    galleryImages.appendChild(goUpItem);
-                }
-
-                // Add folders
                 if (contents.folders && contents.folders.length > 0) {
                     contents.folders.forEach(folder => {
-                        const folderItem = createGalleryItem({
-                            id: folder.id,
-                            name: folder.name,
-                            type: 'folder',
-                            icon: 'folder',
-                            path: folder.path,
-                            parent_id: folder.parent_id,
-                            itemCount: folder.item_count,
-                            createdAt: folder.created_at,
-                            isSelected: selectedItems.some(item => item.id === folder.id && item.type === 'folder')
-                        });
-
-                        folderItem.addEventListener('click', (e) => {
-                            if (e.target.closest('.item-checkbox')) return;
-                            if (isTrashView) {
-                                toggleItemSelection(folder.id, 'folder', folderItem);
-                            } else {
-                                handleFolderClick(folderItem);
-                            }
-                        });
-
-                        galleryImages.appendChild(folderItem);
+                        this.createFolderItem(folder, true);
                     });
                 }
 
-                // Add files
                 if (contents.files && contents.files.length > 0) {
                     contents.files.forEach(file => {
-                        const fileItem = createGalleryItem({
-                            id: file.id,
-                            name: file.name,
-                            type: 'file',
-                            icon: getFileIcon(file.mime_type),
-                            thumbnail: file.thumb_url || file.url,
-                            size: file.size,
-                            createdAt: file.created_at,
-                            isFeatured: file.is_featured,
-                            isSelected: selectedItems.some(item => item.id === file.id && item.type === 'file')
-                        });
+                        this.createFileItem(file, true);
+                    });
+                }
+            },
 
-                        fileItem.addEventListener('click', (e) => {
-                            if (e.target.closest('.item-checkbox')) return;
-                            toggleItemSelection(file.id, 'file', fileItem);
-                            updatePreview(file);
-                        });
+            renderNormalView(contents) {
+                if ((!contents.folders || contents.folders.length === 0) &&
+                    (!contents.files || contents.files.length === 0)) {
+                    this.showEmptyState('This folder is empty', 'fa-folder-open');
+                    return;
+                }
 
-                        galleryImages.appendChild(fileItem);
+                if (this.state.currentPath) {
+                    this.createGoUpItem();
+                }
+
+                if (contents.folders && contents.folders.length > 0) {
+                    contents.folders.forEach(folder => {
+                        this.createFolderItem(folder, false);
                     });
                 }
 
-                updateSelectionDisplay();
-            }
-
-
-            // Create a gallery item element
-            function createGalleryItem(options) {
-                const item = document.createElement('div');
-                item.className = `gallery-item ${options.isSelected ? 'selected' : ''}`;
-                item.dataset.id = options.id;
-                item.dataset.type = options.type;
-                if (options.path) item.dataset.path = options.path;
-                if (options.parent_id) item.dataset.parent_id = options.parent_id;
-
-                let thumbnailContent = '';
-                if (options.thumbnail && options.type === 'file') {
-                    thumbnailContent = `<img src="${options.thumbnail}" alt="${options.name}">`;
-                } else {
-                    const icon = options.icon || 'file';
-                    thumbnailContent = `
-            <div class="${options.isSpecial ? 'bg-teal-50' : 'bg-gray-100'}">
-                <i class="fas fa-${icon} folder-icon"></i>
-            </div>
-        `;
+                if (contents.files && contents.files.length > 0) {
+                    contents.files.forEach(file => {
+                        this.createFileItem(file, false);
+                    });
                 }
+            },
 
-                item.innerHTML = `
-        <div class="item-thumbnail relative">
-            ${thumbnailContent}
+            showEmptyState(message, icon) {
+                const emptyState = document.createElement('div');
+                emptyState.className = 'empty-state';
+                emptyState.innerHTML = `
+                <i class="fas ${icon} text-5xl mb-4"></i>
+                <p>${message}</p>
+            `;
+                this.elements.imagesContainer.appendChild(emptyState);
+            },
 
-            ${options.type === 'folder' && options.itemCount !== undefined ? `
-                <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
-                    ${options.itemCount} items
-                </div>` : ''}
+            createGoUpItem() {
+                const goUpItem = document.createElement('div');
+                goUpItem.className = 'gallery-item';
+                goUpItem.dataset.id = 'go-up';
+                goUpItem.dataset.type = 'folder';
+                goUpItem.innerHTML = `
+                <div class="item-thumbnail">
+                    <div class="bg-teal-50">
+                        <i class="fas fa-level-up-alt folder-icon"></i>
+                    </div>
+                    <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                        Parent
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="item-name">Go Up</div>
+                </div>
+            `;
 
-            ${options.isFeatured ? '<i class="fas fa-star item-featured"></i>' : ''}
-
-            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                ${formatDate(options.createdAt)}
-            </div>
-
-            ${options.type === 'file' ? `
-                <div class="absolute bottom-1 right-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                    ${formatFileSize(options.size)}
-                </div>` : ''}
-
-            <div class="item-checkbox absolute top-1 right-1">
-                <input type="checkbox" ${options.isSelected ? 'checked' : ''}>
-            </div>
-        </div>
-
-        <div class="item-info">
-            <div class="item-name">${options.name}</div>
-            <div class="item-meta">
-                <span>${options.type === 'folder' && options.parent_id ? 'Subfolder' : ''}</span>
-            </div>
-        </div>
-    `;
-
-                // Add checkbox event listener
-                const checkbox = item.querySelector('.item-checkbox input');
-                checkbox.addEventListener('change', (e) => {
-                    e.stopPropagation();
-                    toggleItemSelection(options.id, options.type, item);
+                goUpItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const parts = this.state.currentPath.split('/');
+                    parts.pop();
+                    this.state.currentPath = parts.join('/');
+                    this.state.currentFolderId = null;
+                    this.loadContents();
                 });
 
-                return item;
-            }
+                this.elements.imagesContainer.appendChild(goUpItem);
+            },
 
+            createFolderItem(folder, isTrash) {
+                const folderItem = document.createElement('div');
+                folderItem.className = `gallery-item ${this.isSelected(folder.id, 'folder') ? 'selected' : ''}`;
+                folderItem.dataset.id = folder.id;
+                folderItem.dataset.type = 'folder';
+                folderItem.dataset.path = folder.path;
+                if (folder.parent_id) folderItem.dataset.parent_id = folder.parent_id;
 
-            // Toggle item selection
-            function toggleItemSelection(id, type, element) {
-                const index = selectedItems.findIndex(item => item.id === id && item.type === type);
+                const dateInfo = isTrash ?
+                    `Deleted: ${this.formatDate(folder.deleted_at)}` :
+                    `Created: ${this.formatDate(folder.created_at)}`;
+
+                folderItem.innerHTML = `
+                <div class="item-thumbnail">
+                    <div class="bg-gray-100">
+                        <i class="fas fa-folder folder-icon"></i>
+                    </div>
+                    ${folder.item_count !== undefined ? `
+                        <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
+                            ${folder.item_count} items
+                        </div>` : ''}
+                    <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                        ${dateInfo}
+                    </div>
+                    <div class="item-checkbox">
+                        <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="item-name">${folder.name}</div>
+                    <div class="item-meta">
+                        <span>${folder.parent_id ? 'Subfolder' : ''}</span>
+                    </div>
+                </div>
+            `;
+
+                if (isTrash) {
+                    folderItem.classList.add('deleted-item');
+                }
+
+                this.elements.imagesContainer.appendChild(folderItem);
+            },
+
+            createFileItem(file, isTrash) {
+                const fileItem = document.createElement('div');
+                fileItem.className = `gallery-item ${this.isSelected(file.id, 'file') ? 'selected' : ''}`;
+                fileItem.dataset.id = file.id;
+                fileItem.dataset.type = 'file';
+
+                const dateInfo = isTrash ?
+                    `Deleted: ${this.formatDate(file.deleted_at)}` :
+                    `Created: ${this.formatDate(file.created_at)}`;
+
+                const thumbnail = file.thumb_url || file.url;
+                const thumbnailContent = thumbnail ?
+                    `<img src="${thumbnail}" alt="${file.name}">` :
+                    `<i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon"></i>`;
+
+                fileItem.innerHTML = `
+                <div class="item-thumbnail">
+                    ${thumbnailContent}
+                    ${file.is_featured ? '<i class="fas fa-star item-featured"></i>' : ''}
+                    <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                        ${dateInfo}
+                    </div>
+                    ${file.size ? `
+                        <div class="absolute bottom-1 right-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                            ${this.formatFileSize(file.size)}
+                        </div>` : ''}
+                    <div class="item-checkbox">
+                        <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
+                    </div>
+                </div>
+                <div class="item-info">
+                    <div class="item-name">${file.name}</div>
+                </div>
+            `;
+
+                if (isTrash) {
+                    fileItem.classList.add('deleted-item');
+                }
+
+                this.elements.imagesContainer.appendChild(fileItem);
+            },
+
+            // ======================
+            // 4. CONTEXT MENU SYSTEM
+            // ======================
+            handleContextMenu(e) {
+                const item = e.target.closest('.gallery-item');
+                if (!item) {
+                    this.clearSelections();
+                    return;
+                }
+
+                const id = item.dataset.id;
+                const type = item.dataset.type;
+                const isSelected = this.isSelected(id, type);
+
+                if (!isSelected) {
+                    this.clearSelections();
+                    this.state.selectedItems = [{ id, type }];
+                    item.classList.add('selected');
+                    const checkbox = item.querySelector('.item-checkbox input');
+                    if (checkbox) checkbox.checked = true;
+                }
+
+                this.updateSelectionDisplay();
+                this.showContextMenu(e);
+            },
+
+            showContextMenu(e) {
+                e.preventDefault();
+                this.closeContextMenu();
+
+                const menu = document.createElement('div');
+                menu.className = 'context-menu';
+                menu.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
+                menu.style.top = `${Math.min(e.clientY, window.innerHeight - 300)}px`;
+
+                // Get contextually appropriate menu items
+                const items = this.getContextMenuItems();
+
+                items.forEach(item => {
+                    if (item.type === 'separator') {
+                        const sep = document.createElement('div');
+                        sep.className = 'context-menu-separator';
+                        menu.appendChild(sep);
+                    } else {
+                        const btn = document.createElement('button');
+                        btn.className = `context-menu-item ${item.danger ? 'danger' : ''}`;
+                        btn.innerHTML = `
+                        <i class="fas fa-${item.icon}"></i>
+                        <span>${item.label}</span>
+                        ${item.shortcut ? `<span class="shortcut">${item.shortcut}</span>` : ''}
+                    `;
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            this.executeMenuAction(item.action);
+                            this.closeContextMenu();
+                        });
+                        menu.appendChild(btn);
+                    }
+                });
+
+                document.body.appendChild(menu);
+            },
+
+            closeContextMenu() {
+                const menu = document.querySelector('.context-menu');
+                if (menu) menu.remove();
+            },
+
+            getContextMenuItems() {
+                const { selectedItems, isTrashView, clipboard } = this.state;
+                const hasSelection = selectedItems.length > 0;
+                const singleSelection = selectedItems.length === 1;
+
+                return [
+                    {
+                        label: 'New Folder',
+                        icon: 'folder-plus',
+                        action: 'createFolder',
+                        available: !isTrashView
+                    },
+                    {
+                        label: 'Upload Files',
+                        icon: 'upload',
+                        action: 'uploadFiles',
+                        available: !isTrashView
+                    },
+                    { type: 'separator', available: !isTrashView },
+                    {
+                        label: 'Cut',
+                        icon: 'cut',
+                        action: 'cutItems',
+                        available: !isTrashView && hasSelection,
+                        shortcut: 'Ctrl+X'
+                    },
+                    {
+                        label: 'Copy',
+                        icon: 'copy',
+                        action: 'copyItems',
+                        available: !isTrashView && hasSelection,
+                        shortcut: 'Ctrl+C'
+                    },
+                    {
+                        label: 'Paste',
+                        icon: 'paste',
+                        action: 'pasteItems',
+                        available: !isTrashView && clipboard !== null,
+                        shortcut: 'Ctrl+V'
+                    },
+                    { type: 'separator' },
+                    {
+                        label: 'Rename',
+                        icon: 'i-cursor',
+                        action: 'renameItem',
+                        available: singleSelection,
+                        shortcut: 'F2'
+                    },
+                    {
+                        label: isTrashView ? 'Delete Permanently' : 'Delete',
+                        icon: 'trash',
+                        action: 'deleteItems',
+                        available: hasSelection,
+                        danger: true,
+                        shortcut: 'Del'
+                    },
+                    {
+                        label: 'Restore',
+                        icon: 'trash-restore',
+                        action: 'restoreItems',
+                        available: isTrashView && hasSelection
+                    },
+                    { type: 'separator' },
+                    {
+                        label: 'Select All',
+                        icon: 'check-square',
+                        action: 'selectAll',
+                        available: true,
+                        shortcut: 'Ctrl+A'
+                    },
+                    {
+                        label: 'Properties',
+                        icon: 'info-circle',
+                        action: 'showProperties',
+                        available: singleSelection
+                    }
+                ].filter(item => item.available !== false);
+            },
+
+            executeMenuAction(action) {
+                const actions = {
+                    createFolder: () => this.createNewFolder(),
+                    uploadFiles: () => this.showUploadDialog(),
+                    cutItems: () => this.cutItems(),
+                    copyItems: () => this.copyItems(),
+                    pasteItems: () => this.pasteItems(),
+                    renameItem: () => this.renameItem(),
+                    deleteItems: () => this.deleteSelected(),
+                    restoreItems: () => this.restoreSelected(),
+                    emptyTrash: () => this.emptyTrash(),
+                    selectAll: () => this.selectAllItems(),
+                    showProperties: () => this.showProperties()
+                };
+
+                if (actions[action]) {
+                    actions[action]();
+                }
+            },
+
+            // ======================
+            // 5. ITEM INTERACTIONS
+            // ======================
+            handleItemClick(item, event) {
+                const id = item.dataset.id;
+                const type = item.dataset.type;
+
+                if (type === 'folder') {
+                    if (this.state.isTrashView) {
+                        this.toggleItemSelection(id, type, item);
+                    } else {
+                        this.navigateToFolder(item);
+                    }
+                } else {
+                    this.toggleItemSelection(id, type, item);
+                    this.updatePreview(id);
+                }
+            },
+
+            navigateToFolder(folderElement) {
+                this.state.currentPath = folderElement.dataset.path;
+                this.state.currentFolderId = folderElement.dataset.id;
+                this.loadContents();
+            },
+
+            toggleItemSelection(id, type, element) {
+                const index = this.state.selectedItems.findIndex(item =>
+                    item.id === id && item.type === type
+                );
 
                 if (index === -1) {
-                    selectedItems.push({ id, type });
+                    this.state.selectedItems.push({ id, type });
                     element.classList.add('selected');
                     element.querySelector('.item-checkbox input').checked = true;
                 } else {
-                    selectedItems.splice(index, 1);
+                    this.state.selectedItems.splice(index, 1);
                     element.classList.remove('selected');
                     element.querySelector('.item-checkbox input').checked = false;
                 }
 
-                updateSelectionDisplay();
-            }
+                this.updateSelectionDisplay();
+            },
 
-            // Update UI based on current selection
-            function updateSelectionDisplay() {
-                const hasSelection = selectedItems.length > 0;
-                const singleSelection = selectedItems.length === 1;
+            isSelected(id, type) {
+                return this.state.selectedItems.some(item =>
+                    item.id === id && item.type === type
+                );
+            },
 
-                // Update action buttons
-                deleteImageButton.classList.toggle('hidden', !hasSelection);
-                restoreImageButton.classList.toggle('hidden', !isTrashView || !hasSelection);
-                featuredButton.classList.toggle('hidden', isTrashView || !hasSelection ||
-                    selectedItems.some(item => item.type !== 'file'));
+            clearSelections() {
+                this.elements.imagesContainer.querySelectorAll('.gallery-item.selected').forEach(el => {
+                    el.classList.remove('selected');
+                    const checkbox = el.querySelector('.item-checkbox input');
+                    if (checkbox) checkbox.checked = false;
+                });
+                this.state.selectedItems = [];
+                this.updateSelectionDisplay();
+            },
 
-                // Update preview
-                if (singleSelection && selectedItems[0].type === 'file') {
-                    fetchFileDetails(selectedItems[0].id);
+            updateSelectionDisplay() {
+                const hasSelection = this.state.selectedItems.length > 0;
+                const singleSelection = this.state.selectedItems.length === 1;
+                const isTrashView = this.state.isTrashView;
+
+                // Update action buttons visibility
+                this.elements.deleteButton.classList.toggle('hidden', !hasSelection);
+                this.elements.restoreButton.classList.toggle('hidden', !isTrashView || !hasSelection);
+                this.elements.featuredButton.classList.toggle('hidden',
+                    isTrashView || !hasSelection ||
+                    this.state.selectedItems.some(item => item.type !== 'file')
+                );
+
+                // Update button text based on context
+                if (hasSelection) {
+                    this.elements.deleteButton.innerHTML = `
+                    <i class="fas fa-trash mr-2"></i>
+                    ${isTrashView ? 'Delete Permanently' : 'Move to Trash'}
+                `;
+                }
+
+                // Update preview if single file is selected
+                if (singleSelection && this.state.selectedItems[0].type === 'file') {
+                    this.fetchFileDetails(this.state.selectedItems[0].id);
                 } else if (!hasSelection) {
-                    clearPreview();
+                    this.clearPreview();
                 }
-            }
+            },
 
-            // Update preview panel
-            function updatePreview(file) {
-                if (!file) {
-                    clearPreview();
-                    return;
-                }
+            updatePreview(fileId) {
+                this.fetchFileDetails(fileId);
+            },
 
-                previewImage.src = file.url;
-                previewImage.alt = file.name;
-                previewImage.classList.remove('hidden');
-                previewEmpty.classList.add('hidden');
-                previewDetails.classList.remove('hidden');
-                imageActions.classList.remove('hidden');
+            clearPreview() {
+                this.elements.previewImage.classList.add('hidden');
+                this.elements.previewEmpty.classList.remove('hidden');
+                this.elements.previewDetails.classList.add('hidden');
+                this.elements.imageActions.classList.add('hidden');
+            },
 
-                // Update details
-                document.getElementById('detailName').textContent = file.name;
-                document.getElementById('detailType').textContent = file.mime_type;
-                document.getElementById('detailSize').textContent = formatFileSize(file.size);
-                document.getElementById('detailDimensions').textContent = file.dimensions ?
-                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
-                document.getElementById('detailUploaded').textContent = formatDate(file.created_at);
-            }
-
-            // Clear preview panel
-            function clearPreview() {
-                previewImage.classList.add('hidden');
-                previewEmpty.classList.remove('hidden');
-                previewDetails.classList.add('hidden');
-                imageActions.classList.add('hidden');
-            }
-
-            // Fetch file details for preview
-            function fetchFileDetails(fileId) {
-                fetch(`{{ route("gallery.show", '') }}/${fileId}`, {
+            fetchFileDetails(fileId) {
+                fetch(`{{ route("gallery.file.show", '') }}/${fileId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -1091,27 +1451,55 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updatePreview(data.file);
+                            this.showFilePreview(data.file);
                         } else {
                             throw new Error(data.message || 'Failed to load file details');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Toggle trash view
-            function toggleTrashView() {
-                isTrashView = !isTrashView;
-                currentPath = '';
-                selectedItems = [];
-                loadGalleryContents();
-            }
+            showFilePreview(file) {
+                if (!file) {
+                    this.clearPreview();
+                    return;
+                }
 
-            // Show upload dialog
-            function showUploadDialog() {
+                this.elements.previewImage.src = file.url;
+                this.elements.previewImage.alt = file.name;
+                this.elements.previewImage.classList.remove('hidden');
+                this.elements.previewEmpty.classList.add('hidden');
+                this.elements.previewDetails.classList.remove('hidden');
+                this.elements.imageActions.classList.remove('hidden');
+
+                document.getElementById('detailName').textContent = file.name;
+                document.getElementById('detailType').textContent = file.mime_type;
+                document.getElementById('detailSize').textContent = this.formatFileSize(file.size);
+                document.getElementById('detailDimensions').textContent = file.dimensions ?
+                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
+                document.getElementById('detailUploaded').textContent = this.formatDate(file.created_at);
+            },
+
+            // ======================
+            // 6. GALLERY OPERATIONS
+            // ======================
+            toggleTrashView() {
+                this.state.isTrashView = !this.state.isTrashView;
+                this.state.currentPath = '';
+                this.state.selectedItems = [];
+                this.loadContents();
+
+                // Update trash button text
+                const trashButtonText = document.getElementById('trashButtonText');
+                if (trashButtonText) {
+                    trashButtonText.textContent = this.state.isTrashView ? 'Back to Gallery' : 'Trash';
+                }
+            },
+
+            showUploadDialog() {
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.multiple = true;
@@ -1119,25 +1507,24 @@
 
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    if (files.length === 0) return;
-
-                    uploadFiles(files);
+                    if (files.length > 0) {
+                        this.uploadFiles(files);
+                    }
                 };
 
                 input.click();
-            }
+            },
 
-            // Upload files
-            function uploadFiles(files) {
-                showProgress('Uploading Files');
+            uploadFiles(files) {
+                this.showProgress('Uploading Files');
 
                 const formData = new FormData();
                 files.forEach(file => {
                     formData.append('files[]', file);
                 });
 
-                if (currentPath) {
-                    formData.append('path', currentPath);
+                if (this.state.currentPath) {
+                    formData.append('path', this.state.currentPath);
                 }
 
                 const xhr = new XMLHttpRequest();
@@ -1145,7 +1532,7 @@
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
                         const percent = Math.round((e.loaded / e.total) * 100);
-                        updateProgress(percent, `Uploading ${percent}%`);
+                        this.updateProgress(percent, `Uploading ${percent}%`);
                     }
                 });
 
@@ -1153,44 +1540,42 @@
                     try {
                         const data = JSON.parse(xhr.responseText);
                         if (data.success) {
-                            updateProgress(100, 'Processing files...');
+                            this.updateProgress(100, 'Processing files...');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess('Files uploaded successfully');
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess('Files uploaded successfully');
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Upload failed');
                         }
                     } catch (error) {
-                        hideProgress();
-                        showError(error.message);
+                        this.hideProgress();
+                        this.showError(error.message);
                     }
                 });
 
                 xhr.addEventListener('error', () => {
-                    hideProgress();
-                    showError('Upload failed');
+                    this.hideProgress();
+                    this.showError('Upload failed');
                 });
 
                 xhr.open('POST', '{{ route("gallery.upload") }}');
                 xhr.setRequestHeader('X-CSRF-TOKEN', document.querySelector('meta[name="csrf-token"]').content);
                 xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
                 xhr.send(formData);
-            }
+            },
 
-            // Create new folder
-            function createNewFolder() {
+            createNewFolder() {
                 const folderName = prompt('Enter folder name:');
                 if (!folderName) return;
 
-                // Validate folder name
                 if (!/^[a-zA-Z0-9\-_ ]+$/.test(folderName)) {
-                    showError('Folder name can only contain letters, numbers, spaces, hyphens and underscores');
+                    this.showError('Folder name can only contain letters, numbers, spaces, hyphens and underscores');
                     return;
                 }
 
-                showProgress('Creating Folder');
+                this.showProgress('Creating Folder');
 
                 fetch('{{ route("gallery.folder.create") }}', {
                     method: 'POST',
@@ -1201,41 +1586,39 @@
                     },
                     body: JSON.stringify({
                         name: folderName,
-                        parent_id: currentFolderId ? parseInt(currentFolderId) : null
+                        parent_id: this.state.currentFolderId ? parseInt(this.state.currentFolderId) : null
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showSuccess('Folder created successfully');
-                            loadGalleryContents();
+                            this.showSuccess('Folder created successfully');
+                            this.loadContents();
                         } else {
                             throw new Error(data.message || 'Folder creation failed');
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     })
-                    .finally(() => hideProgress());
-            }
+                    .finally(() => this.hideProgress());
+            },
 
+            deleteSelected() {
+                if (this.state.selectedItems.length === 0) return;
 
-            // Delete selected items
-            function deleteSelectedItems() {
-                if (selectedItems.length === 0) return;
-
-                const permanent = isTrashView;
+                const permanent = this.state.isTrashView;
                 const message = permanent
-                    ? `Are you sure you want to permanently delete ${selectedItems.length} item(s)? This cannot be undone.`
-                    : `Move ${selectedItems.length} item(s) to trash?`;
+                    ? `Are you sure you want to permanently delete ${this.state.selectedItems.length} item(s)? This cannot be undone.`
+                    : `Move ${this.state.selectedItems.length} item(s) to trash?`;
 
                 if (!confirm(message)) return;
 
-                showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
-                updateProgress(30, 'Processing...');
+                this.showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
+                this.updateProgress(30, 'Processing...');
 
-                fetch('{{ route("gallery.batch.destroy") }}', {
+                fetch('{{ route("gallery.batch.delete") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1243,39 +1626,38 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        items: selectedItems,
+                        items: this.state.selectedItems,
                         permanent: permanent
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                clearPreview();
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                this.clearPreview();
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Delete failed');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Delete error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Restore selected items
-            function restoreSelectedItems() {
-                if (selectedItems.length === 0) return;
+            restoreSelected() {
+                if (this.state.selectedItems.length === 0) return;
 
-                if (!confirm(`Restore ${selectedItems.length} item(s) from trash?`)) return;
+                if (!confirm(`Restore ${this.state.selectedItems.length} item(s) from trash?`)) return;
 
-                showProgress('Restoring Items');
-                updateProgress(30, 'Processing...');
+                this.showProgress('Restoring Items');
+                this.updateProgress(30, 'Processing...');
 
                 fetch('{{ route("gallery.batch.restore") }}', {
                     method: 'POST',
@@ -1285,38 +1667,37 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        items: selectedItems
+                        items: this.state.selectedItems
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                clearPreview();
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                this.clearPreview();
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Restore failed');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Restore error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Set as featured
-            function setAsFeatured() {
-                if (selectedItems.length !== 1 || selectedItems[0].type !== 'file') return;
+            setAsFeatured() {
+                if (this.state.selectedItems.length !== 1 || this.state.selectedItems[0].type !== 'file') return;
 
-                showProgress('Setting as Featured');
-                updateProgress(30, 'Processing...');
+                this.showProgress('Setting as Featured');
+                this.updateProgress(30, 'Processing...');
 
-                fetch(`{{ route("gallery.set-featured", '') }}/${selectedItems[0].id}`, {
+                fetch(`{{ route("gallery.set-featured", '') }}/${this.state.selectedItems[0].id}`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1327,33 +1708,32 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Failed to set featured');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Featured error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Insert selected item
-            function insertSelectedItem() {
-                if (selectedItems.length !== 1) {
+            insertSelected() {
+                if (this.state.selectedItems.length !== 1) {
                     alert('Please select exactly one item');
                     return;
                 }
 
-                const item = selectedItems[0];
+                const item = this.state.selectedItems[0];
 
-                if (galleryCallback) {
+                if (this.state.callback) {
                     fetch(`/gallery/${item.type}/${item.id}`, {
                         headers: {
                             'Accept': 'application/json',
@@ -1363,15 +1743,15 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                galleryCallback(data.item);
-                                closeGalleryModal();
+                                this.state.callback(data.item);
+                                this.closeModal();
                             } else {
                                 throw new Error(data.message || 'Failed to get item details');
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
-                            showError(error.message);
+                            this.showError(error.message);
                         });
                 } else {
                     fetch(`{{ route("gallery.generate-url", '') }}/${item.id}`, {
@@ -1383,32 +1763,31 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                copyToClipboard(data.url);
-                                showSuccess('URL copied to clipboard');
+                                this.copyToClipboard(data.url);
+                                this.showSuccess('URL copied to clipboard');
                             } else {
                                 throw new Error(data.message || 'URL generation failed');
                             }
                         })
                         .catch(error => {
                             console.error('URL generation error:', error);
-                            showError(error.message);
+                            this.showError(error.message);
                         });
                 }
-            }
+            },
 
-            // Perform search
-            function performSearch() {
-                const query = searchInput.value.trim();
+            performSearch() {
+                const query = this.elements.searchInput.value.trim();
                 if (!query) {
-                    loadGalleryContents();
+                    this.loadContents();
                     return;
                 }
 
-                showLoading();
+                this.showLoading();
 
                 const url = new URL('{{ route("gallery.index") }}');
                 url.searchParams.append('search', query);
-                if (currentPath) url.searchParams.append('path', currentPath);
+                if (this.state.currentPath) url.searchParams.append('path', this.state.currentPath);
 
                 fetch(url, {
                     headers: {
@@ -1419,145 +1798,25 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            renderGalleryContents(data.contents);
-                            searchInput.focus();
+                            this.renderContents(data.contents);
+                            this.elements.searchInput.focus();
                         } else {
                             throw new Error(data.message || 'Search failed');
                         }
                     })
                     .catch(error => {
                         console.error('Search error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     })
-                    .finally(hideLoading);
-            }
+                    .finally(() => this.hideLoading());
+            },
 
-            // Show context menu
-            function showContextMenu(e) {
-                e.preventDefault();
-                closeContextMenu();
+            cutItems() {
+                if (this.state.selectedItems.length === 0) return;
 
-                const menu = document.createElement('div');
-                menu.className = 'context-menu';
-                menu.style.left = `${e.pageX}px`;
-                menu.style.top = `${e.pageY}px`;
-
-                const itemElement = e.target.closest('.gallery-item');
-                let item = null;
-
-                if (itemElement) {
-                    item = {
-                        id: itemElement.dataset.id,
-                        type: itemElement.dataset.type
-                    };
-
-                    if (!selectedItems.some(selected => selected.id === item.id && selected.type === item.type)) {
-                        selectedItems = [item];
-                        updateSelectionDisplay();
-                    }
-                }
-
-                const menuItems = getContextMenuItems(item);
-                menuItems.forEach(menuItem => {
-                    if (menuItem.type === 'separator') {
-                        const separator = document.createElement('div');
-                        separator.className = 'context-menu-separator';
-                        menu.appendChild(separator);
-                    } else {
-                        const button = document.createElement('div');
-                        button.className = `context-menu-item ${menuItem.danger ? 'danger' : ''}`;
-                        button.innerHTML = `
-                        <i class="fas fa-${menuItem.icon}"></i>
-                        <span>${menuItem.label}</span>
-                        ${menuItem.shortcut ? `<span class="ml-auto">${menuItem.shortcut}</span>` : ''}
-                    `;
-                        button.addEventListener('click', () => {
-                            executeContextMenuAction(menuItem.action);
-                            closeContextMenu();
-                        });
-                        menu.appendChild(button);
-                    }
-                });
-
-                document.body.appendChild(menu);
-
-                const closeOnClick = (e) => {
-                    if (!e.target.closest('.context-menu')) {
-                        closeContextMenu();
-                        document.removeEventListener('click', closeOnClick);
-                    }
-                };
-
-                setTimeout(() => {
-                    document.addEventListener('click', closeOnClick);
-                }, 100);
-            }
-
-            // Close context menu
-            function closeContextMenu() {
-                const menu = document.querySelector('.context-menu');
-                if (menu) menu.remove();
-            }
-
-            // Get context menu items based on current state
-            function getContextMenuItems(item) {
-                const items = [];
-
-                if (isTrashView) {
-                    items.push(
-                        { label: 'Restore', icon: 'trash-restore', action: 'restoreItems', available: selectedItems.length > 0 },
-                        { label: 'Delete Permanently', icon: 'trash-alt', action: 'deleteItems', available: selectedItems.length > 0, danger: true },
-                        { type: 'separator' },
-                        { label: 'Empty Trash', icon: 'broom', action: 'emptyTrash', available: true },
-                        { type: 'separator' },
-                        { label: 'Refresh', icon: 'sync', action: 'refresh', available: true }
-                    );
-                } else {
-                    items.push(
-                        { label: 'New Folder', icon: 'folder-plus', action: 'createFolder', available: true },
-                        { label: 'Upload Files', icon: 'upload', action: 'uploadFiles', available: true },
-                        { type: 'separator' },
-                        { label: 'Cut', icon: 'cut', action: 'cutItems', available: selectedItems.length > 0, shortcut: 'Ctrl+X' },
-                        { label: 'Copy', icon: 'copy', action: 'copyItems', available: selectedItems.length > 0, shortcut: 'Ctrl+C' },
-                        { label: 'Paste', icon: 'paste', action: 'pasteItems', available: clipboard !== null, shortcut: 'Ctrl+V' },
-                        { type: 'separator' },
-                        { label: 'Rename', icon: 'i-cursor', action: 'renameItem', available: selectedItems.length === 1, shortcut: 'F2' },
-                        { label: 'Delete', icon: 'trash', action: 'deleteItems', available: selectedItems.length > 0, shortcut: 'Del', danger: true },
-                        { type: 'separator' },
-                        { label: 'Select All', icon: 'check-square', action: 'selectAll', available: true, shortcut: 'Ctrl+A' },
-                        { label: 'Properties', icon: 'info-circle', action: 'showProperties', available: selectedItems.length === 1 }
-                    );
-                }
-
-                return items.filter(item => item.available !== false);
-            }
-
-            // Execute context menu action
-            function executeContextMenuAction(action) {
-                switch (action) {
-                    case 'createFolder': createNewFolder(); break;
-                    case 'uploadFiles': showUploadDialog(); break;
-                    case 'cutItems': cutItems(); break;
-                    case 'copyItems': copyItems(); break;
-                    case 'pasteItems': pasteItems(); break;
-                    case 'renameItem': renameItem(); break;
-                    case 'deleteItems': deleteSelectedItems(); break;
-                    case 'restoreItems': restoreSelectedItems(); break;
-                    case 'emptyTrash': emptyTrash(); break;
-                    case 'selectAll': selectAllItems(); break;
-                    case 'showProperties': showProperties(); break;
-                    case 'refresh': loadGalleryContents(); break;
-                    default: console.warn('Unknown action:', action);
-                }
-            }
-
-            // Cut items to clipboard
-            function cutItems() {
-                if (selectedItems.length === 0) return;
-
-                clipboard = {
+                this.state.clipboard = {
                     action: 'cut',
-                    items: selectedItems
+                    items: this.state.selectedItems
                 };
 
                 fetch('{{ route("gallery.cut") }}', {
@@ -1568,30 +1827,29 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        items: selectedItems
+                        items: this.state.selectedItems
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showSuccess(data.message);
+                            this.showSuccess(data.message);
                         } else {
                             throw new Error(data.message || 'Failed to cut items');
                         }
                     })
                     .catch(error => {
                         console.error('Cut error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Copy items to clipboard
-            function copyItems() {
-                if (selectedItems.length === 0) return;
+            copyItems() {
+                if (this.state.selectedItems.length === 0) return;
 
-                clipboard = {
+                this.state.clipboard = {
                     action: 'copy',
-                    items: selectedItems
+                    items: this.state.selectedItems
                 };
 
                 fetch('{{ route("gallery.copy") }}', {
@@ -1602,29 +1860,28 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        items: selectedItems
+                        items: this.state.selectedItems
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showSuccess(data.message);
+                            this.showSuccess(data.message);
                         } else {
                             throw new Error(data.message || 'Failed to copy items');
                         }
                     })
                     .catch(error => {
                         console.error('Copy error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Paste items from clipboard
-            function pasteItems() {
-                if (!clipboard || clipboard.items.length === 0) return;
+            pasteItems() {
+                if (!this.state.clipboard || this.state.clipboard.items.length === 0) return;
 
-                showProgress('Pasting Items');
-                updateProgress(30, 'Processing...');
+                this.showProgress('Pasting Items');
+                this.updateProgress(30, 'Processing...');
 
                 fetch('{{ route("gallery.paste") }}', {
                     method: 'POST',
@@ -1634,46 +1891,45 @@
                         'X-Requested-With': 'XMLHttpRequest'
                     },
                     body: JSON.stringify({
-                        items: clipboard.items,
-                        target_path: currentPath
+                        items: this.state.clipboard.items,
+                        target_path: this.state.currentPath
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                if (clipboard.action === 'cut') {
-                                    clipboard = null;
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                if (this.state.clipboard.action === 'cut') {
+                                    this.state.clipboard = null;
                                 }
-                                loadGalleryContents();
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Paste failed');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Paste error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Rename selected item
-            function renameItem() {
-                if (selectedItems.length !== 1) return;
+            renameItem() {
+                if (this.state.selectedItems.length !== 1) return;
 
-                const item = selectedItems[0];
+                const item = this.state.selectedItems[0];
                 const currentName = prompt('Enter new name:');
                 if (!currentName) return;
 
-                showProgress('Renaming Item');
-                updateProgress(30, 'Processing...');
+                this.showProgress('Renaming Item');
+                this.updateProgress(30, 'Processing...');
 
-                fetch('{{ route("gallery.update", "") }}/' + item.id, {
-                    method: 'PUT',
+                fetch(`{{ route('gallery.file.rename', ['id' => '__ID__']) }}`.replace('__ID__', item.id), {
+                    method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -1681,37 +1937,37 @@
                     },
                     body: JSON.stringify({
                         type: item.type,
+                        id: item.id,
                         new_name: currentName
                     })
                 })
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Rename failed');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Rename error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Empty trash
-            function emptyTrash() {
+            emptyTrash() {
                 if (!confirm('Are you sure you want to permanently delete all items in the trash? This cannot be undone.')) {
                     return;
                 }
 
-                showProgress('Emptying Trash');
-                updateProgress(30, 'Processing...');
+                this.showProgress('Emptying Trash');
+                this.updateProgress(30, 'Processing...');
 
                 fetch('{{ route("gallery.empty-trash") }}', {
                     method: 'POST',
@@ -1724,27 +1980,26 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            updateProgress(100, 'Completed');
+                            this.updateProgress(100, 'Completed');
                             setTimeout(() => {
-                                hideProgress();
-                                showSuccess(data.message);
-                                loadGalleryContents();
+                                this.hideProgress();
+                                this.showSuccess(data.message);
+                                this.loadContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Failed to empty trash');
                         }
                     })
                     .catch(error => {
-                        hideProgress();
+                        this.hideProgress();
                         console.error('Empty trash error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Select all items
-            function selectAllItems() {
-                const items = document.querySelectorAll('.gallery-item');
-                selectedItems = [];
+            selectAllItems() {
+                const items = this.elements.imagesContainer.querySelectorAll('.gallery-item');
+                this.state.selectedItems = [];
 
                 items.forEach(item => {
                     const id = item.dataset.id;
@@ -1752,19 +2007,19 @@
 
                     if (type === 'go-up') return;
 
-                    selectedItems.push({ id, type });
+                    this.state.selectedItems.push({ id, type });
                     item.classList.add('selected');
-                    item.querySelector('.item-checkbox input').checked = true;
+                    const checkbox = item.querySelector('.item-checkbox input');
+                    if (checkbox) checkbox.checked = true;
                 });
 
-                updateSelectionDisplay();
-            }
+                this.updateSelectionDisplay();
+            },
 
-            // Show properties for selected item
-            function showProperties() {
-                if (selectedItems.length !== 1) return;
+            showProperties() {
+                if (this.state.selectedItems.length !== 1) return;
 
-                const item = selectedItems[0];
+                const item = this.state.selectedItems[0];
 
                 fetch(`/gallery/properties/${item.type}/${item.id}`, {
                     headers: {
@@ -1775,19 +2030,18 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            showPropertiesModal(data.properties, item.type);
+                            this.showPropertiesModal(data.properties, item.type);
                         } else {
                             throw new Error(data.message || 'Failed to get properties');
                         }
                     })
                     .catch(error => {
                         console.error('Properties error:', error);
-                        showError(error.message);
+                        this.showError(error.message);
                     });
-            }
+            },
 
-            // Show properties modal
-            function showPropertiesModal(properties, type) {
+            showPropertiesModal(properties, type) {
                 const modal = document.createElement('div');
                 modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
 
@@ -1800,7 +2054,7 @@
                 <h3 class="text-lg font-medium text-gray-900">
                     ${type === 'file' ? 'File' : 'Folder'} Properties
                 </h3>
-                <button type="button" class="text-gray-400 hover:text-gray-500">
+                <button type="button" class="text-gray-400 hover:text-gray-500" aria-label="Close">
                     <i class="fas fa-times"></i>
                 </button>
             `;
@@ -1843,30 +2097,65 @@
 
                 closeButton.addEventListener('click', closeModal);
                 okButton.addEventListener('click', closeModal);
-            }
+            },
 
-            // Handle keyboard shortcuts
-            function handleKeyboardShortcuts(e) {
-                if (!galleryModal.classList.contains('hidden')) {
-                    if (e.ctrlKey) {
-                        switch (e.key.toLowerCase()) {
-                            case 'a': e.preventDefault(); selectAllItems(); break;
-                            case 'c': e.preventDefault(); copyItems(); break;
-                            case 'x': e.preventDefault(); cutItems(); break;
-                            case 'v': e.preventDefault(); pasteItems(); break;
-                        }
-                    }
+            // ======================
+            // 7. MODAL MANAGEMENT
+            // ======================
+            openModal(path = '', callback = null) {
+                this.state.currentPath = path;
+                this.state.isTrashView = false;
+                this.state.selectedItems = [];
+                this.state.callback = callback;
+                this.elements.modal.classList.remove('hidden');
+                this.loadContents();
+            },
 
-                    switch (e.key) {
-                        case 'F2': e.preventDefault(); renameItem(); break;
-                        case 'Delete': e.preventDefault(); deleteSelectedItems(); break;
-                        case 'Escape': e.preventDefault(); closeContextMenu(); break;
-                    }
+            closeModal() {
+                this.elements.modal.classList.add('hidden');
+                this.state.callback = null;
+            },
+
+            // ======================
+            // 8. PROGRESS MANAGEMENT
+            // ======================
+            showProgress(title) {
+                this.elements.progressTitle.textContent = title;
+                this.elements.progressBar.style.width = '0%';
+                this.elements.progressStatus.textContent = '0% Complete';
+                this.elements.progressModal.classList.add('show');
+            },
+
+            updateProgress(percent, status) {
+                this.elements.progressBar.style.width = `${percent}%`;
+                this.elements.progressStatus.textContent = status || `${percent}% Complete`;
+            },
+
+            hideProgress() {
+                this.elements.progressModal.classList.remove('show');
+            },
+
+            // ======================
+            // 9. UTILITY FUNCTIONS
+            // ======================
+            // ======================
+            showLoading() {
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay';
+                loadingOverlay.innerHTML = '<i class="fas fa-spinner loading-spinner"></i>';
+                this.elements.imagesContainer.appendChild(loadingOverlay);
+            },
+
+            hideLoading() {
+                const loadingOverlay = this.elements.imagesContainer.querySelector('.loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.remove();
                 }
-            }
+            },
 
-            // Helper functions
-            function getFileIcon(mimeType) {
+            getFileIcon(mimeType) {
+                if (!mimeType) return 'file';
+
                 if (mimeType.startsWith('image/')) return 'file-image';
                 if (mimeType.startsWith('video/')) return 'file-video';
                 if (mimeType.startsWith('audio/')) return 'file-audio';
@@ -1876,49 +2165,103 @@
                 if (mimeType.includes('excel')) return 'file-excel';
                 if (mimeType.includes('powerpoint')) return 'file-powerpoint';
                 return 'file';
-            }
+            },
 
-            function formatFileSize(bytes) {
+            formatFileSize(bytes) {
                 if (!bytes) return '0 B';
 
                 const units = ['B', 'KB', 'MB', 'GB', 'TB'];
                 const i = Math.floor(Math.log(bytes) / Math.log(1024));
                 return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
-            }
+            },
 
-            function formatDate(dateString) {
+            formatDate(dateString) {
                 if (!dateString) return '';
 
                 const date = new Date(dateString);
                 const day = String(date.getDate()).padStart(2, '0');
                 const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = String(date.getFullYear()).slice(-2); // Get last 2 digits
+                const year = String(date.getFullYear()).slice(-2);
 
                 return `${day}-${month}-${year}`;
-            }
+            },
 
-            function copyToClipboard(text) {
+            copyToClipboard(text) {
                 const textarea = document.createElement('textarea');
                 textarea.value = text;
                 document.body.appendChild(textarea);
                 textarea.select();
                 document.execCommand('copy');
                 document.body.removeChild(textarea);
-            }
+            },
 
-            function showLoading() {
-                const loading = document.createElement('div');
-                loading.className = 'loading-overlay';
-                loading.innerHTML = '<i class="fas fa-spinner loading-spinner"></i>';
-                galleryModal.querySelector('.gallery-container').appendChild(loading);
-            }
+            handleKeyboardShortcuts(e) {
+                if (!this.elements.modal.classList.contains('hidden')) {
+                    if (e.ctrlKey || e.metaKey) {
+                        switch (e.key.toLowerCase()) {
+                            case 'a':
+                                e.preventDefault();
+                                this.selectAllItems();
+                                break;
+                            case 'c':
+                                e.preventDefault();
+                                this.copyItems();
+                                break;
+                            case 'x':
+                                e.preventDefault();
+                                this.cutItems();
+                                break;
+                            case 'v':
+                                e.preventDefault();
+                                this.pasteItems();
+                                break;
+                        }
+                    }
 
-            function hideLoading() {
-                const loading = galleryModal.querySelector('.loading-overlay');
-                if (loading) loading.remove();
-            }
+                    switch (e.key) {
+                        case 'F2':
+                            e.preventDefault();
+                            this.renameItem();
+                            break;
+                        case 'Delete':
+                            e.preventDefault();
+                            this.deleteSelected();
+                            break;
+                        case 'Escape':
+                            e.preventDefault();
+                            this.closeContextMenu();
+                            break;
+                    }
+                }
+            },
 
-            function showSuccess(message) {
+            handleKeyboardNavigation(e) {
+                // Implement keyboard navigation for items
+                const items = Array.from(this.elements.imagesContainer.querySelectorAll('.gallery-item'));
+                const currentIndex = items.findIndex(item => item === document.activeElement);
+                let newIndex = currentIndex;
+
+                switch (e.key) {
+                    case 'ArrowRight':
+                        newIndex = (currentIndex + 1) % items.length;
+                        break;
+                    case 'ArrowLeft':
+                        newIndex = (currentIndex - 1 + items.length) % items.length;
+                        break;
+                    case 'ArrowDown':
+                        newIndex = Math.min(currentIndex + 5, items.length - 1);
+                        break;
+                    case 'ArrowUp':
+                        newIndex = Math.max(currentIndex - 5, 0);
+                        break;
+                }
+
+                if (newIndex !== -1) {
+                    items[newIndex].focus();
+                }
+            },
+
+            showSuccess(message) {
                 const toast = document.createElement('div');
                 toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
                 toast.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
@@ -1928,9 +2271,9 @@
                     toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
                     setTimeout(() => toast.remove(), 500);
                 }, 3000);
-            }
+            },
 
-            function showError(message) {
+            showError(message) {
                 const toast = document.createElement('div');
                 toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
                 toast.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> ${message}`;
@@ -1941,9 +2284,14 @@
                     setTimeout(() => toast.remove(), 500);
                 }, 3000);
             }
+        };
 
-            // Initialize the gallery
-            initGallery();
-        });
-    </script>
-@endpush
+        // Initialize the gallery
+        gallery.init();
+
+        // Expose the open function to window
+        window.openGalleryModal = function(path = '', callback = null) {
+            gallery.openModal(path, callback);
+        };
+    });
+</script>

@@ -114,53 +114,48 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
 
     Route::prefix('gallery')->name('gallery.')->group(function () {
-        // Main browsing
+        // Main browsing and content management
         Route::get('/', [GalleryController::class, 'index'])->name('index');
-        Route::get('/folder/{path}', [GalleryController::class, 'getFolderContents'])->name('folder.contents')->where('path', '.*');
+        Route::get('/trash', [GalleryController::class, 'getTrashedItems'])->name('trash');
+        Route::get('/search', [GalleryController::class, 'searchItems'])->name('search');
 
         // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::get('/file/{media}', [GalleryController::class, 'show'])->name('show');
-        Route::put('/file/{media}', [GalleryController::class, 'update'])->name('update');
-        Route::delete('/file/{media}', [GalleryController::class, 'destroy'])->name('destroy');
+        Route::get('/file/{id}', [GalleryController::class, 'show'])->name('file.show');
+        Route::put('/file/{id}', [GalleryController::class, 'renameItem'])->name('file.rename');
+        Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
 
         // Folder operations
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
-        Route::put('/folder/{folder}', [GalleryController::class, 'updateFolder'])->name('folder.update');
-        Route::delete('/folder/{folder}', [GalleryController::class, 'destroyFolder'])->name('folder.destroy');
+        Route::put('/folder/{id}', [GalleryController::class, 'renameFolder'])->name('folder.rename');
+        Route::delete('/folder/{id}', [GalleryController::class, 'deleteFolder'])->name('folder.delete');
 
         // Clipboard operations
         Route::post('/copy', [GalleryController::class, 'copyItems'])->name('copy');
         Route::post('/cut', [GalleryController::class, 'cutItems'])->name('cut');
         Route::post('/paste', [GalleryController::class, 'pasteItems'])->name('paste');
 
-        // Move/rename operations
-        Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
-        Route::post('/rename', [GalleryController::class, 'renameItem'])->name('rename');
-
         // Batch operations
-        Route::post('/batch-delete', [GalleryController::class, 'batchDestroy'])->name('batch.destroy');
-        Route::post('/batch-restore', [GalleryController::class, 'batchRestore'])->name('batch.restore');
+        Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
+        Route::post('/batch-delete', [GalleryController::class, 'deleteItems'])->name('batch.delete');
+        Route::post('/batch-restore', [GalleryController::class, 'restoreItems'])->name('batch.restore');
 
         // Trash operations
-        Route::get('/trash', [GalleryController::class, 'trash'])->name('trash');
-        Route::post('/trash/empty', [GalleryController::class, 'emptyTrash'])->name('empty-trash'); // This was missing
-        Route::post('/restore/{id}', [GalleryController::class, 'restore'])->name('restore');
-        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
-
-        // Featured items
-        Route::post('/set-featured/{media}', [GalleryController::class, 'setFeatured'])->name('set-featured');
-        Route::delete('/remove-featured/{media}', [GalleryController::class, 'removeFeatured'])->name('remove-featured');
+        Route::post('/empty-trash', [GalleryController::class, 'emptyTrash'])->name('empty-trash');
 
         // Properties and URLs
         Route::get('/properties/{type}/{id}', [GalleryController::class, 'getProperties'])->name('properties');
-        Route::get('/generate-url/{media}', [GalleryController::class, 'generateUrl'])->name('generate-url');
-
-        // Search
-        Route::get('/search', [GalleryController::class, 'searchItems'])->name('search');
+        Route::get('/generate-url/{id}', [GalleryController::class, 'generateUrl'])->name('generate-url');
 
         // Context menu
         Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
+
+        // Featured media routes
+        Route::post('/set-featured/{id}', [GalleryController::class, 'setFeatured'])->name('set-featured');
+        Route::post('/remove-featured/{id}', [GalleryController::class, 'removeFeatured'])->name('remove-featured');
+
+        // Force delete (bypass soft delete)
+        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {
