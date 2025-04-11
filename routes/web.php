@@ -111,8 +111,6 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
-
-
     Route::prefix('gallery')->name('gallery.')->group(function () {
         // Main browsing and content management
         Route::get('/', [GalleryController::class, 'index'])->name('index');
@@ -127,6 +125,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Folder operations
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
+        Route::get('/folder-info/{id}', [GalleryController::class, 'getFolderInfo'])->name('folder.info');
         Route::put('/folder/{id}', [GalleryController::class, 'renameFolder'])->name('folder.rename');
         Route::delete('/folder/{id}', [GalleryController::class, 'deleteFolder'])->name('folder.delete');
 

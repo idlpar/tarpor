@@ -296,6 +296,30 @@ class GalleryController extends Controller
         }
     }
 
+
+    public function getFolderInfo($id)
+    {
+        $folder = MediaFolder::withTrashed()->find($id);
+
+        if (!$folder) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Folder not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'folder' => [
+                'id' => $folder->id,
+                'name' => $folder->name,
+                'path' => $folder->path,
+                'parent_id' => $folder->parent_id,
+                'deleted_at' => $folder->deleted_at?->format('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
     /**
      * Upload files with all fields populated
      */
@@ -843,6 +867,18 @@ class GalleryController extends Controller
         $media = Media::withTrashed()->findOrFail($fileId);
 
         if ($permanent) {
+            // Delete the actual file
+            $filePath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
+            Storage::disk($this->disk)->delete($filePath);
+
+            // Delete conversions if they exist
+            foreach ($this->conversions as $conversion => $settings) {
+                $conversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
+                if (Storage::disk($this->disk)->exists($conversionPath)) {
+                    Storage::disk($this->disk)->delete($conversionPath);
+                }
+            }
+
             // Permanently delete the file record
             $media->forceDelete();
         } else {
@@ -876,6 +912,9 @@ class GalleryController extends Controller
 
             // Delete the folder and all subfolders from database
             MediaFolder::where('path', 'like', $folder->path.'%')->forceDelete();
+
+            // Delete the physical folder
+            Storage::disk($this->disk)->deleteDirectory($folder->path);
         } else {
             if ($folder->trashed()) {
                 throw new \Exception('Folder is already in trash');
@@ -892,9 +931,19 @@ class GalleryController extends Controller
     /**
      * Get trashed items
      */
-    public function getTrashedItems()
+    public function getTrashedItems(Request $request)
     {
+        $parentId = $request->input('parent_id', null);
+
+        // Get trashed files in current folder
         $trashedFiles = Media::onlyTrashed()
+            ->when($parentId, function($query) use ($parentId) {
+                $folder = MediaFolder::onlyTrashed()->find($parentId);
+                return $query->where('directory', $folder->path);
+            }, function($query) {
+                return $query->whereNull('directory')
+                    ->orWhere('directory', '');
+            })
             ->orderBy('deleted_at', 'desc')
             ->get()
             ->map(function($file) {
@@ -911,8 +960,17 @@ class GalleryController extends Controller
                 ];
             });
 
+        // Get trashed folders (only direct children if parent_id is provided)
         $trashedFolders = MediaFolder::onlyTrashed()
-            ->withCount(['children', 'media'])
+            ->withCount([
+                'children as trashed_children_count' => function($query) {
+                    $query->onlyTrashed();
+                },
+                'media as trashed_media_count' => function($query) {
+                    $query->onlyTrashed();
+                }
+            ])
+            ->where('parent_id', $parentId)
             ->orderBy('deleted_at', 'desc')
             ->get()
             ->map(function($folder) {
@@ -921,17 +979,38 @@ class GalleryController extends Controller
                     'name' => $folder->name,
                     'type' => 'folder',
                     'path' => $folder->path,
+                    'parent_id' => $folder->parent_id,
                     'deleted_at' => $folder->deleted_at->format('Y-m-d H:i:s'),
-                    'item_count' => $folder->media_count + $folder->children_count
+                    'folder_count' => $folder->trashed_children_count,
+                    'file_count' => $folder->trashed_media_count,
+                    'item_count' => $folder->trashed_children_count + $folder->trashed_media_count
                 ];
             });
+
+        // Add "Go Up" folder if we're in a subfolder
+        $goUpFolder = null;
+        if ($parentId) {
+            $parentFolder = MediaFolder::onlyTrashed()->find($parentId);
+            if ($parentFolder) {
+                $goUpFolder = [
+                    'id' => 'go-up',
+                    'name' => 'Go Up',
+                    'type' => 'folder',
+                    'path' => '..',
+                    'parent_id' => $parentFolder->parent_id,
+                    'deleted_at' => null,
+                    'is_go_up' => true
+                ];
+            }
+        }
 
         return response()->json([
             'success' => true,
             'contents' => [
                 'files' => $trashedFiles,
-                'folders' => $trashedFolders
+                'folders' => $goUpFolder ? [$goUpFolder, ...$trashedFolders] : $trashedFolders
             ],
+            'parent_id' => $parentId,
             'contextMenu' => $this->getTrashContextMenuOptions()
         ]);
     }

@@ -111,8 +111,8 @@
     }
 
     .gallery-close {
-        background: rgba(190, 18, 60, 0.1);
-        border: 2px solid rgba(190, 18, 60, 0.2);
+        background: #FFFFFF;
+        border: 2px solid #FFFFFF;
         border-radius: 50%;
         width: 2.5rem;
         height: 2.5rem;
@@ -274,13 +274,16 @@
 
     /* Breadcrumb Navigation */
     .breadcrumb-container {
-        display: flex;
         align-items: center;
         padding: 0.75rem 1.25rem;
         background-color: white;
         border-bottom: 1px solid #e2e8f0;
         overflow-x: auto;
         scrollbar-width: thin;
+    }
+    .breadcrumb-container.show
+    {
+        display: flex;
     }
 
     .breadcrumb-item {
@@ -961,10 +964,16 @@
                 this.loadContents();
             },
 
-            loadTrashContents() {
+            loadTrashContents(parentId = null) {
                 this.showLoading();
+                this.elements.breadcrumbs.classList.add('hidden');
 
-                fetch('{{ route("gallery.trash") }}', {
+                const url = new URL('{{ route("gallery.trash") }}');
+                if (parentId) {
+                    url.searchParams.append('parent_id', parentId);
+                }
+
+                fetch(url, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -973,8 +982,8 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            this.state.currentTrashParent = data.parent_id;
                             this.renderContents(data.contents);
-                            // Update context menu for trash view
                             this.updateContextMenu(data.contextMenu);
                         } else {
                             throw new Error(data.message || 'Failed to load trash contents');
@@ -1151,45 +1160,64 @@
             createFolderItem(folder, isTrash) {
                 const folderItem = document.createElement('div');
                 folderItem.className = `gallery-item ${this.isSelected(folder.id, 'folder') ? 'selected' : ''}`;
-                folderItem.dataset.id = folder.id;
+                folderItem.dataset.id = folder.id || 'go-up'; // Handle go-up case
                 folderItem.dataset.type = 'folder';
                 folderItem.dataset.path = folder.path;
                 if (folder.parent_id) folderItem.dataset.parent_id = folder.parent_id;
+                if (folder.is_go_up) folderItem.dataset.is_go_up = true;
 
-                const dateInfo = isTrash ?
+                const dateInfo = isTrash && !folder.is_go_up ?
                     `Deleted: ${this.formatDate(folder.deleted_at)}` :
-                    `Created: ${this.formatDate(folder.created_at)}`;
+                    (folder.is_go_up ? '' : `Created: ${this.formatDate(folder.created_at)}`);
+
+                // Don't show counts for "Go Up" folder
+                const countBadge = folder.is_go_up ? '' : `
+        <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
+            ${folder.folder_count || 0} folders, ${folder.file_count || 0} files
+        </div>`;
 
                 folderItem.innerHTML = `
-                <div class="item-thumbnail">
-                    <div class="bg-gray-100">
-                        <i class="fas fa-folder folder-icon"></i>
-                    </div>
-                    ${folder.item_count !== undefined ? `
-                        <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
-                            ${folder.item_count} items
-                        </div>` : ''}
-                    <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                        ${dateInfo}
-                    </div>
-                    <div class="item-checkbox">
-                        <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}>
-                    </div>
-                </div>
-                <div class="item-info">
-                    <div class="item-name">${folder.name}</div>
-                    <div class="item-meta">
-                        <span>${folder.parent_id ? 'Subfolder' : ''}</span>
-                    </div>
-                </div>
-            `;
+        <div class="item-thumbnail">
+            <div class="bg-gray-100">
+                <i class="fas ${folder.is_go_up ? 'fa-level-up-alt' : 'fa-folder'} folder-icon"></i>
+            </div>
+            ${countBadge}
+            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
+                ${dateInfo}
+            </div>
+            <div class="item-checkbox">
+                <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}
+                    ${folder.is_go_up ? 'disabled' : ''}>
+            </div>
+        </div>
+        <div class="item-info">
+            <div class="item-name">${folder.name}</div>
+            <div class="item-meta">
+                <span>${folder.is_go_up ? 'Parent folder' : (folder.parent_id ? 'Subfolder' : '')}</span>
+            </div>
+        </div>
+    `;
 
-                if (isTrash) {
+                if (isTrash && !folder.is_go_up) {
                     folderItem.classList.add('deleted-item');
                 }
 
+                folderItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    if (folder.is_go_up) {
+                        this.navigateToParentFolder(folder.parent_id);
+                    } else {
+                        this.navigateToFolder(folderItem);
+                    }
+                });
+
                 this.elements.imagesContainer.appendChild(folderItem);
             },
+
+            navigateToParentFolder(parentId) {
+                this.loadTrashContents(parentId);
+            },
+
 
             createFileItem(file, isTrash) {
                 const fileItem = document.createElement('div');
@@ -1425,9 +1453,16 @@
             },
 
             navigateToFolder(folderElement) {
-                this.state.currentPath = folderElement.dataset.path;
-                this.state.currentFolderId = folderElement.dataset.id;
-                this.loadContents();
+                if (this.state.isTrashView) {
+                    // For trash view, we navigate by parent_id
+                    const folderId = folderElement.dataset.id;
+                    this.loadTrashContents(folderId);
+                } else {
+                    // Regular folder navigation
+                    this.state.currentPath = folderElement.dataset.path;
+                    this.state.currentFolderId = folderElement.dataset.id;
+                    this.loadContents();
+                }
             },
 
             toggleItemSelection(id, type, element) {
@@ -1569,6 +1604,13 @@
                 this.state.isTrashView = !this.state.isTrashView;
                 this.state.currentPath = '';
                 this.state.selectedItems = [];
+
+                // Show/hide breadcrumbs based on view
+                if (this.state.isTrashView) {
+                    this.elements.breadcrumbs.classList.remove('show');
+                } else {
+                    this.elements.breadcrumbs.classList.add('show');
+                }
 
                 // Update trash button text and show/hide empty trash button
                 const trashButtonText = document.getElementById('trashButtonText');
