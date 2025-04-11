@@ -892,7 +892,7 @@ class GalleryController extends Controller
     /**
      * Get trashed items
      */
-    protected function getTrashedItems()
+    public function getTrashedItems()
     {
         $trashedFiles = Media::onlyTrashed()
             ->orderBy('deleted_at', 'desc')
@@ -906,11 +906,13 @@ class GalleryController extends Controller
                     'mime_type' => $file->mime_type,
                     'size' => $file->size,
                     'deleted_at' => $file->deleted_at->format('Y-m-d H:i:s'),
-                    'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name)
+                    'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                    'thumb_url' => $this->getThumbUrl($file)
                 ];
             });
 
         $trashedFolders = MediaFolder::onlyTrashed()
+            ->withCount(['children', 'media'])
             ->orderBy('deleted_at', 'desc')
             ->get()
             ->map(function($folder) {
@@ -919,7 +921,8 @@ class GalleryController extends Controller
                     'name' => $folder->name,
                     'type' => 'folder',
                     'path' => $folder->path,
-                    'deleted_at' => $folder->deleted_at->format('Y-m-d H:i:s')
+                    'deleted_at' => $folder->deleted_at->format('Y-m-d H:i:s'),
+                    'item_count' => $folder->media_count + $folder->children_count
                 ];
             });
 

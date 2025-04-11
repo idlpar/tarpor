@@ -132,6 +132,21 @@
     }
 
     /* Trash view specific styles */
+    /* Remove the empty trash button from the items grid */
+    .trash-header {
+        display: none; /* We'll now use the toolbar button */
+    }
+
+    /* Style the empty trash button in toolbar */
+    #emptyTrashBtn {
+        margin-left: 0.5rem;
+        transition: all 0.2s;
+    }
+
+    #emptyTrashBtn:hover {
+        transform: scale(1.05);
+    }
+
     .trash-view .breadcrumb-container {
         justify-content: flex-end;
     }
@@ -667,6 +682,10 @@
                     <i class="fas fa-trash-restore"></i>
                     <span id="trashButtonText">Trash</span>
                 </button>
+                <button type="button" id="emptyTrashBtn" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-700 rounded hover:bg-red-800 hidden">
+                    <i class="fas fa-broom"></i>
+                    <span>Empty Trash</span>
+                </button>
             </div>
 
             <div class="relative w-full sm:w-auto sm:flex-1 max-w-sm">
@@ -821,7 +840,7 @@
                 // Navigation
                 this.elements.refreshButton.addEventListener('click', (e) => {
                     e.preventDefault();
-                    this.loadContents();
+                    this.refreshContents();
                 });
 
                 this.elements.trashButton.addEventListener('click', (e) => {
@@ -942,12 +961,40 @@
                 this.loadContents();
             },
 
+            loadTrashContents() {
+                this.showLoading();
+
+                fetch('{{ route("gallery.trash") }}', {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            this.renderContents(data.contents);
+                            // Update context menu for trash view
+                            this.updateContextMenu(data.contextMenu);
+                        } else {
+                            throw new Error(data.message || 'Failed to load trash contents');
+                        }
+                    })
+                    .catch(error => this.showError(error.message))
+                    .finally(() => this.hideLoading());
+            },
+
+
             loadContents() {
                 this.showLoading();
 
                 const url = new URL('{{ route("gallery.index") }}');
                 url.searchParams.append('path', this.state.currentPath);
-                if (this.state.isTrashView) url.searchParams.append('trash', 'true');
+
+                // Add trash parameter if in trash view
+                if (this.state.isTrashView) {
+                    url.searchParams.append('trash', 'true');
+                }
 
                 fetch(url, {
                     headers: {
@@ -1011,6 +1058,17 @@
                     this.showEmptyState('Trash is empty', 'fa-trash-alt');
                     return;
                 }
+
+                // Add empty trash button at the top
+                const emptyTrashBtn = document.createElement('button');
+                emptyTrashBtn.className = 'empty-trash-btn';
+                emptyTrashBtn.innerHTML = '<i class="fas fa-trash"></i> Empty Trash';
+                emptyTrashBtn.addEventListener('click', () => this.emptyTrash());
+
+                const header = document.createElement('div');
+                header.className = 'trash-header';
+                header.appendChild(emptyTrashBtn);
+                this.elements.imagesContainer.appendChild(header);
 
                 if (contents.folders && contents.folders.length > 0) {
                     contents.folders.forEach(folder => {
@@ -1173,6 +1231,11 @@
                 }
 
                 this.elements.imagesContainer.appendChild(fileItem);
+            },
+
+            updateContextMenu(menuOptions) {
+                // Store the current context menu options
+                this.state.contextMenuOptions = menuOptions;
             },
 
             // ======================
@@ -1439,16 +1502,31 @@
                 this.elements.previewEmpty.classList.remove('hidden');
                 this.elements.previewDetails.classList.add('hidden');
                 this.elements.imageActions.classList.add('hidden');
+
+                // Clear any existing preview data
+                document.getElementById('detailName').textContent = '-';
+                document.getElementById('detailType').textContent = '-';
+                document.getElementById('detailSize').textContent = '-';
+                document.getElementById('detailDimensions').textContent = '-';
+                document.getElementById('detailUploaded').textContent = '-';
             },
 
             fetchFileDetails(fileId) {
+                // Clear preview first to avoid showing stale data
+                this.clearPreview();
+
                 fetch(`{{ route("gallery.file.show", '') }}/${fileId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
                     }
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('File not found');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
                             this.showFilePreview(data.file);
@@ -1458,7 +1536,8 @@
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        this.showError(error.message);
+                        this.showError('Could not load file details');
+                        this.clearPreview();
                     });
             },
 
@@ -1490,14 +1569,31 @@
                 this.state.isTrashView = !this.state.isTrashView;
                 this.state.currentPath = '';
                 this.state.selectedItems = [];
-                this.loadContents();
 
-                // Update trash button text
+                // Update trash button text and show/hide empty trash button
                 const trashButtonText = document.getElementById('trashButtonText');
+                const emptyTrashBtn = document.getElementById('emptyTrashBtn');
+
                 if (trashButtonText) {
                     trashButtonText.textContent = this.state.isTrashView ? 'Back to Gallery' : 'Trash';
                 }
+
+                if (emptyTrashBtn) {
+                    emptyTrashBtn.classList.toggle('hidden', !this.state.isTrashView);
+                }
+
+                // Load the appropriate content
+                this.refreshContents();
             },
+
+            refreshContents() {
+                if (this.state.isTrashView) {
+                    this.loadTrashContents();
+                } else {
+                    this.loadContents();
+                }
+            },
+
 
             showUploadDialog() {
                 const input = document.createElement('input');
@@ -1638,7 +1734,7 @@
                                 this.hideProgress();
                                 this.showSuccess(data.message);
                                 this.clearPreview();
-                                this.loadContents();
+                                this.refreshContents(); // Refresh the current view
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Delete failed');
@@ -1650,6 +1746,7 @@
                         this.showError(error.message);
                     });
             },
+
 
             restoreSelected() {
                 if (this.state.selectedItems.length === 0) return;
@@ -1678,7 +1775,7 @@
                                 this.hideProgress();
                                 this.showSuccess(data.message);
                                 this.clearPreview();
-                                this.loadContents();
+                                this.refreshContents(); // Refresh the current view
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Restore failed');
@@ -1984,7 +2081,9 @@
                             setTimeout(() => {
                                 this.hideProgress();
                                 this.showSuccess(data.message);
-                                this.loadContents();
+                                this.clearPreview();
+                                this.clearSelections(); // Clear any selections
+                                this.loadTrashContents(); // Reload trash contents (which should now be empty)
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Failed to empty trash');
@@ -1996,6 +2095,7 @@
                         this.showError(error.message);
                     });
             },
+
 
             selectAllItems() {
                 const items = this.elements.imagesContainer.querySelectorAll('.gallery-item');
