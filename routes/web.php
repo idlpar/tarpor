@@ -111,6 +111,8 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/store', [TagController::class, 'store'])->name('store');
     });
 
+
+
     Route::prefix('gallery')->name('gallery.')->group(function () {
         // Main browsing and content management
         Route::get('/', [GalleryController::class, 'index'])->name('index');
@@ -120,12 +122,12 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
         Route::get('/file/{id}', [GalleryController::class, 'show'])->name('file.show');
-        Route::put('/file/{id}', [GalleryController::class, 'update'])->name('file.update');
+        Route::put('/file/{id}', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
 
         // Folder operations
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
-        Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
+        Route::put('/folder/{id}', [GalleryController::class, 'renameFolder'])->name('folder.rename');
         Route::delete('/folder/{id}', [GalleryController::class, 'deleteFolder'])->name('folder.delete');
 
         // Clipboard operations
@@ -145,9 +147,15 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::get('/properties/{type}/{id}', [GalleryController::class, 'getProperties'])->name('properties');
         Route::get('/generate-url/{id}', [GalleryController::class, 'generateUrl'])->name('generate-url');
 
+        // Context menu
+        Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
+
         // Featured media routes
         Route::post('/set-featured/{id}', [GalleryController::class, 'setFeatured'])->name('set-featured');
         Route::post('/remove-featured/{id}', [GalleryController::class, 'removeFeatured'])->name('remove-featured');
+
+        // Force delete (bypass soft delete)
+        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {
