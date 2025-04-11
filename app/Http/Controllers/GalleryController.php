@@ -45,7 +45,7 @@ class GalleryController extends Controller
         $isTrash = $request->get('trash', false);
 
         if ($isTrash) {
-            return $this->getTrashedItems();
+            return $this->getTrashedItems($request);
         }
 
         if ($searchTerm) {
@@ -54,10 +54,18 @@ class GalleryController extends Controller
 
         $contents = $this->getFolderContents($currentPath);
 
+        // Get counts for current folder
+        $folderCount = count($contents['folders']);
+        $fileCount = count($contents['files']);
+
         return response()->json([
             'success' => true,
             'currentPath' => $currentPath,
             'contents' => $contents,
+            'counts' => [
+                'folders' => $folderCount,
+                'files' => $fileCount,
+            ],
             'breadcrumbs' => $this->getBreadcrumbs($currentPath),
             'contextMenu' => $this->getContextMenuOptions($currentPath)
         ]);
@@ -80,7 +88,7 @@ class GalleryController extends Controller
         // Get child folders (direct children only)
         $childFolders = MediaFolder::withCount(['children', 'media'])
             ->where('parent_id', $currentFolder ? $currentFolder->id : null)
-            ->whereNull('deleted_at') // Only non-deleted folders
+            ->whereNull('deleted_at')
             ->orderBy('name')
             ->get();
 
@@ -92,15 +100,17 @@ class GalleryController extends Controller
                 'parent_id' => $folder->parent_id,
                 'type' => 'folder',
                 'has_children' => $folder->children_count > 0,
-                'created_at' => $folder->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $folder->updated_at->format('Y-m-d H:i:s'),
+                'created_at' => $folder->created_at->format('d-m-Y'),
+                'updated_at' => $folder->updated_at->format('d-m-Y'),
+                'folder_count' => $folder->children_count,
+                'file_count' => $folder->media_count,
                 'item_count' => $folder->media_count + $folder->children_count
             ];
         }
 
         // Get files in current directory
         $files = Media::where('directory', $path)
-            ->whereNull('deleted_at') // Only non-deleted files
+            ->whereNull('deleted_at')
             ->orderBy('name')
             ->get();
 
@@ -114,14 +124,33 @@ class GalleryController extends Controller
                 'thumb_url' => $this->getThumbUrl($file),
                 'type' => 'file',
                 'mime_type' => $file->mime_type,
-                'size' => $file->size,
+                'size' => $this->formatFileSize($file->size),
+                'size_bytes' => $file->size,
                 'dimensions' => $file->dimensions,
-                'created_at' => $file->created_at->format('Y-m-d H:i:s'),
-                'updated_at' => $file->updated_at->format('Y-m-d H:i:s')
+                'created_at' => $file->created_at->format('d-m-Y'),
+                'updated_at' => $file->updated_at->format('d-m-Y'),
+                'is_featured' => $file->is_featured
             ];
         }
 
         return $contents;
+    }
+
+    protected function formatFileSize($bytes)
+    {
+        if ($bytes >= 1073741824) {
+            return number_format($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return number_format($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return number_format($bytes / 1024, 2) . ' KB';
+        } elseif ($bytes > 1) {
+            return $bytes . ' bytes';
+        } elseif ($bytes == 1) {
+            return $bytes . ' byte';
+        } else {
+            return '0 bytes';
+        }
     }
 
 
@@ -881,6 +910,7 @@ class GalleryController extends Controller
 
             // Permanently delete the file record
             $media->forceDelete();
+            return $media;
         } else {
             if ($media->trashed()) {
                 throw new \Exception('File is already in trash');
@@ -889,9 +919,8 @@ class GalleryController extends Controller
             // Soft delete by setting deleted_at timestamp
             $media->deleted_at = now();
             $media->save();
+            return $media;
         }
-
-        return $media;
     }
 
 
@@ -913,8 +942,14 @@ class GalleryController extends Controller
             // Delete the folder and all subfolders from database
             MediaFolder::where('path', 'like', $folder->path.'%')->forceDelete();
 
-            // Delete the physical folder
+            // Delete the physical folder and all conversions
             Storage::disk($this->disk)->deleteDirectory($folder->path);
+            foreach ($this->conversions as $conversion => $settings) {
+                $conversionPath = $folder->path.'/'.$conversion;
+                if (Storage::disk($this->disk)->exists($conversionPath)) {
+                    Storage::disk($this->disk)->deleteDirectory($conversionPath);
+                }
+            }
         } else {
             if ($folder->trashed()) {
                 throw new \Exception('Folder is already in trash');
@@ -927,7 +962,6 @@ class GalleryController extends Controller
 
         return $folder;
     }
-
     /**
      * Get trashed items
      */
@@ -938,11 +972,18 @@ class GalleryController extends Controller
         // Get trashed files in current folder
         $trashedFiles = Media::onlyTrashed()
             ->when($parentId, function($query) use ($parentId) {
+                // For specific folder, filter by directory path
                 $folder = MediaFolder::onlyTrashed()->find($parentId);
+                if (!$folder) {
+                    return $query->whereRaw('1=0'); // Return empty result if folder not found
+                }
                 return $query->where('directory', $folder->path);
             }, function($query) {
-                return $query->whereNull('directory')
-                    ->orWhere('directory', '');
+                // For root trash, get files that were in root
+                return $query->where(function($q) {
+                    $q->whereNull('directory')
+                        ->orWhere('directory', '');
+                });
             })
             ->orderBy('deleted_at', 'desc')
             ->get()
@@ -953,10 +994,12 @@ class GalleryController extends Controller
                     'type' => 'file',
                     'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
                     'mime_type' => $file->mime_type,
-                    'size' => $file->size,
-                    'deleted_at' => $file->deleted_at->format('Y-m-d H:i:s'),
+                    'size' => $this->formatFileSize($file->size),
+                    'size_bytes' => $file->size,
+                    'deleted_at' => $file->deleted_at->format('d-m-Y H:i:s'),
                     'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
-                    'thumb_url' => $this->getThumbUrl($file)
+                    'thumb_url' => $this->getThumbUrl($file),
+                    'created_at' => $file->created_at->format('d-m-Y')
                 ];
             });
 
@@ -970,7 +1013,13 @@ class GalleryController extends Controller
                     $query->onlyTrashed();
                 }
             ])
-            ->where('parent_id', $parentId)
+            ->when($parentId, function($query) use ($parentId) {
+                // For specific folder, get direct children
+                return $query->where('parent_id', $parentId);
+            }, function($query) {
+                // For root trash, get all root folders (parent_id is null)
+                return $query->whereNull('parent_id');
+            })
             ->orderBy('deleted_at', 'desc')
             ->get()
             ->map(function($folder) {
@@ -980,27 +1029,35 @@ class GalleryController extends Controller
                     'type' => 'folder',
                     'path' => $folder->path,
                     'parent_id' => $folder->parent_id,
-                    'deleted_at' => $folder->deleted_at->format('Y-m-d H:i:s'),
+                    'deleted_at' => $folder->deleted_at->format('d-m-Y H:i:s'),
                     'folder_count' => $folder->trashed_children_count,
                     'file_count' => $folder->trashed_media_count,
-                    'item_count' => $folder->trashed_children_count + $folder->trashed_media_count
+                    'item_count' => $folder->trashed_children_count + $folder->trashed_media_count,
+                    'created_at' => $folder->created_at->format('d-m-Y')
                 ];
             });
 
         // Add "Go Up" folder if we're in a subfolder
         $goUpFolder = null;
         if ($parentId) {
-            $parentFolder = MediaFolder::onlyTrashed()->find($parentId);
-            if ($parentFolder) {
-                $goUpFolder = [
-                    'id' => 'go-up',
-                    'name' => 'Go Up',
-                    'type' => 'folder',
-                    'path' => '..',
-                    'parent_id' => $parentFolder->parent_id,
-                    'deleted_at' => null,
-                    'is_go_up' => true
-                ];
+            $currentFolder = MediaFolder::onlyTrashed()->find($parentId);
+            if ($currentFolder && $currentFolder->parent_id) {
+                $parentFolder = MediaFolder::onlyTrashed()->find($currentFolder->parent_id);
+                if ($parentFolder) {
+                    $goUpFolder = [
+                        'id' => $parentFolder->id, // Use actual parent folder ID
+                        'name' => 'Go Up',
+                        'type' => 'folder',
+                        'path' => $parentFolder->path,
+                        'parent_id' => $parentFolder->parent_id,
+                        'deleted_at' => null,
+                        'is_go_up' => true,
+                        'folder_count' => $parentFolder->trashed_children_count ?? 0,
+                        'file_count' => $parentFolder->trashed_media_count ?? 0,
+                        'item_count' => ($parentFolder->trashed_children_count ?? 0) + ($parentFolder->trashed_media_count ?? 0),
+                        'created_at' => $parentFolder->created_at->format('d-m-Y')
+                    ];
+                }
             }
         }
 
@@ -1498,12 +1555,23 @@ class GalleryController extends Controller
     }
 
     // In GalleryController.php
-    public function show($id)
+    public function showFolder($id)
     {
-        $file = MediaFolder::findOrFail($id);
+        $folder = MediaFolder::with(['files', 'children'])->findOrFail($id);
         return response()->json([
             'success' => true,
-            'file' => $file
+            'type' => 'folder',
+            'data' => $folder
+        ]);
+    }
+
+    public function showFile($id)
+    {
+        $file = Media::findOrFail($id);
+        return response()->json([
+            'success' => true,
+            'type' => 'file',
+            'data' => $file
         ]);
     }
 
@@ -1701,6 +1769,30 @@ class GalleryController extends Controller
             'id' => $id,
             'new_name' => $request->input('name')
         ]));
+    }
+
+    /**
+     * Get file details for insertion
+     */
+    public function getFileForInsertion($id)
+    {
+        $file = Media::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'file' => [
+                'id' => $file->id,
+                'name' => $file->name,
+                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                'thumb_url' => $this->getThumbUrl($file),
+                'type' => 'file',
+                'mime_type' => $file->mime_type,
+                'size' => $this->formatFileSize($file->size),
+                'dimensions' => $file->dimensions,
+                'created_at' => $file->created_at->format('d-m-Y'),
+                'updated_at' => $file->updated_at->format('d-m-Y')
+            ]
+        ]);
     }
 
 }

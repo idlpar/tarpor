@@ -2,12 +2,14 @@
     /* Context Menu */
     .context-menu {
         position: fixed;
-        z-index: 99999;
+        z-index: 99999 !important;
         background: white;
         border: 1px solid #e2e8f0;
         box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         min-width: 200px;
         padding: 0.5rem 0;
+        opacity: 1 !important; /* Force visibility */
+        display: block !important; /* Force display */
     }
 
     .context-menu-item {
@@ -62,6 +64,7 @@
         right: 0;
         bottom: 0;
         background-color: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(2px);
         display: flex;
         align-items: center;
         justify-content: center;
@@ -211,9 +214,12 @@
         border-radius: 8px;
         font-size: 0.875rem;
         font-weight: 500;
+        height: 40px;
         transition: all 0.2s;
         cursor: pointer;
         border: 1px solid transparent;
+        overflow: hidden;
+        text-overflow: ellipsis;
     }
 
     .toolbar-button.primary {
@@ -351,7 +357,11 @@
         border: 1px solid #e2e8f0;
         background-color: white;
         cursor: pointer;
+        height: 160px;
+        display: flex;
+        flex-direction: column;
     }
+
     /* For cut items */
     .gallery-item.cut {
         opacity: 0.6;
@@ -383,14 +393,25 @@
         border: 2px solid #4f46e5;
     }
 
+
     .item-thumbnail {
-        width: 100%;
-        height: 80px;
+        flex-grow: 1;
         display: flex;
         align-items: center;
         justify-content: center;
         background-color: #f8fafc;
         position: relative;
+    }
+
+    .item-count-badge {
+        position: absolute;
+        top: 4px;
+        left: 4px;
+        font-size: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 4px;
+        border-radius: 4px;
     }
 
     .item-thumbnail img {
@@ -406,10 +427,34 @@
 
     .item-checkbox {
         position: absolute;
-        top: 0.5rem;
-        right: 0.5rem;
+        top: 4px;
+        right: 4px;
         z-index: 10;
     }
+
+
+    .item-date {
+        position: absolute;
+        bottom: 4px;
+        left: 4px;
+        font-size: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
+    .item-size {
+        position: absolute;
+        bottom: 4px;
+        right: 4px;
+        font-size: 10px;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 2px 4px;
+        border-radius: 4px;
+    }
+
 
     .item-featured {
         position: absolute;
@@ -442,10 +487,29 @@
 
     /* Preview Panel */
     .preview-panel {
-        border-left: 1px solid #e2e8f0;
-        padding: 1.5rem;
+        position: relative;
         overflow-y: auto;
-        background-color: white;
+        padding: 1rem;
+        background: white;
+        border-left: 1px solid #e2e8f0;
+    }
+
+    .preview-image-container {
+        max-height: 300px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f8fafc;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .preview-image {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        border-radius: 4px;
     }
 
     .preview-header {
@@ -546,10 +610,12 @@
 
     /* Footer */
     .gallery-footer {
+        height: 60px;
         padding: 1rem 1.25rem;
         border-top: 1px solid #e2e8f0;
         display: flex;
         justify-content: flex-end;
+        align-items: center;
         background-color: white;
     }
 
@@ -561,16 +627,17 @@
         right: 0;
         bottom: 0;
         background-color: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(2px);
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 40;
+        z-index: 1000;
     }
 
     .loading-spinner {
         animation: spin 1s linear infinite;
         color: #4f46e5;
-        font-size: 2rem;
+        font-size: 3rem;
     }
 
     @keyframes spin {
@@ -650,7 +717,7 @@
 
 <!-- Gallery Modal -->
 <div id="galleryModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 flex justify-center items-center p-4">
-    <div class="gallery-container w-full max-w-6xl">
+    <div class="gallery-container w-full max-w-6xl bg-white rounded-lg shadow-xl overflow-hidden">
         <!-- Header -->
         <div class="gallery-header">
             <div class="gallery-title">
@@ -689,6 +756,14 @@
                     <i class="fas fa-broom"></i>
                     <span>Empty Trash</span>
                 </button>
+                <button type="button" id="restoreImage" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-green-600 rounded hover:bg-green-700 hidden">
+                    <i class="fas fa-trash-restore"></i>
+                    <span>Restore</span>
+                </button>
+                <button type="button" id="setAsFeatured" class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-yellow-500 rounded hover:bg-yellow-600 hidden">
+                    <i class="fas fa-star"></i>
+                    <span>Featured</span>
+                </button>
             </div>
 
             <div class="relative w-full sm:w-auto sm:flex-1 max-w-sm">
@@ -698,68 +773,68 @@
         </div>
 
         <!-- Breadcrumbs -->
-        <div id="breadcrumbContainer" class="breadcrumb-container">
+        <div id="breadcrumbContainer" class="breadcrumb-container show">
             <!-- Dynamic breadcrumbs will be inserted here -->
         </div>
 
         <!-- Main Content -->
-        <div class="gallery-content">
+        <div class="gallery-content relative">
             <!-- Items Grid -->
             <div class="items-grid" id="galleryImages">
                 <!-- Dynamic content will be inserted here -->
             </div>
 
             <!-- Preview Panel -->
-            <div class="preview-panel">
-                <div class="preview-header">Preview</div>
-                <div class="preview-content">
-                    <div id="imagePreview">
-                        <div class="preview-empty">
-                            <i class="fas fa-image text-4xl mb-2"></i>
-                            <p>No item selected</p>
-                        </div>
-                        <img id="previewImage" class="preview-image hidden" src="" alt="Preview">
-                    </div>
-
-                    <div id="previewDetails" class="preview-details hidden">
-                        <div class="detail-row">
-                            <span class="detail-label">Name:</span>
-                            <span class="detail-value" id="detailName">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Type:</span>
-                            <span class="detail-value" id="detailType">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Size:</span>
-                            <span class="detail-value" id="detailSize">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Dimensions:</span>
-                            <span class="detail-value" id="detailDimensions">-</span>
-                        </div>
-                        <div class="detail-row">
-                            <span class="detail-label">Uploaded:</span>
-                            <span class="detail-value" id="detailUploaded">-</span>
-                        </div>
+            <div class="preview-panel p-4 bg-white border-l border-gray-200 overflow-y-auto">
+                <div class="preview-header text-xl font-semibold mb-4">Preview</div>
+                <div class="preview-content" id="previewContent">
+                    <div class="preview-empty flex flex-col items-center justify-center h-64 text-gray-400">
+                        <i class="fas fa-image text-4xl mb-2"></i>
+                        <p>No item selected</p>
                     </div>
                 </div>
 
-                <div id="imageActions" class="action-buttons hidden">
-                    <button type="button" id="deleteImage" class="action-button danger">
+                <div id="previewDetails" class="preview-details hidden mt-6">
+                    <div class="detail-row">
+                        <span class="detail-label">Name:</span>
+                        <span class="detail-value" id="detailName">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Type:</span>
+                        <span class="detail-value" id="detailType">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Size:</span>
+                        <span class="detail-value" id="detailSize">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Dimensions:</span>
+                        <span class="detail-value" id="detailDimensions">-</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Uploaded:</span>
+                        <span class="detail-value" id="detailUploaded">-</span>
+                    </div>
+                    <!-- Details will be populated here -->
+                </div>
+
+                <div id="imageActions" class="action-buttons hidden mt-6">
+                    <button class="action-button primary" id="insertSingleButton">
+                        <i class="fas fa-check mr-2"></i>
+                        Insert
+                    </button>
+                    <button class="action-button secondary" id="downloadButton">
+                        <i class="fas fa-download mr-2"></i>
+                        Download
+                    </button>
+                    <button class="action-button danger" id="deleteSingleButton">
                         <i class="fas fa-trash mr-2"></i>
                         Delete
                     </button>
-                    <button type="button" id="restoreImage" class="action-button secondary">
-                        <i class="fas fa-undo mr-2"></i>
-                        Restore
-                    </button>
-                    <button type="button" id="setAsFeatured" class="action-button primary">
-                        <i class="fas fa-star mr-2"></i>
-                        Set as Featured
-                    </button>
+                    <!-- Action buttons -->
                 </div>
             </div>
+
         </div>
 
         <!-- Footer -->
@@ -788,6 +863,11 @@
         // ======================
         // 1. CORE INITIALIZATION
         // ======================
+        if (!document.getElementById('galleryModal')) {
+            console.error('Gallery modal container not found');
+            return;
+        }
+
         const gallery = {
             // DOM Elements
             elements: {
@@ -795,11 +875,8 @@
                 closeBtn: document.getElementById('closeGalleryModal'),
                 imagesContainer: document.getElementById('galleryImages'),
                 breadcrumbs: document.getElementById('breadcrumbContainer'),
-                previewImage: document.getElementById('previewImage'),
-                previewEmpty: document.querySelector('.preview-empty'),
-                previewDetails: document.getElementById('previewDetails'),
                 imageActions: document.getElementById('imageActions'),
-                deleteButton: document.getElementById('deleteImage'),
+                deleteButton: document.getElementById('deleteSelected'),
                 restoreButton: document.getElementById('restoreImage'),
                 featuredButton: document.getElementById('setAsFeatured'),
                 insertButton: document.getElementById('insertButton'),
@@ -807,11 +884,24 @@
                 newFolderButton: document.getElementById('newFolder'),
                 refreshButton: document.getElementById('refreshFolders'),
                 trashButton: document.getElementById('toggleTrashView'),
+                emptyTrashBtn: document.getElementById('emptyTrashBtn'),
                 searchInput: document.getElementById('searchInput'),
                 progressModal: document.getElementById('progressModal'),
                 progressTitle: document.getElementById('progressTitle'),
                 progressBar: document.getElementById('progressBar'),
-                progressStatus: document.getElementById('progressStatus')
+                progressStatus: document.getElementById('progressStatus'),
+
+                previewPanel: document.querySelector('.preview-panel'),
+                previewContent: document.getElementById('previewContent'),
+                previewImage: document.createElement('img'), // Will be added dynamically
+                previewEmpty: document.querySelector('.preview-empty'),
+                previewDetails: document.getElementById('previewDetails'),
+                detailName: document.getElementById('detailName'),
+                detailType: document.getElementById('detailType'),
+                detailSize: document.getElementById('detailSize'),
+                detailDimensions: document.getElementById('detailDimensions'),
+                detailUploaded: document.getElementById('detailUploaded')
+
             },
 
             // State
@@ -826,8 +916,17 @@
 
             // Initialize the gallery
             init() {
+                // Verify all required elements exist
+                for (const [key, element] of Object.entries(this.elements)) {
+                    if (!element && key !== 'previewImage') { // previewImage is created dynamically
+                        console.error(`Missing gallery element: ${key}`);
+                        return false;
+                    }
+                }
+
                 this.setupEventListeners();
                 this.setupAccessibility();
+                return true;
             },
 
             // ======================
@@ -894,6 +993,7 @@
                 // Context menu with proper event prevention
                 this.elements.imagesContainer.addEventListener('contextmenu', (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     this.handleContextMenu(e);
                 });
 
@@ -901,7 +1001,7 @@
                     if (!e.target.closest('.context-menu')) {
                         this.closeContextMenu();
                     }
-                });
+                }, true); // Use capture phase
 
                 document.addEventListener('keydown', (e) => {
                     this.handleKeyboardShortcuts(e);
@@ -1160,55 +1260,35 @@
             createFolderItem(folder, isTrash) {
                 const folderItem = document.createElement('div');
                 folderItem.className = `gallery-item ${this.isSelected(folder.id, 'folder') ? 'selected' : ''}`;
-                folderItem.dataset.id = folder.id || 'go-up'; // Handle go-up case
+                folderItem.dataset.id = folder.id;
                 folderItem.dataset.type = 'folder';
                 folderItem.dataset.path = folder.path;
                 if (folder.parent_id) folderItem.dataset.parent_id = folder.parent_id;
-                if (folder.is_go_up) folderItem.dataset.is_go_up = true;
-
-                const dateInfo = isTrash && !folder.is_go_up ?
-                    `Deleted: ${this.formatDate(folder.deleted_at)}` :
-                    (folder.is_go_up ? '' : `Created: ${this.formatDate(folder.created_at)}`);
-
-                // Don't show counts for "Go Up" folder
-                const countBadge = folder.is_go_up ? '' : `
-        <div class="absolute top-1 left-1 text-xs px-2 py-0.5 bg-blue-600 text-white rounded">
-            ${folder.folder_count || 0} folders, ${folder.file_count || 0} files
-        </div>`;
 
                 folderItem.innerHTML = `
-        <div class="item-thumbnail">
-            <div class="bg-gray-100">
-                <i class="fas ${folder.is_go_up ? 'fa-level-up-alt' : 'fa-folder'} folder-icon"></i>
-            </div>
-            ${countBadge}
-            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                ${dateInfo}
-            </div>
-            <div class="item-checkbox">
-                <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}
-                    ${folder.is_go_up ? 'disabled' : ''}>
-            </div>
-        </div>
-        <div class="item-info">
-            <div class="item-name">${folder.name}</div>
-            <div class="item-meta">
-                <span>${folder.is_go_up ? 'Parent folder' : (folder.parent_id ? 'Subfolder' : '')}</span>
-            </div>
-        </div>
-    `;
+                <div class="item-thumbnail bg-teal-100">
+                    <div class="h-full flex items-center justify-center">
+                        <i class="fas fa-folder folder-icon text-4xl text-yellow-400"></i>
+                    </div>
+                    <div class="item-count-badge"> <span class="text-amber-500">${folder.folder_count}</span> | ${folder.file_count}</div>
+                    <div class="item-checkbox">
+                        <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}>
+                    </div>
+                    <div class="item-date">${folder.created_at}</div>
 
-                if (isTrash && !folder.is_go_up) {
+                </div>
+                <div class="item-info p-2 truncate">
+                    <div class="item-name text-sm truncate">${folder.name}</div>
+                </div>
+            `;
+
+                if (isTrash) {
                     folderItem.classList.add('deleted-item');
                 }
 
                 folderItem.addEventListener('click', (e) => {
                     e.preventDefault();
-                    if (folder.is_go_up) {
-                        this.navigateToParentFolder(folder.parent_id);
-                    } else {
-                        this.navigateToFolder(folderItem);
-                    }
+                    this.navigateToFolder(folderItem);
                 });
 
                 this.elements.imagesContainer.appendChild(folderItem);
@@ -1225,38 +1305,35 @@
                 fileItem.dataset.id = file.id;
                 fileItem.dataset.type = 'file';
 
-                const dateInfo = isTrash ?
-                    `Deleted: ${this.formatDate(file.deleted_at)}` :
-                    `Created: ${this.formatDate(file.created_at)}`;
-
                 const thumbnail = file.thumb_url || file.url;
                 const thumbnailContent = thumbnail ?
-                    `<img src="${thumbnail}" alt="${file.name}">` :
-                    `<i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon"></i>`;
+                    `<img src="${thumbnail}" alt="${file.name}" class="max-h-full max-w-full">` :
+                    `<i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>`;
 
                 fileItem.innerHTML = `
                 <div class="item-thumbnail">
                     ${thumbnailContent}
-                    ${file.is_featured ? '<i class="fas fa-star item-featured"></i>' : ''}
-                    <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                        ${dateInfo}
-                    </div>
-                    ${file.size ? `
-                        <div class="absolute bottom-1 right-1 text-xs text-gray-600 bg-white/70 backdrop-blur px-2 py-0.5 rounded">
-                            ${this.formatFileSize(file.size)}
-                        </div>` : ''}
+                    ${file.is_featured ? '<i class="fas fa-star item-featured text-yellow-400"></i>' : ''}
                     <div class="item-checkbox">
                         <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
                     </div>
+                    <div class="item-date">${file.created_at}</div>
+                    <div class="item-size">${file.size}</div>
                 </div>
-                <div class="item-info">
-                    <div class="item-name">${file.name}</div>
+                <div class="item-info p-2 truncate">
+                    <div class="item-name text-sm truncate">${file.name}</div>
                 </div>
             `;
 
                 if (isTrash) {
                     fileItem.classList.add('deleted-item');
                 }
+
+                fileItem.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.toggleItemSelection(file.id, 'file', fileItem);
+                    this.updatePreview(file.id);
+                });
 
                 this.elements.imagesContainer.appendChild(fileItem);
             },
@@ -1448,7 +1525,7 @@
                     }
                 } else {
                     this.toggleItemSelection(id, type, item);
-                    this.updatePreview(id);
+                    this.updatePreview(id, type);
                 }
             },
 
@@ -1528,22 +1605,72 @@
                 }
             },
 
-            updatePreview(fileId) {
-                this.fetchFileDetails(fileId);
+            updatePreview(id, type) {
+                this.clearPreview();
+                this.showLoadingPreview();
+
+                // Use correct endpoint based on type
+                const endpoint = type === 'folder'
+                    ? `/gallery/folder/${id}`
+                    : `/gallery/file/${id}`;
+
+                fetch(endpoint, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            if (type === 'file') {
+                                this.showFilePreview(data.file ?? data.data); // fallback to `data.data` if needed
+                            } else {
+                                this.showFolderPreview(data.folder ?? data.data);
+                            }
+                        } else {
+                            throw new Error(data.message || 'Failed to load preview');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        this.showError('Could not load preview details');
+                        this.clearPreview();
+                    })
+                    .finally(() => {
+                        this.hideLoadingPreview();
+                    });
+            },
+
+            showLoadingPreview() {
+                this.clearPreview();
+
+                const loadingOverlay = document.createElement('div');
+                loadingOverlay.className = 'loading-overlay flex items-center justify-center';
+                loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>';
+
+                this.elements.previewContent.appendChild(loadingOverlay);
+            },
+
+            hideLoadingPreview() {
+                const loadingOverlay = this.elements.previewContent.querySelector('.loading-overlay');
+                if (loadingOverlay) {
+                    loadingOverlay.remove();
+                }
             },
 
             clearPreview() {
-                this.elements.previewImage.classList.add('hidden');
+                this.elements.previewContent.innerHTML = '';
                 this.elements.previewEmpty.classList.remove('hidden');
                 this.elements.previewDetails.classList.add('hidden');
                 this.elements.imageActions.classList.add('hidden');
 
-                // Clear any existing preview data
-                document.getElementById('detailName').textContent = '-';
-                document.getElementById('detailType').textContent = '-';
-                document.getElementById('detailSize').textContent = '-';
-                document.getElementById('detailDimensions').textContent = '-';
-                document.getElementById('detailUploaded').textContent = '-';
+                // Clear details
+                this.elements.detailName.textContent = '-';
+                this.elements.detailType.textContent = '-';
+                this.elements.detailSize.textContent = '-';
+                this.elements.detailDimensions.textContent = '-';
+                this.elements.detailUploaded.textContent = '-';
             },
 
             fetchFileDetails(fileId) {
@@ -1582,20 +1709,42 @@
                     return;
                 }
 
-                this.elements.previewImage.src = file.url;
-                this.elements.previewImage.alt = file.name;
-                this.elements.previewImage.classList.remove('hidden');
-                this.elements.previewEmpty.classList.add('hidden');
+                // Clear previous content
+                this.elements.previewContent.innerHTML = '';
+
+                // Create preview container
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-image-container flex items-center justify-center bg-gray-100 rounded-lg p-4';
+
+                if (file.mime_type.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = file.url;
+                    img.alt = file.name;
+                    img.className = 'preview-image max-w-full max-h-64 object-contain';
+                    previewContainer.appendChild(img);
+                } else {
+                    const icon = document.createElement('i');
+                    icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
+                    previewContainer.appendChild(icon);
+                }
+
+                this.elements.previewContent.appendChild(previewContainer);
+
+                // Update details
+                this.elements.detailName.textContent = file.name;
+                this.elements.detailType.textContent = file.mime_type;
+                this.elements.detailSize.textContent = this.formatFileSize(file.size);
+                this.elements.detailDimensions.textContent = file.dimensions ?
+                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
+                this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
+
+                // Show elements
                 this.elements.previewDetails.classList.remove('hidden');
                 this.elements.imageActions.classList.remove('hidden');
-
-                document.getElementById('detailName').textContent = file.name;
-                document.getElementById('detailType').textContent = file.mime_type;
-                document.getElementById('detailSize').textContent = this.formatFileSize(file.size);
-                document.getElementById('detailDimensions').textContent = file.dimensions ?
-                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
-                document.getElementById('detailUploaded').textContent = this.formatDate(file.created_at);
+                this.elements.previewEmpty.classList.add('hidden');
             },
+
+
 
             // ======================
             // 6. GALLERY OPERATIONS
@@ -1872,8 +2021,13 @@
 
                 const item = this.state.selectedItems[0];
 
+                if (item.type !== 'file') {
+                    alert('Please select a file to insert');
+                    return;
+                }
+
                 if (this.state.callback) {
-                    fetch(`/gallery/${item.type}/${item.id}`, {
+                    fetch(`/gallery/file/${item.id}/for-insertion`, {
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest'
@@ -1882,10 +2036,10 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                this.state.callback(data.item);
+                                this.state.callback(data.file);
                                 this.closeModal();
                             } else {
-                                throw new Error(data.message || 'Failed to get item details');
+                                throw new Error(data.message || 'Failed to get file details');
                             }
                         })
                         .catch(error => {
@@ -1893,6 +2047,7 @@
                             this.showError(error.message);
                         });
                 } else {
+                    // Default behavior if no callback provided
                     fetch(`{{ route("gallery.generate-url", '') }}/${item.id}`, {
                         headers: {
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,

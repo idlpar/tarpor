@@ -119,7 +119,8 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::get('/file/{id}', [GalleryController::class, 'show'])->name('file.show');
+        Route::get('/folder/{id}', [GalleryController::class, 'showFolder'])->name('folder.show');
+        Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
         Route::put('/file/{id}', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
 
