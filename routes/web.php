@@ -151,6 +151,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Context menu
         Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
+        Route::post('/gallery/navigate-up', [GalleryController::class, 'navigateUp'])->name('navigate-up');
 
         // Featured media routes
         Route::post('/set-featured/{id}', [GalleryController::class, 'setFeatured'])->name('set-featured');

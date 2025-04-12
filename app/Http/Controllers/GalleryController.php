@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\DeleteFolderContents;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -12,6 +13,10 @@ use App\Models\MediaFolder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Symfony\Component\HttpFoundation\StreamedResponse;
+use App\Jobs\ProcessImageConversions;
+use App\Jobs\ProcessVideoThumbnail;
+use App\Jobs\DeleteMediaFiles;
+use App\Jobs\RestoreMediaFiles;
 
 class GalleryController extends Controller
 {
@@ -74,7 +79,6 @@ class GalleryController extends Controller
     /**
      * Get folder contents
      */
-
     protected function getFolderContents($path = '')
     {
         $contents = [
@@ -153,7 +157,6 @@ class GalleryController extends Controller
         }
     }
 
-
     /**
      * Get thumbnail URL for a file
      */
@@ -186,7 +189,6 @@ class GalleryController extends Controller
     /**
      * Generate breadcrumbs
      */
-    // Update the breadcrumb generation
     protected function getBreadcrumbs($currentPath)
     {
         $breadcrumbs = [[
@@ -200,11 +202,16 @@ class GalleryController extends Controller
             return $breadcrumbs;
         }
 
+        // Normalize path (remove trailing slashes)
+        $currentPath = rtrim($currentPath, '/');
+
         $parts = explode('/', $currentPath);
         $accumulatedPath = '';
 
         foreach ($parts as $part) {
-            $accumulatedPath = $accumulatedPath ? "$accumulatedPath/$part" : $part;
+            if (empty($part)) continue;
+
+            $accumulatedPath = $accumulatedPath === '' ? $part : "$accumulatedPath/$part";
             $folder = MediaFolder::where('path', $accumulatedPath)->first();
 
             if ($folder) {
@@ -220,6 +227,54 @@ class GalleryController extends Controller
         return $breadcrumbs;
     }
 
+    /**
+     * Navigate to parent directory
+     */
+    public function navigateUp(Request $request)
+    {
+        $currentPath = $request->input('path', '');
+
+        // Handle empty or root path
+        if (empty($currentPath)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Already at root directory'
+            ]);
+        }
+
+        // Normalize path (remove trailing slash)
+        $currentPath = rtrim($currentPath, '/');
+
+        // Find the parent path
+        $parentPath = dirname($currentPath);
+
+        // Handle root case (dirname returns '.' for top-level folders)
+        if ($parentPath === '.') {
+            $parentPath = '';
+        }
+
+        // Verify the parent folder exists
+        if (!empty($parentPath)) {
+            $parentFolder = MediaFolder::where('path', $parentPath)->exists();
+            if (!$parentFolder) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Parent directory not found'
+                ]);
+            }
+        }
+
+        // Get contents of parent directory
+        $contents = $this->getFolderContents($parentPath);
+
+        return response()->json([
+            'success' => true,
+            'currentPath' => $parentPath,
+            'contents' => $contents,
+            'breadcrumbs' => $this->getBreadcrumbs($parentPath),
+            'message' => 'Navigated to parent directory'
+        ]);
+    }
 
     /**
      * Get context menu options
@@ -228,6 +283,14 @@ class GalleryController extends Controller
     {
         $hasSelection = !empty($selectedItems);
         $isRoot = empty($currentPath);
+
+
+        // Calculate if we can go up
+        $canGoUp = false;
+        if (!$isRoot) {
+            $parentPath = dirname(rtrim($currentPath, '/'));
+            $canGoUp = empty($parentPath) || $parentPath !== '.';
+        }
 
         return [
             'newFolder' => [
@@ -246,7 +309,8 @@ class GalleryController extends Controller
                 'label' => 'Go Up',
                 'icon' => 'level-up-alt',
                 'action' => 'navigateUp',
-                'available' => !$isRoot
+                'available' => $canGoUp,
+                'disabled' => !$canGoUp
             ],
             'refresh' => [
                 'label' => 'Refresh',
@@ -325,7 +389,6 @@ class GalleryController extends Controller
         }
     }
 
-
     public function getFolderInfo($id)
     {
         $folder = MediaFolder::withTrashed()->find($id);
@@ -366,7 +429,8 @@ class GalleryController extends Controller
         $path = $request->input('path', '');
         $uploadedFiles = [];
 
-        DB::beginTransaction();
+        // Remove DB transaction temporarily for debugging
+        // DB::beginTransaction();
 
         try {
             foreach ($request->file('files') as $file) {
@@ -385,10 +449,10 @@ class GalleryController extends Controller
                     $this->disk
                 );
 
-                // Create media record with all fields
-                $media = new Media([
-                    'model_type' => null, // Set to your model if applicable
-                    'model_id' => null,   // Set to your model ID if applicable
+                // Create media record
+                $media = Media::create([
+                    'model_type' => null,
+                    'model_id' => null,
                     'uuid' => Str::uuid(),
                     'collection_name' => 'default',
                     'name' => $baseName,
@@ -409,18 +473,21 @@ class GalleryController extends Controller
                     ]
                 ]);
 
-                // Process image/video if needed
+                \Log::info("Media record created", ['id' => $media->id]);
+
+                // Dispatch job based on file type
                 if (Str::startsWith($mimeType, 'image/')) {
-                    $this->processImage($file, $path, $fileName, $media);
+                    ProcessImageConversions::dispatch($media, $this->conversions)
+                        ->onQueue('media');
                 } elseif (Str::startsWith($mimeType, 'video/')) {
-                    $this->processVideo($file, $media);
+                    ProcessVideoThumbnail::dispatch($media)
+                        ->onQueue('media');
                 }
 
-                $media->save();
                 $uploadedFiles[] = $media;
             }
 
-            DB::commit();
+            // DB::commit(); // Temporarily disabled
 
             return response()->json([
                 'success' => true,
@@ -429,102 +496,13 @@ class GalleryController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            DB::rollBack();
+            // DB::rollBack(); // Temporarily disabled
+            \Log::error('Upload failed: '.$e->getMessage());
+
             return response()->json([
                 'success' => false,
                 'message' => 'File upload failed: '.$e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * Process image and create conversions with all metadata
-     */
-    protected function processImage($file, $path, $fileName, $media)
-    {
-        try {
-            $image = $this->imageManager->read($file->getRealPath());
-
-            // Set dimensions
-            $media->dimensions = [
-                'width' => $image->width(),
-                'height' => $image->height(),
-                'aspect_ratio' => $image->width() / $image->height()
-            ];
-
-            $generatedConversions = [];
-            $manipulations = [];
-            $responsiveImages = [];
-
-            foreach ($this->conversions as $conversionName => $settings) {
-                $conversionPath = $path.'/'.$conversionName;
-                Storage::disk($this->disk)->makeDirectory($conversionPath);
-
-                $conversionImage = $image->scaleDown($settings['width'], $settings['height']);
-                $encodedImage = $conversionImage->encodeByExtension(
-                    pathinfo($fileName, PATHINFO_EXTENSION),
-                    $settings['quality']
-                );
-
-                Storage::disk($this->disk)->put(
-                    $conversionPath.'/'.$fileName,
-                    $encodedImage
-                );
-
-                // Record conversion details
-                $generatedConversions[$conversionName] = true;
-                $manipulations[$conversionName] = [
-                    'width' => $settings['width'],
-                    'height' => $settings['height'],
-                    'quality' => $settings['quality'],
-                    'format' => pathinfo($fileName, PATHINFO_EXTENSION),
-                    'created_at' => now()->toDateTimeString()
-                ];
-
-                // Generate responsive images data
-                $responsiveImages[$conversionName] = [
-                    'urls' => [
-                        Storage::disk($this->disk)->url($conversionPath.'/'.$fileName)
-                    ],
-                    'base64svg' => '', // Can be filled with placeholder SVG if needed
-                    'width' => $settings['width'],
-                    'height' => $settings['height']
-                ];
-            }
-
-            // Save all processing data
-            $media->manipulations = $manipulations;
-            $media->generated_conversions = $generatedConversions;
-            $media->responsive_images = $responsiveImages;
-
-        } catch (\Exception $e) {
-            throw new \Exception("Image processing failed: ".$e->getMessage());
-        }
-    }
-
-    /**
-     * Process video file metadata
-     */
-    protected function processVideo($file, $media)
-    {
-        try {
-            $duration = FFMpeg::fromDisk($this->disk)
-                ->open($media->directory.'/'.$media->file_name)
-                ->getDurationInSeconds();
-
-            $media->duration = $duration;
-            $media->custom_properties = array_merge(
-                $media->custom_properties ?? [],
-                [
-                    'type' => 'video',
-                    'duration_formatted' => gmdate('H:i:s', $duration),
-                    'frame_rate' => null, // Can be extracted similarly
-                    'bitrate' => null     // Can be extracted similarly
-                ]
-            );
-        } catch (\Exception $e) {
-            // Fallback if FFmpeg not available
-            $media->duration = 0;
         }
     }
 
@@ -873,6 +851,11 @@ class GalleryController extends Controller
 
             DB::commit();
 
+            // Dispatch background job for permanent deletion
+            if ($permanent) {
+                DeleteMediaFiles::dispatch($deletedItems, $this->conversions);
+            }
+
             return response()->json([
                 'success' => true,
                 'items' => $deletedItems,
@@ -896,19 +879,7 @@ class GalleryController extends Controller
         $media = Media::withTrashed()->findOrFail($fileId);
 
         if ($permanent) {
-            // Delete the actual file
-            $filePath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
-            Storage::disk($this->disk)->delete($filePath);
-
-            // Delete conversions if they exist
-            foreach ($this->conversions as $conversion => $settings) {
-                $conversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
-                if (Storage::disk($this->disk)->exists($conversionPath)) {
-                    Storage::disk($this->disk)->delete($conversionPath);
-                }
-            }
-
-            // Permanently delete the file record
+            // Just mark for deletion - actual file deletion will happen in the job
             $media->forceDelete();
             return $media;
         } else {
@@ -923,8 +894,6 @@ class GalleryController extends Controller
         }
     }
 
-
-
     /**
      * Delete a folder (soft delete)
      */
@@ -933,35 +902,54 @@ class GalleryController extends Controller
         $folder = MediaFolder::withTrashed()->findOrFail($folderId);
 
         if ($permanent) {
-            // Permanently delete all files in the folder and subfolders
-            $files = Media::where('directory', 'like', $folder->path.'%')->withTrashed()->get();
-            foreach ($files as $file) {
-                $this->deleteFile($file->id, true);
-            }
+            // Get all files in this folder and subfolders first
+            $files = Media::withTrashed()
+                ->where('directory', 'like', $folder->path.'%')
+                ->get();
 
-            // Delete the folder and all subfolders from database
-            MediaFolder::where('path', 'like', $folder->path.'%')->forceDelete();
+            // Get all subfolders
+            $subfolders = MediaFolder::withTrashed()
+                ->where('path', 'like', $folder->path.'%')
+                ->get();
 
-            // Delete the physical folder and all conversions
-            Storage::disk($this->disk)->deleteDirectory($folder->path);
-            foreach ($this->conversions as $conversion => $settings) {
-                $conversionPath = $folder->path.'/'.$conversion;
-                if (Storage::disk($this->disk)->exists($conversionPath)) {
-                    Storage::disk($this->disk)->deleteDirectory($conversionPath);
-                }
+            DB::beginTransaction();
+            try {
+                // Permanently delete all files in this folder and subfolders from database
+                Media::where('directory', 'like', $folder->path.'%')
+                    ->forceDelete();
+
+                // Delete the folder and all subfolders from database
+                MediaFolder::where('path', 'like', $folder->path.'%')
+                    ->forceDelete();
+
+                DB::commit();
+
+                // Dispatch job to delete physical files and folders
+                DeleteFolderContents::dispatch(
+                    $folder->path,
+                    $files,
+                    $this->conversions
+                )->onQueue('media');
+
+                return $folder;
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw new \Exception("Failed to delete folder: ".$e->getMessage());
             }
         } else {
             if ($folder->trashed()) {
                 throw new \Exception('Folder is already in trash');
             }
 
-            // Soft delete the folder and all subfolders by setting deleted_at timestamp
+            // Soft delete the folder and all subfolders
             MediaFolder::where('path', 'like', $folder->path.'%')
                 ->update(['deleted_at' => now()]);
-        }
 
-        return $folder;
+            return $folder;
+        }
     }
+
     /**
      * Get trashed items
      */
@@ -1193,6 +1181,9 @@ class GalleryController extends Controller
 
             DB::commit();
 
+            // Dispatch background job to restore any missing conversions
+            RestoreMediaFiles::dispatch($restoredItems, $this->conversions);
+
             return response()->json([
                 'success' => true,
                 'items' => $restoredItems,
@@ -1249,23 +1240,18 @@ class GalleryController extends Controller
         DB::beginTransaction();
 
         try {
-            // Permanently delete all trashed files and their conversions
+            // Get all trashed items first
             $files = Media::onlyTrashed()->get();
-            foreach ($files as $file) {
-                $this->deleteFile($file->id, true);
-            }
-
-            // Permanently delete all trashed folders
             $folders = MediaFolder::onlyTrashed()->get();
-            foreach ($folders as $folder) {
-                $this->deleteFolder($folder->id, true);
-            }
 
-            // Clean up trash directories
-            Storage::disk($this->disk)->deleteDirectory('trash/files');
-            Storage::disk($this->disk)->deleteDirectory('trash/conversions');
+            // Mark all items for deletion in database
+            Media::onlyTrashed()->forceDelete();
+            MediaFolder::onlyTrashed()->forceDelete();
 
             DB::commit();
+
+            // Dispatch background job to delete all files
+            DeleteMediaFiles::dispatch($files, $this->conversions);
 
             return response()->json([
                 'success' => true,
@@ -1280,7 +1266,6 @@ class GalleryController extends Controller
             ], 500);
         }
     }
-
 
     /**
      * Search items
@@ -1609,7 +1594,6 @@ class GalleryController extends Controller
         return round($bytes, $precision).' '.$units[$pow];
     }
 
-    // In GalleryController.php
     public function showFolder($id)
     {
         $folder = MediaFolder::with(['files', 'children'])->findOrFail($id);
@@ -1780,21 +1764,11 @@ class GalleryController extends Controller
     {
         $item = Media::withTrashed()->findOrFail($id);
 
-        // Delete the actual file
-        Storage::disk($this->disk)->delete(
-            $item->directory ? $item->directory.'/'.$item->file_name : $item->file_name
-        );
-
-        // Delete conversions if they exist
-        foreach ($this->conversions as $conversion => $settings) {
-            $path = ($item->directory ? $item->directory.'/'.$conversion : $conversion).'/'.$item->file_name;
-            if (Storage::disk($this->disk)->exists($path)) {
-                Storage::disk($this->disk)->delete($path);
-            }
-        }
-
-        // Permanently delete the record
+        // Delete the record first
         $item->forceDelete();
+
+        // Dispatch job to delete physical files
+        DeleteMediaFiles::dispatch([$item], $this->conversions);
 
         return response()->json([
             'success' => true,
@@ -1849,5 +1823,4 @@ class GalleryController extends Controller
             ]
         ]);
     }
-
 }

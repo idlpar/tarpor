@@ -2,12 +2,12 @@
 
 namespace App\Jobs;
 
+use App\Models\Media;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use App\Models\Media;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -15,6 +15,10 @@ use Intervention\Image\Drivers\Gd\Driver;
 class ProcessImageConversions implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+
+    public $tries = 3;
+    public $timeout = 120;
+    public $maxExceptions = 2;
 
     protected $media;
     protected $conversions;
@@ -27,22 +31,17 @@ class ProcessImageConversions implements ShouldQueue
 
     public function handle()
     {
-        $this->media->update(['processing_status' => 'processing']);
-
         try {
             $imageManager = new ImageManager(new Driver());
             $filePath = $this->media->directory
                 ? $this->media->directory.'/'.$this->media->file_name
                 : $this->media->file_name;
 
-            $image = $imageManager->read(Storage::disk($this->media->disk)->path($filePath));
+            if (!Storage::disk($this->media->disk)->exists($filePath)) {
+                throw new \Exception("Original image file not found");
+            }
 
-            // Set dimensions
-            $this->media->dimensions = [
-                'width' => $image->width(),
-                'height' => $image->height(),
-                'aspect_ratio' => $image->width() / $image->height()
-            ];
+            $image = $imageManager->read(Storage::disk($this->media->disk)->get($filePath));
 
             $generatedConversions = [];
             $manipulations = [];
@@ -85,21 +84,32 @@ class ProcessImageConversions implements ShouldQueue
                 ];
             }
 
-            $this->media->manipulations = $manipulations;
-            $this->media->generated_conversions = $generatedConversions;
-            $this->media->responsive_images = $responsiveImages;
-            $this->media->processing_status = 'completed';
-            $this->media->save();
+            // Update the media record with conversion data
+            $this->media->update([
+                'manipulations' => $manipulations,
+                'generated_conversions' => $generatedConversions,
+                'responsive_images' => $responsiveImages,
+                'dimensions' => [
+                    'width' => $image->width(),
+                    'height' => $image->height(),
+                    'aspect_ratio' => $image->width() / $image->height()
+                ]
+            ]);
 
         } catch (\Exception $e) {
-            $this->media->update([
-                'processing_status' => 'failed',
-                'custom_properties' => array_merge(
-                    $this->media->custom_properties ?? [],
-                    ['processing_error' => $e->getMessage()]
-                )
+            \Log::error('Image conversion failed for media ID: '.$this->media->id, [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             throw $e;
         }
+    }
+
+    public function failed(\Throwable $exception)
+    {
+        \Log::error('ProcessImageConversions job failed for media ID: '.$this->media->id, [
+            'error' => $exception->getMessage(),
+            'trace' => $exception->getTraceAsString()
+        ]);
     }
 }

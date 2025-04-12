@@ -79,9 +79,27 @@
                 <!-- Permalink -->
                 <div class="mb-6">
                     <label class="block font-semibold text-gray-700 mb-2">Permalink *</label>
-                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="https://yourwebsite.com/products/">
-                    <p class="text-sm text-gray-500 mt-2">Preview: <a href="#" class="text-blue-500 hover:underline">https://yourwebsite.com/products/</a></p>
+
+                    <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 bg-teal-50 text-gray-500 select-none">
+                        https://tarpor.com/product/
+                    </span>
+                        <input
+                            type="text"
+                            name="slug"
+                            class="w-full pl-[210px] border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="your-slug"
+                        >
+                    </div>
+
+                    <p class="text-sm text-gray-500 mt-2">
+                        Preview:
+                        <a href="#" class="text-blue-500 hover:underline" id="permalink-preview">
+                            https://tarpor.com/product/your-slug
+                        </a>
+                    </p>
                 </div>
+
 
                 <!-- Description -->
                 <div class="mb-6">
