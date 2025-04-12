@@ -1609,10 +1609,10 @@
                 this.clearPreview();
                 this.showLoadingPreview();
 
-                // Use correct endpoint based on type
+                // Determine the correct endpoint based on type
                 const endpoint = type === 'folder'
-                    ? `/gallery/folder/${id}`
-                    : `/gallery/file/${id}`;
+                    ? `{{ route("gallery.folder.show", '') }}/${id}`
+                    : `{{ route("gallery.file.show", '') }}/${id}`;
 
                 fetch(endpoint, {
                     headers: {
@@ -1640,6 +1640,38 @@
                     .finally(() => {
                         this.hideLoadingPreview();
                     });
+            },
+
+            showFolderPreview(folder) {
+                if (!folder) {
+                    this.clearPreview();
+                    return;
+                }
+
+                // Clear previous content
+                this.elements.previewContent.innerHTML = '';
+
+                // Create preview container
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-image-container flex items-center justify-center bg-gray-100 rounded-lg p-4';
+
+                const icon = document.createElement('i');
+                icon.className = 'fas fa-folder text-6xl text-yellow-400';
+                previewContainer.appendChild(icon);
+
+                this.elements.previewContent.appendChild(previewContainer);
+
+                // Update details
+                this.elements.detailName.textContent = folder.name;
+                this.elements.detailType.textContent = 'Folder';
+                this.elements.detailSize.textContent = '-';
+                this.elements.detailDimensions.textContent = '-';
+                this.elements.detailUploaded.textContent = this.formatDate(folder.created_at);
+
+                // Show elements
+                this.elements.previewDetails.classList.remove('hidden');
+                this.elements.imageActions.classList.remove('hidden');
+                this.elements.previewEmpty.classList.add('hidden');
             },
 
             showLoadingPreview() {

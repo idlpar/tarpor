@@ -109,4 +109,11 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'image-processing' => [
+        'driver' => 'database',
+        'table' => 'jobs',
+        'queue' => 'image-processing',
+        'retry_after' => 600, // 10 minutes
+    ],
+
 ];

@@ -969,107 +969,162 @@ class GalleryController extends Controller
     {
         $parentId = $request->input('parent_id', null);
 
-        // Get trashed files in current folder
-        $trashedFiles = Media::onlyTrashed()
-            ->when($parentId, function($query) use ($parentId) {
-                // For specific folder, filter by directory path
-                $folder = MediaFolder::onlyTrashed()->find($parentId);
-                if (!$folder) {
-                    return $query->whereRaw('1=0'); // Return empty result if folder not found
-                }
-                return $query->where('directory', $folder->path);
-            }, function($query) {
-                // For root trash, get files that were in root
-                return $query->where(function($q) {
-                    $q->whereNull('directory')
-                        ->orWhere('directory', '');
-                });
-            })
-            ->orderBy('deleted_at', 'desc')
-            ->get()
-            ->map(function($file) {
-                return [
-                    'id' => $file->id,
-                    'name' => $file->name,
-                    'type' => 'file',
-                    'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                    'mime_type' => $file->mime_type,
-                    'size' => $this->formatFileSize($file->size),
-                    'size_bytes' => $file->size,
-                    'deleted_at' => $file->deleted_at->format('d-m-Y H:i:s'),
-                    'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
-                    'thumb_url' => $this->getThumbUrl($file),
-                    'created_at' => $file->created_at->format('d-m-Y')
-                ];
-            });
+        try {
+            // Get all trashed folder paths to properly filter files
+            $trashedFolderPaths = MediaFolder::onlyTrashed()
+                ->pluck('path', 'id')
+                ->toArray();
 
-        // Get trashed folders (only direct children if parent_id is provided)
-        $trashedFolders = MediaFolder::onlyTrashed()
-            ->withCount([
-                'children as trashed_children_count' => function($query) {
-                    $query->onlyTrashed();
-                },
-                'media as trashed_media_count' => function($query) {
-                    $query->onlyTrashed();
-                }
-            ])
-            ->when($parentId, function($query) use ($parentId) {
-                // For specific folder, get direct children
-                return $query->where('parent_id', $parentId);
-            }, function($query) {
-                // For root trash, get all root folders (parent_id is null)
-                return $query->whereNull('parent_id');
-            })
-            ->orderBy('deleted_at', 'desc')
-            ->get()
-            ->map(function($folder) {
-                return [
-                    'id' => $folder->id,
-                    'name' => $folder->name,
-                    'type' => 'folder',
-                    'path' => $folder->path,
-                    'parent_id' => $folder->parent_id,
-                    'deleted_at' => $folder->deleted_at->format('d-m-Y H:i:s'),
-                    'folder_count' => $folder->trashed_children_count,
-                    'file_count' => $folder->trashed_media_count,
-                    'item_count' => $folder->trashed_children_count + $folder->trashed_media_count,
-                    'created_at' => $folder->created_at->format('d-m-Y')
-                ];
-            });
+            // Get trashed files - MODIFIED TO PROPERLY SHOW FILES IN NESTED FOLDERS
+            $trashedFiles = Media::onlyTrashed()
+                ->when($parentId, function($query) use ($parentId, $trashedFolderPaths) {
+                    // For specific folder, show files that:
+                    // 1. Are directly in this folder OR
+                    // 2. Are in any of its descendant folders
+                    $folder = MediaFolder::onlyTrashed()->find($parentId);
+                    if (!$folder) {
+                        return $query->whereRaw('1=0');
+                    }
 
-        // Add "Go Up" folder if we're in a subfolder
-        $goUpFolder = null;
-        if ($parentId) {
-            $currentFolder = MediaFolder::onlyTrashed()->find($parentId);
-            if ($currentFolder && $currentFolder->parent_id) {
-                $parentFolder = MediaFolder::onlyTrashed()->find($currentFolder->parent_id);
-                if ($parentFolder) {
-                    $goUpFolder = [
-                        'id' => $parentFolder->id, // Use actual parent folder ID
-                        'name' => 'Go Up',
-                        'type' => 'folder',
-                        'path' => $parentFolder->path,
-                        'parent_id' => $parentFolder->parent_id,
-                        'deleted_at' => null,
-                        'is_go_up' => true,
-                        'folder_count' => $parentFolder->trashed_children_count ?? 0,
-                        'file_count' => $parentFolder->trashed_media_count ?? 0,
-                        'item_count' => ($parentFolder->trashed_children_count ?? 0) + ($parentFolder->trashed_media_count ?? 0),
-                        'created_at' => $parentFolder->created_at->format('d-m-Y')
+                    // Get all descendant folder paths
+                    $descendantPaths = MediaFolder::onlyTrashed()
+                        ->where('path', 'like', $folder->path . '/%')
+                        ->pluck('path')
+                        ->toArray();
+
+                    $allPaths = array_merge([$folder->path], $descendantPaths);
+
+                    return $query->whereIn('directory', $allPaths);
+                }, function($query) use ($trashedFolderPaths) {
+                    // For root trash, only show files that:
+                    // 1. Have no directory (root files) OR
+                    // 2. Their directory doesn't exist in trashed folders (individual deletions)
+                    return $query->where(function($q) use ($trashedFolderPaths) {
+                        $q->whereNull('directory')
+                            ->orWhereNotIn('directory', $trashedFolderPaths);
+                    });
+                })
+                ->orderBy('deleted_at', 'desc')
+                ->get()
+                ->map(function($file) {
+                    return [
+                        'id' => $file->id,
+                        'name' => $file->name,
+                        'type' => 'file',
+                        'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
+                        'mime_type' => $file->mime_type,
+                        'size' => $this->formatFileSize($file->size),
+                        'size_bytes' => $file->size,
+                        'deleted_at' => $file->deleted_at->format('d-m-Y H:i:s'),
+                        'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                        'thumb_url' => $this->getThumbUrl($file),
+                        'created_at' => $file->created_at->format('d-m-Y')
                     ];
+                });
+
+            // Get trashed folders - MODIFIED TO PROPERLY HANDLE HIERARCHY
+            $trashedFolders = MediaFolder::onlyTrashed()
+                ->withCount([
+                    'children as trashed_children_count' => function($query) {
+                        $query->onlyTrashed();
+                    },
+                    'media as trashed_media_count' => function($query) {
+                        $query->onlyTrashed();
+                    }
+                ])
+                ->when($parentId, function($query) use ($parentId) {
+                    // For specific folder, get direct children
+                    return $query->where('parent_id', $parentId);
+                }, function($query) {
+                    // For root trash, only show folders that:
+                    // 1. Have no parent (root folders) OR
+                    // 2. Their parent isn't trashed (individual folder deletions)
+                    return $query->where(function($q) {
+                        $trashedParentIds = MediaFolder::onlyTrashed()->pluck('id');
+                        $q->whereNull('parent_id')
+                            ->orWhereNotIn('parent_id', $trashedParentIds);
+                    });
+                })
+                ->orderBy('deleted_at', 'desc')
+                ->get()
+                ->map(function($folder) {
+                    return [
+                        'id' => $folder->id,
+                        'name' => $folder->name,
+                        'type' => 'folder',
+                        'path' => $folder->path,
+                        'parent_id' => $folder->parent_id,
+                        'deleted_at' => $folder->deleted_at->format('d-m-Y H:i:s'),
+                        'folder_count' => $folder->trashed_children_count,
+                        'file_count' => $folder->trashed_media_count,
+                        'item_count' => $folder->trashed_children_count + $folder->trashed_media_count,
+                        'created_at' => $folder->created_at->format('d-m-Y')
+                    ];
+                });
+
+            // Add "Go Up" folder if we're in a subfolder
+            $goUpFolder = null;
+            if ($parentId) {
+                $currentFolder = MediaFolder::onlyTrashed()->find($parentId);
+
+                if ($currentFolder && $currentFolder->parent_id) {
+                    $parentFolder = MediaFolder::onlyTrashed()->find($currentFolder->parent_id);
+
+                    if ($parentFolder) {
+                        $trashedChildrenCount = MediaFolder::onlyTrashed()
+                            ->where('parent_id', $parentFolder->id)
+                            ->count();
+
+                        $trashedMediaCount = Media::onlyTrashed()
+                            ->where('directory', $parentFolder->path)
+                            ->count();
+
+                        $goUpFolder = [
+                            'id' => $parentFolder->id,
+                            'name' => 'Go Up',
+                            'type' => 'folder',
+                            'path' => $parentFolder->path,
+                            'parent_id' => $parentFolder->parent_id,
+                            'deleted_at' => null,
+                            'is_go_up' => true,
+                            'folder_count' => $trashedChildrenCount,
+                            'file_count' => $trashedMediaCount,
+                            'item_count' => $trashedChildrenCount + $trashedMediaCount,
+                            'created_at' => $parentFolder->created_at->format('d-m-Y')
+                        ];
+                    }
                 }
             }
-        }
 
-        return response()->json([
-            'success' => true,
-            'contents' => [
-                'files' => $trashedFiles,
-                'folders' => $goUpFolder ? [$goUpFolder, ...$trashedFolders] : $trashedFolders
-            ],
-            'parent_id' => $parentId,
-            'contextMenu' => $this->getTrashContextMenuOptions()
-        ]);
+            return response()->json([
+                'success' => true,
+                'contents' => [
+                    'files' => $trashedFiles,
+                    'folders' => $goUpFolder ? [$goUpFolder, ...$trashedFolders] : $trashedFolders
+                ],
+                'parent_id' => $parentId,
+                'contextMenu' => $this->getTrashContextMenuOptions(),
+                '_debug' => [
+                    'trashed_files_count' => count($trashedFiles),
+                    'trashed_folders_count' => count($trashedFolders),
+                    'file_ids' => collect($trashedFiles)->pluck('id'),
+                    'folder_ids' => collect($trashedFolders)->pluck('id'),
+                    'trashed_folder_paths' => $trashedFolderPaths
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error in getTrashedItems: '.$e->getMessage(), [
+                'exception' => $e,
+                'parent_id' => $parentId
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error loading trash contents',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

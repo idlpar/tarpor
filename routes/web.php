@@ -8,6 +8,8 @@ use App\Http\Controllers\ShopController;
 use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SvgController;
 use App\Http\Controllers\TagController;
+use App\Models\Media;
+use App\Models\MediaFolder;
 use Illuminate\Support\Facades\Route;
 
 
@@ -156,6 +158,20 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Force delete (bypass soft delete)
         Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
+    });
+
+    // Temporary test route
+    Route::get('/test-trash', function() {
+        // Should return your trashed folders (16, 20)
+        $folders = MediaFolder::onlyTrashed()->get();
+
+        // Should return your trashed files (including ID 5)
+        $files = Media::onlyTrashed()->get();
+
+        return [
+            'folders' => $folders->pluck('id'),
+            'files' => $files->pluck('id')
+        ];
     });
 
     Route::prefix('icons')->name('icons.')->group(function () {
