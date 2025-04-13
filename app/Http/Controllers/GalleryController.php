@@ -1582,37 +1582,81 @@ class GalleryController extends Controller
     /**
      * Format bytes to human-readable format
      */
-    protected function formatBytes($bytes, $precision = 2)
+    private function formatBytes($bytes, $precision = 2)
     {
         $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-
         $bytes = max($bytes, 0);
         $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
         $pow = min($pow, count($units) - 1);
         $bytes /= pow(1024, $pow);
-
         return round($bytes, $precision).' '.$units[$pow];
     }
 
     public function showFolder($id)
     {
-        $folder = MediaFolder::with(['files', 'children'])->findOrFail($id);
+        $folder = MediaFolder::with(['parent', 'children', 'media'])->findOrFail($id);
+
         return response()->json([
             'success' => true,
-            'type' => 'folder',
-            'data' => $folder
+            'folder' => $folder,
+            'breadcrumbs' => $this->getBreadcrumbs($folder->path)
         ]);
     }
 
+    /**
+     * Show file details
+     */
     public function showFile($id)
     {
         $file = Media::findOrFail($id);
+
         return response()->json([
             'success' => true,
-            'type' => 'file',
-            'data' => $file
+            'file' => $file,
+            'properties' => $this->getFileProperties($file)
         ]);
     }
+
+    /**
+     * Get file properties
+     */
+    private function getFileProperties(Media $file)
+    {
+        return [
+            'name' => $file->name,
+            'type' => 'File',
+            'size' => $this->formatBytes($file->size),
+            'location' => $file->directory ?: 'Root',
+            'created' => $file->created_at->format('M d, Y H:i'),
+            'modified' => $file->updated_at->format('M d, Y H:i'),
+            'mime_type' => $file->mime_type,
+            'dimensions' => $file->dimensions ? $file->dimensions['width'].' × '.$file->dimensions['height'] : 'N/A'
+        ];
+    }
+
+    /**
+     * Get file details for insertion
+     */
+    public function getFileForInsertion($id)
+    {
+        $file = Media::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'file' => [
+                'id' => $file->id,
+                'name' => $file->name,
+                'url' => Storage::disk($this->disk)->url($file->path),
+                'thumb_url' => $this->getThumbUrl($file),
+                'type' => 'file',
+                'mime_type' => $file->mime_type,
+                'size' => $this->formatFileSize($file->size),
+                'dimensions' => $file->dimensions,
+                'created_at' => $file->created_at->format('d-m-Y')
+            ]
+        ]);
+    }
+
 
     /**
      * Generate a public URL for a media item
@@ -1800,27 +1844,4 @@ class GalleryController extends Controller
         ]));
     }
 
-    /**
-     * Get file details for insertion
-     */
-    public function getFileForInsertion($id)
-    {
-        $file = Media::findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'file' => [
-                'id' => $file->id,
-                'name' => $file->name,
-                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
-                'thumb_url' => $this->getThumbUrl($file),
-                'type' => 'file',
-                'mime_type' => $file->mime_type,
-                'size' => $this->formatFileSize($file->size),
-                'dimensions' => $file->dimensions,
-                'created_at' => $file->created_at->format('d-m-Y'),
-                'updated_at' => $file->updated_at->format('d-m-Y')
-            ]
-        ]);
-    }
 }

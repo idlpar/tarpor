@@ -28,7 +28,7 @@ Route::get('/guest/dashboard', function () {
 // Authentication Routes
 Route::middleware('guest')->group(function () {
     // Login
-    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+    Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login') ->middleware('throttle:5,1');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
 //    Route::post('/send-otp', [AuthController::class, 'sendOtp'])->name('send.otp');
 //    Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp');
@@ -122,7 +122,10 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         // File operations
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
         Route::get('/folder/{id}', [GalleryController::class, 'showFolder'])->name('folder.show');
+        Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
         Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
+        Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
+        Route::put('/file/{id}', [GalleryController::class, 'updateFile'])->name('file.update');
         Route::put('/file/{id}', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
 
