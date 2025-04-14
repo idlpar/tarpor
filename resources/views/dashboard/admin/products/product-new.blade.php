@@ -41,6 +41,16 @@
         .gradient-bg {
             background: linear-gradient(135deg, #f9fafb, #e5e7eb);
         }
+        /* Optional highlight when typing Categories */
+        .highlight {
+            background-color: yellow;
+            font-weight: bold;
+        }
+
+        /* Optional highlight when typing Brandhs */
+        #brand-list li span.highlight {
+            background-color: yellow;
+        }
 
 
     </style>
@@ -72,8 +82,8 @@
 
                 <!-- Name -->
                 <div class="mb-6">
-                    <label class="block font-semibold text-gray-700 mb-2">Name *</label>
-                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Product Name">
+                    <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
+                    <input type="text" id="name" name="name" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Product Name">
                 </div>
 
                 <!-- Permalink -->
@@ -81,13 +91,13 @@
                     <label class="block font-semibold text-gray-700 mb-2">Permalink *</label>
 
                     <div class="relative">
-                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 bg-teal-50 text-gray-500 select-none">
-                        https://tarpor.com/product/
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 bg-teal-50 text-gray-500 select-none rounded-lg">
+                        {{ url('/product') . '/' }}
                     </span>
                         <input
                             type="text"
                             name="slug"
-                            class="w-full pl-[210px] border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full pl-[230px] border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="your-slug"
                         >
                     </div>
@@ -95,7 +105,7 @@
                     <p class="text-sm text-gray-500 mt-2">
                         Preview:
                         <a href="#" class="text-blue-500 hover:underline" id="permalink-preview">
-                            https://tarpor.com/product/your-slug
+                            {{ url('/product/your-slug') }}
                         </a>
                     </p>
                 </div>
@@ -328,23 +338,69 @@
             <!-- Is Featured? Card -->
             <x-form.card label="Is Featured?">
                 <label class="relative inline-flex items-center cursor-pointer ml-2">
-                    <input type="checkbox" class="sr-only peer" id="featuredToggle" disabled>
-                    <div class="w-11 h-6 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-disabled:bg-gray-400"></div>
+                    <input type="hidden" name="is_featured" value="0"> <!-- fallback when unchecked -->
+                    <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle">
+                    <div class="w-11 h-6 bg-gray-100 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600 peer-disabled:bg-gray-400"></div>
                 </label>
             </x-form.card>
 
 
+
             <!-- Categories Card -->
             <x-form.card label="Categories">
-                <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search...">
+                <div class="relative mb-3">
+                    <input type="text"
+                           class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10"
+                           placeholder="Search..."
+                           id="category-search">
+                            <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+                                <!-- Search icon -->
+                                <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                    <path d="M10 10m-7 0a7 7 0 1 0 14 0a7 7 0 1 0 -14 0"></path>
+                                    <path d="M21 21l-6 -6"></path>
+                                </svg>
+                             </span>
+                        </div>
+
+                <!-- Scrollable category list container -->
+                <div class="max-h-96 overflow-auto">
+                    <ul id="category-tree" class="mt-2 space-y-1">
+                        @include('partials.category-checkboxes', ['categories' => $categories])
+                    </ul>
+                </div>
             </x-form.card>
+
 
             <!-- Brand Card -->
             <x-form.card label="Brand">
-                <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Select a brand...</option>
-                </select>
+                <div class="relative">
+                    <!-- Searchable input -->
+                    <input type="text"
+                           id="brand-search"
+                           class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                           placeholder="Search brands...">
+
+                    <!-- Dropdown list -->
+                    <div id="brand-dropdown"
+                         class="absolute z-20 bg-white mt-1 w-full border border-gray-200 rounded-md shadow-md hidden max-h-64 overflow-y-auto">
+                        <ul id="brand-list" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            @foreach($brands as $brand)
+                                <li class="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-all"
+                                    data-value="{{ $brand->id }}">
+                                    {{ $brand->name }}
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    <!-- Hidden input for form -->
+                    <input type="hidden" name="brand_id" id="selected-brand-id">
+                </div>
             </x-form.card>
+
+
+
 
             <!-- Featured Image Card -->
             <x-form.card label="Featured Image (Optional)">
@@ -554,5 +610,205 @@
             }, 100);
         });
     </script>
+
+    <!-- Slug Generation -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get elements
+            const nameInput = document.getElementById('name');
+            const slugInput = document.querySelector('input[name="slug"]');
+            const permalinkPreview = document.getElementById('permalink-preview');
+            const baseUrl = "{{ url('/product') }}/"; // Get dynamic base URL from Laravel
+
+            // Debounce function to limit API calls
+            function debounce(func, timeout = 500) {
+                let timer;
+                return (...args) => {
+                    clearTimeout(timer);
+                    timer = setTimeout(() => { func.apply(this, args); }, timeout);
+                };
+            }
+
+            // Create URL-friendly slug
+            function createSlug(text) {
+                return text.toLowerCase()
+                    .replace(/\s+/g, '-')
+                    .replace(/[^\w-]+/g, '');
+            }
+
+            // Update the preview URL
+            function updatePreview(slug) {
+                if (!slug) slug = 'your-slug'; // Default if empty
+                permalinkPreview.textContent = baseUrl + slug;
+                permalinkPreview.href = baseUrl + slug;
+            }
+
+            // Check slug availability via API
+            const checkSlug = debounce(async (slug) => {
+                if (!slug || slug === 'your-slug') return;
+
+                try {
+                    const response = await fetch(`/product/slug/check?slug=${encodeURIComponent(slug)}`);
+                    const data = await response.json();
+
+                    // Update preview with the suggested slug
+                    updatePreview(data.suggested);
+
+                    // If slug exists and matches current value, update field
+                    if (data.exists && slugInput.value === slug) {
+                        slugInput.value = data.suggested;
+                    }
+                } catch (error) {
+                    console.error('Error checking slug:', error);
+                }
+            });
+
+            // Auto-generate slug when typing in name field
+            nameInput.addEventListener('input', function() {
+                const generatedSlug = createSlug(this.value);
+                slugInput.value = generatedSlug; // Set the value directly
+                updatePreview(generatedSlug);
+                checkSlug(generatedSlug);
+            });
+
+            // Handle manual slug changes
+            slugInput.addEventListener('input', function() {
+                const manualSlug = this.value.trim();
+                if (manualSlug) {
+                    updatePreview(manualSlug);
+                    checkSlug(manualSlug);
+                } else {
+                    // If slug field is cleared, generate from name
+                    const generatedSlug = createSlug(nameInput.value);
+                    slugInput.value = generatedSlug;
+                    updatePreview(generatedSlug);
+                }
+            });
+
+            // Initialize preview with current value
+            updatePreview(slugInput.value || 'your-slug');
+        });
+    </script>
+
+    <!-- Category Search -->
+    <script>
+        function filterCategories() {
+            const searchTerm = document.querySelector('#category-search').value.trim().toLowerCase();
+            const allLis = document.querySelectorAll('#category-tree li');
+
+            // First, clear previous highlights
+            allLis.forEach(li => {
+                const label = li.querySelector('.category-label');
+                if (label) label.innerHTML = label.textContent;
+            });
+
+            // Recursive function to check if an li or its children match
+            function checkMatch(li) {
+                const label = li.querySelector('.category-label');
+                const children = li.querySelectorAll(':scope > ul > li');
+                let isMatch = false;
+
+                if (label) {
+                    const text = label.textContent.trim().toLowerCase();
+                    isMatch = text.includes(searchTerm);
+                    if (isMatch && searchTerm) {
+                        const regex = new RegExp(`(${escapeRegExp(searchTerm)})`, 'gi');
+                        label.innerHTML = label.textContent.replace(regex, '<span class="highlight">$1</span>');
+                    }
+                }
+
+                let childHasMatch = false;
+                children.forEach(childLi => {
+                    const result = checkMatch(childLi);
+                    if (result) {
+                        childHasMatch = true;
+                    }
+                });
+
+                const shouldShow = searchTerm === '' || isMatch || childHasMatch;
+                li.style.display = shouldShow ? 'block' : 'none';
+
+                return shouldShow;
+            }
+
+            document.querySelectorAll('#category-tree > li').forEach(topLi => checkMatch(topLi));
+        }
+
+        // Helper function to escape special regex characters
+        function escapeRegExp(string) {
+            return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        }
+
+        // Add debounce to improve performance
+        const debouncedFilter = debounce(filterCategories, 300);
+        document.querySelector('#category-search').addEventListener('input', debouncedFilter);
+
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => { func.apply(this, args); }, timeout);
+            };
+        }
+
+    </script>
+
+    <!-- Brand List Work -->
+    <script>
+        const brandSearch = document.getElementById('brand-search');
+        const brandList = document.getElementById('brand-list');
+        const brandDropdown = document.getElementById('brand-dropdown');
+        const selectedBrandInput = document.getElementById('selected-brand-id');
+
+        const allItems = Array.from(brandList.querySelectorAll('li'));
+
+        // Show all items when focusing
+        brandSearch.addEventListener('focus', () => {
+            allItems.forEach(item => item.style.display = 'block');
+            brandDropdown.classList.remove('hidden');
+        });
+
+        // Filter logic
+        brandSearch.addEventListener('input', function () {
+            const term = this.value.trim().toLowerCase();
+            let hasMatch = false;
+
+            allItems.forEach(item => {
+                const match = item.textContent.toLowerCase().includes(term);
+                item.style.display = match ? 'block' : 'none';
+                if (match) hasMatch = true;
+            });
+
+            brandDropdown.classList.toggle('hidden', !hasMatch && term === '');
+        });
+
+        // Click on a brand
+        brandList.addEventListener('click', function (e) {
+            const item = e.target.closest('li');
+            if (!item) return;
+
+            brandSearch.value = item.textContent.trim();
+            selectedBrandInput.value = item.dataset.value;
+
+            // Hide dropdown completely
+            brandDropdown.classList.add('hidden');
+
+            // Hide all others except selected
+            allItems.forEach(i => {
+                i.style.display = (i === item) ? 'block' : 'none';
+            });
+
+            brandDropdown.classList.remove('hidden');
+        });
+
+        // Click outside to close dropdown
+        document.addEventListener('click', function (e) {
+            if (!brandDropdown.contains(e.target) && !brandSearch.contains(e.target)) {
+                brandDropdown.classList.add('hidden');
+            }
+        });
+    </script>
+
+
 
 @endpush

@@ -45,6 +45,7 @@ class ProductController extends Controller
         if (empty($slug)) {
             return response()->json(['error' => 'Slug is empty'], 400);
         }
+
         $originalSlug = $slug;
         $counter = 1;
 
@@ -58,6 +59,7 @@ class ProductController extends Controller
             'suggested' => $slug
         ]);
     }
+
     public function generateSku(Request $request)
     {
         $request->validate([

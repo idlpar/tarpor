@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable(); // Brand description
             $table->enum('status', ['active', 'inactive'])->default('active'); // Brand status
             $table->timestamps(); // created_at and updated_at
+            $table->softDeletes();
         });
     }
 
