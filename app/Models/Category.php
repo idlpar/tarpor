@@ -25,11 +25,6 @@ class Category extends Model
     /**
      * Get the child categories.
      */
-//    public function children(): HasMany
-//    {
-//        return $this->hasMany(__CLASS__, 'parent_id');
-//    }
-
     public function children(): HasMany
     {
         return $this->hasMany(__CLASS__, 'parent_id')->with('children');
@@ -42,6 +37,7 @@ class Category extends Model
     {
         return $this->belongsToMany(Product::class, 'category_product');
     }
+
     /**
      * Get the SEO metadata for this category.
      */
@@ -49,17 +45,47 @@ class Category extends Model
     {
         return $this->morphOne(SeoMeta::class, 'entity');
     }
+
     public function totalProducts()
     {
-        // Sum of products directly associated with this category
         $productsCount = $this->products->count();
-
-        // Recursively sum products from all children
         foreach ($this->children as $child) {
             $productsCount += $child->totalProducts();
         }
-
         return $productsCount;
     }
 
+    /**
+     * Get all ancestors of the category (new method)
+     */
+    public function ancestors()
+    {
+        $ancestors = collect();
+        $parent = $this->parent;
+
+        while ($parent) {
+            $ancestors->push($parent);
+            $parent = $parent->parent;
+        }
+
+        return $ancestors->reverse()->values();
+    }
+
+    /**
+     * Get the full ancestor path including self (new method)
+     */
+    public function getFullPath()
+    {
+        $path = $this->ancestors()->pluck('id')->toArray();
+        $path[] = $this->id;
+        return $path;
+    }
+
+    /**
+     * Check if category is a leaf node (no children) (new method)
+     */
+    public function isLeaf()
+    {
+        return $this->children->isEmpty();
+    }
 }

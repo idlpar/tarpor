@@ -97,7 +97,7 @@
                         <input
                             type="text"
                             name="slug"
-                            class="w-full pl-[230px] border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            class="w-full pl-[230px] border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             placeholder="your-slug"
                         >
                     </div>
@@ -186,6 +186,7 @@
                             <label class="block font-semibold text-gray-700 mb-2">SKU</label>
                             <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="SKU-CZA-PZ-997">
                         </div>
+
                         <!-- Price -->
                         <div>
                             <label class="block font-semibold text-gray-700 mb-2">Price</label>
@@ -322,11 +323,13 @@
 
             <!-- Status Card -->
             <x-form.card label="Status" required="true">
-                <select class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                    <option>Published</option>
-                    <option>Draft</option>
+                <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    <option value="published">Published</option>
+                    <option value="draft">Draft</option>
+                    <option value="archived">Archived</option>
                 </select>
             </x-form.card>
+
 
             <!-- Store Card -->
             <x-form.card label="Store">
@@ -419,40 +422,60 @@
             </x-form.card>
 
             <!-- Product Collections Card -->
+            @php
+                $collections = old('product_collections', []);
+            @endphp
+
             <x-form.card label="Product Collections">
                 <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="product_collections[]" value="new_arrival" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-gray-700 font-medium">New Arrival</span>
-                    </label>
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="product_collections[]" value="best_sellers" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-gray-700 font-medium">Best Sellers</span>
-                    </label>
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="product_collections[]" value="special_offer" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                        <span class="text-gray-700 font-medium">Special Offer</span>
-                    </label>
+                    @foreach ([
+                        'new_arrival' => ['New Arrival', 'text-indigo-600'],
+                        'best_sellers' => ['Best Sellers', 'text-emerald-600'],
+                        'special_offer' => ['Special Offer', 'text-amber-600'],
+                    ] as $value => [$label, $activeClass])
+                        <label class="flex items-center space-x-3" x-data="{ checked: {{ in_array($value, $collections) ? 'true' : 'false' }} }">
+                            <input type="checkbox"
+                                   name="product_collections[]"
+                                   value="{{ $value }}"
+                                   @change="checked = $event.target.checked"
+                                   {{ in_array($value, $collections) ? 'checked' : '' }}
+                                   class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                            <span :class="checked ? '{{ $activeClass }} font-semibold' : 'text-gray-700 font-medium'">
+                    {{ $label }}
+                </span>
+                        </label>
+                    @endforeach
                 </div>
             </x-form.card>
 
+
+
+
+
             <!-- Labels Card -->
+            @php
+                $labels = old('labels', []);
+            @endphp
+
             <x-form.card label="Labels">
                 <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="labels[]" value="hot" class="w-5 h-5 text-red-600 border-gray-300 rounded focus:ring-red-500">
-                        <span class="text-gray-700 font-medium">Hot</span>
-                    </label>
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="labels[]" value="new" class="w-5 h-5 text-green-600 border-gray-300 rounded focus:ring-green-500">
-                        <span class="text-gray-700 font-medium">New</span>
-                    </label>
-                    <label class="flex items-center space-x-3">
-                        <input type="checkbox" name="labels[]" value="sale" class="w-5 h-5 text-yellow-600 border-gray-300 rounded focus:ring-yellow-500">
-                        <span class="text-gray-700 font-medium">Sale</span>
-                    </label>
+                    @foreach (['hot' => ['🔥', 'red'], 'new' => ['🆕', 'green'], 'sale' => ['💸', 'blue']] as $value => [$emoji, $color])
+                        <label x-data="{ checked: {{ in_array($value, $labels ?? []) ? 'true' : 'false' }} }"
+                               class="flex items-center space-x-3"
+                               :class="{ 'text-{{ $color }}-600': checked }">
+                            <input type="checkbox"
+                                   name="labels[]"
+                                   value="{{ $value }}"
+                                   x-model="checked"
+                                   class="w-5 h-5 border-gray-300 rounded focus:ring-{{ $color }}-500">
+                            <span class="font-medium">
+                     {{ ucfirst($value) }}   {{ $emoji }}
+                </span>
+                        </label>
+                    @endforeach
                 </div>
             </x-form.card>
+
 
             <!-- Minimum Order Quantity Card -->
             <x-form.card label="Minimum Order Quantity" required="true">
@@ -471,7 +494,9 @@
 </div>
 
 @endsection
+
 @push('scripts')
+
     <!-- CKEditor Script -->
     <script src="{{ asset('ckeditor/ckeditor.js') }}" defer></script>
     <script>
@@ -809,6 +834,60 @@
         });
     </script>
 
+
+    <!-- Generate SKU -->
+   <script>
+       document.addEventListener('DOMContentLoaded', function() {
+           const categoryCheckboxes = document.querySelectorAll('input[name="categories[]"]');
+           const skuInput = document.querySelector('input[placeholder="SKU-CZA-PZ-997"]');
+
+           async function fetchGeneratedSku() {
+               const selectedCategories = Array.from(
+                   document.querySelectorAll('input[name="categories[]"]:checked')
+               ).map(checkbox => parseInt(checkbox.value));
+
+               if (!selectedCategories.length) {
+                   if (skuInput) skuInput.value = '';
+                   return;
+               }
+
+               try {
+                   if (skuInput) skuInput.value = 'Generating SKU...';
+
+                   const response = await fetch('/generate-sku', {
+                       method: 'POST',
+                       headers: {
+                           'Content-Type': 'application/json',
+                           'Accept': 'application/json',
+                           'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                       },
+                       body: JSON.stringify({ category_ids: selectedCategories })
+                   });
+
+                   if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+
+                   const data = await response.json();
+                   if (skuInput && data.sku) skuInput.value = data.sku;
+
+               } catch (error) {
+                   console.error('Error:', error);
+                   if (skuInput) {
+                       skuInput.value = '';
+                       alert('SKU generation failed. Please check console for details.');
+                   }
+               }
+           }
+
+           categoryCheckboxes.forEach(checkbox => {
+               checkbox.addEventListener('change', fetchGeneratedSku);
+           });
+
+           // Initial check
+           if (document.querySelector('input[name="categories[]"]:checked')) {
+               fetchGeneratedSku();
+           }
+       });
+   </script>
 
 
 @endpush

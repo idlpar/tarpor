@@ -23,6 +23,8 @@ class Product extends Model
         'images' => 'array',     // Cast images to array
         'tags' => 'array',       // Cast tags to array
         'related_products' => 'array', // Cast related_products to array
+        'product_collections' => 'array',
+        'labels' => 'array',
     ];
 
 

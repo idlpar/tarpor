@@ -62,29 +62,63 @@ class ProductController extends Controller
 
     public function generateSku(Request $request)
     {
-        $request->validate([
-            'category_ids' => 'required|array',
-            'category_ids.*' => 'integer',
-        ]);
+        try {
+            $request->validate([
+                'category_ids' => 'required|array',
+                'category_ids.*' => 'integer|exists:categories,id',
+            ]);
 
-        // Convert category IDs to a 3-digit padded string
-        $skuPrefix = collect($request->category_ids)
-            ->map(fn($id) => str_pad($id, 3, '0', STR_PAD_LEFT))
-            ->implode('.');
+            // Get all selected categories with their full paths
+            $selectedCategories = Category::whereIn('id', $request->category_ids)->get();
 
-        // Get the last product in this category hierarchy
-        $lastProduct = Product::where('sku', 'LIKE', "{$skuPrefix}.%")
-            ->orderBy('sku', 'desc')
-            ->first();
+            // Find leaf nodes (deepest selected categories)
+            $leafCategories = $selectedCategories->filter(function($category) use ($selectedCategories) {
+                // A category is a leaf if none of its children are selected
+                return !$selectedCategories->contains(function($cat) use ($category) {
+                    return $cat->parent_id == $category->id;
+                });
+            });
 
-        // Extract last number and increment
-        $lastNumber = $lastProduct ? (int)substr($lastProduct->sku, strrpos($lastProduct->sku, '.') + 1) : 0;
-        $newNumber = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+            if ($leafCategories->isEmpty()) {
+                throw new \Exception('No valid leaf categories selected');
+            }
 
-        // Generate new SKU
-        $newSku = "{$skuPrefix}.{$newNumber}";
+            // Generate SKU candidates for each leaf category
+            $skuCandidates = [];
+            foreach ($leafCategories as $category) {
+                $pathIds = $category->getFullPath();
+                $skuPrefix = collect($pathIds)
+                    ->map(fn($id) => str_pad($id, 4, '0', STR_PAD_LEFT))
+                    ->implode('.');
 
-        return response()->json(['sku' => $newSku]);
+                $lastProductId = Product::max('id') ?? 0;
+                $newSku = "{$skuPrefix}." . str_pad($lastProductId + 1, 4, '0', STR_PAD_LEFT);
+
+                // Check for existing SKU
+                if (Product::where('sku', $newSku)->exists()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Generated SKU already exists. Please input value manually.',
+                        'sku' => $newSku
+                    ], 409);
+                }
+
+                $skuCandidates[] = $newSku;
+            }
+
+            return response()->json([
+                'success' => true,
+                'sku' => $skuCandidates[0], // Return first SKU by default
+                'all_skus' => count($skuCandidates) > 1 ? $skuCandidates : null
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate SKU',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -120,6 +154,10 @@ class ProductController extends Controller
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
             'tags' => 'nullable|string', // Tags as a comma-separated string
+            'product_collections' => ['nullable', 'array'],
+            'product_collections.*' => ['in:new_arrival,best_sellers,special_offer'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['in:hot,new,sale'],
             'related_products' => 'nullable|array',
             'is_featured' => 'nullable|boolean',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',

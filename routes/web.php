@@ -84,7 +84,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
     // API calls
     Route::get('/product/slug/check', [ProductController::class, 'checkSlug'])->name('api.slug.check');
     Route::get('/category/slug/check', [CategoryController::class, 'checkSlug'])->name('api.category.slug.check');
-    Route::get('/generate-sku', [ProductController::class, 'generateSku'])->name('api.sku.generate');
+    Route::post('/generate-sku', [ProductController::class, 'generateSku'])->name('api.sku.generate');
 
 
     // Product Routes (CRUD)

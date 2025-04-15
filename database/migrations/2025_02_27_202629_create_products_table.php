@@ -24,6 +24,8 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0); // Stock quantity
             $table->enum('stock_status', ['in_stock', 'out_of_stock', 'backorder'])->default('in_stock'); // Stock status
             $table->json('tags')->nullable();
+            $table->json('product_collections')->nullable()->after('tags');
+            $table->json('labels')->nullable()->after('product_collections');
             $table->json('related_products')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->string('barcode', 100)->nullable()->unique();
@@ -51,6 +53,8 @@ return new class extends Migration
             $table->index('price'); // Index for price
             $table->index('sale_price'); // Index for sale price
             $table->index('status'); // Index for status
+            $table->index('product_collections');
+            $table->index('labels');
         });
     }
 
