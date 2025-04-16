@@ -53,6 +53,30 @@
         }
 
 
+        /* Related Products Styles */
+        #selected-related-products div {
+            transition: all 0.2s ease;
+        }
+
+        #selected-related-products div:hover {
+            background-color: #f3f4f6;
+        }
+
+        .remove-related-product {
+            transition: transform 0.2s ease;
+        }
+
+        .remove-related-product:hover {
+            transform: scale(1.2);
+        }
+
+        #related-products-results {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .product-result {
+            transition: background-color 0.2s ease;
+        }
     </style>
 
 @endpush
@@ -204,6 +228,14 @@
                             <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Tk. 0">
                             <p class="text-sm text-gray-500 mt-2">Customers won't see this price.</p>
                         </div>
+
+                        <!-- Stock Quantity -->
+                        <div>
+                            <label class="block font-semibold text-gray-700 mb-2">Stock Quantity</label>
+                            <input type="number" name="stock_quantity" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter stock quantity" value="0" min="0">
+                            <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
+                        </div>
+
                         <!-- Barcode -->
                         <div>
                             <label class="block font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
@@ -274,8 +306,51 @@
                 </x-form.card>
 
                 <!-- Related Products -->
+                <!-- Related Products Section -->
                 <x-form.card label="Related Products" class="bg-transparent">
-                    <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search products">
+                    <div class="relative">
+                        <!-- Search input with loading indicator -->
+                        <div class="relative">
+                            <input
+                                type="text"
+                                id="related-products-search"
+                                class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="Search products by name or SKU"
+                                autocomplete="off"
+                            >
+                            <div id="related-products-loading" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Selected products display -->
+                        <div id="selected-related-products" class="mt-3 space-y-2">
+                            @if(old('related_products'))
+                                @foreach(json_decode(old('related_products')) as $relatedId)
+                                    @php $related = App\Models\Product::find($relatedId); @endphp
+                                    @if($related)
+                                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded" data-id="{{ $related->id }}">
+                                            <span>{{ $related->name }} (SKU: {{ $related->sku }})</span>
+                                            <button type="button" class="text-red-500 remove-related-product">
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            @endif
+                        </div>
+
+                        <!-- Hidden input for form submission -->
+                        <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', '[]') }}">
+
+                        <!-- Search results dropdown -->
+                        <div id="related-products-results" class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-300 max-h-64 overflow-y-auto hidden"></div>
+                    </div>
                 </x-form.card>
 
                 <!-- Cross-Selling Products -->
@@ -889,5 +964,206 @@
        });
    </script>
 
+
+    <!-- Related Product Search and Function -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('related-products-search');
+            const resultsContainer = document.getElementById('related-products-results');
+            const selectedContainer = document.getElementById('selected-related-products');
+            const hiddenInput = document.getElementById('related-products-input');
+            const loadingIndicator = document.getElementById('related-products-loading');
+            const currentProductId = document.querySelector('input[name="product_id"]')?.value;
+
+            let selectedProducts = JSON.parse(hiddenInput.value || '[]');
+            let searchController = null; // For aborting previous searches
+            let suggestionsLoaded = false;
+
+            // Initialize selected products display
+            updateSelectedProducts();
+
+            // Handle search input focus - load suggestions only on first focus
+            searchInput.addEventListener('focus', function() {
+                if (!suggestionsLoaded && currentProductId && !searchInput.value) {
+                    loadSmartSuggestions();
+                }
+            });
+
+            // Improved debounce with abort controller
+            const searchProducts = debounce(async (term) => {
+                if (searchController) {
+                    searchController.abort();
+                }
+                searchController = new AbortController();
+
+                if (!term || term.length < 2) {
+                    resultsContainer.classList.add('hidden');
+                    return;
+                }
+
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+
+                try {
+                    const response = await fetch(`/product/search?q=${encodeURIComponent(term)}`, {
+                        signal: searchController.signal
+                    });
+
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const products = await response.json();
+
+                    if (products.length > 0) {
+                        resultsContainer.innerHTML = products.map(product => `
+                    <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result"
+                         data-id="${product.id}"
+                         data-name="${product.name}"
+                         data-sku="${product.sku}">
+                        <img src="${product.image_url || '/placeholder-product.jpg'}" alt="${product.name}" class="w-14 h-14 object-cover rounded-md shadow-sm border border-gray-200">
+                        <div class="flex-1">
+                            <div class="font-medium text-gray-800">${product.name}</div>
+                            <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                        </div>
+                        <div class="text-sm text-gray-700 font-semibold">$${product.price}</div>
+                    </div>
+                `).join('');
+                    } else {
+                        resultsContainer.innerHTML = '<div class="p-3 text-gray-500">No products found</div>';
+                    }
+                    resultsContainer.classList.remove('hidden');
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Search failed:', error);
+                        resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading results</div>';
+                        resultsContainer.classList.remove('hidden');
+                    }
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    searchController = null;
+                }
+            }, 300);
+
+            // Handle search input
+            searchInput.addEventListener('input', function() {
+                const term = this.value.trim();
+                suggestionsLoaded = term.length > 0; // Don't show suggestions when typing
+
+                if (term.length > 1) {
+                    searchProducts(term);
+                } else {
+                    resultsContainer.classList.add('hidden');
+                }
+            });
+
+            // Load smart suggestions
+            async function loadSmartSuggestions() {
+                if (!currentProductId) return;
+
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.innerHTML = '';
+                resultsContainer.classList.remove('hidden');
+
+                try {
+                    const response = await fetch(`/product/${currentProductId}/suggestions`);
+
+                    if (!response.ok) throw new Error('Network response was not ok');
+
+                    const suggestions = await response.json();
+
+                    if (suggestions.length > 0) {
+                        resultsContainer.innerHTML = `
+                    <div class="p-2 text-xs font-semibold text-gray-500 border-b">SUGGESTED RELATED PRODUCTS</div>
+                    ${suggestions.map(suggestion => `
+                        <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result"
+                             data-id="${suggestion.id}"
+                             data-name="${suggestion.name}"
+                             data-sku="${suggestion.sku}">
+                            <div class="flex-1">
+                                <div class="font-medium text-gray-800">${suggestion.name}</div>
+                                <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
+                                <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
+                            </div>
+                            <div class="text-sm text-gray-700 font-semibold">$${suggestion.price}</div>
+                        </div>
+                    `).join('')}
+                `;
+                    } else {
+                        resultsContainer.innerHTML = '<div class="p-3 text-gray-500">No suggestions available</div>';
+                    }
+                    suggestionsLoaded = true;
+                } catch (error) {
+                    console.error('Failed to load suggestions:', error);
+                    resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading suggestions</div>';
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+
+            // Select a product from results
+            resultsContainer.addEventListener('click', function(e) {
+                const resultItem = e.target.closest('.product-result');
+                if (!resultItem) return;
+
+                const productId = parseInt(resultItem.dataset.id);
+
+                if (!selectedProducts.includes(productId)) {
+                    selectedProducts.push(productId);
+                    updateSelectedProducts();
+                }
+
+                searchInput.value = '';
+                resultsContainer.classList.add('hidden');
+            });
+
+            // Remove a selected product
+            selectedContainer.addEventListener('click', function(e) {
+                if (e.target.closest('.remove-related-product')) {
+                    const item = e.target.closest('[data-id]');
+                    const productId = parseInt(item.dataset.id);
+                    selectedProducts = selectedProducts.filter(id => id !== productId);
+                    updateSelectedProducts();
+                }
+            });
+
+            // Update selected products display
+            function updateSelectedProducts() {
+                hiddenInput.value = JSON.stringify(selectedProducts);
+                selectedContainer.innerHTML = selectedProducts.length ? '' : '<p class="text-sm text-gray-500">No related products selected</p>';
+
+                // In a real app, you might want to optimize this to fetch all selected products at once
+                selectedProducts.forEach(async productId => {
+                    try {
+                        const response = await fetch(`/product/${productId}/brief`);
+                        const product = await response.json();
+
+                        const productEl = document.createElement('div');
+                        productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
+                        productEl.dataset.id = product.id;
+                        productEl.innerHTML = `
+                    <span>${product.name} (SKU: ${product.sku})</span>
+                    <button type="button" class="text-red-500 remove-related-product">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+                        selectedContainer.appendChild(productEl);
+                    } catch (error) {
+                        console.error('Failed to fetch product:', error);
+                    }
+                });
+            }
+
+            // Improved debounce function
+            function debounce(func, wait) {
+                let timeout;
+                return function(...args) {
+                    const context = this;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(() => func.apply(context, args), wait);
+                };
+            }
+        });
+    </script>
 
 @endpush

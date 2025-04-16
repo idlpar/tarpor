@@ -96,6 +96,10 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::put('{product}', [ProductController::class, 'update'])->name('update');
         Route::delete('{product}', [ProductController::class, 'destroy'])->name('destroy');
         Route::post('{product}/restore', [ProductController::class, 'restore'])->name('restore');
+
+        Route::get('search', [ProductController::class, 'search'])->name('search');
+        Route::get('{product}/brief', [ProductController::class, 'getBrief'])->name('brief');
+        Route::get('{product}/suggestions', [ProductController::class, 'suggestions'])->name('suggestions');
     });
 
     // Categories

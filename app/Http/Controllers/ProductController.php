@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Media;
 use App\Models\Product;
 use App\Models\Tag;
 use Illuminate\Http\RedirectResponse;
@@ -11,7 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Spatie\MediaLibrary\MediaCollections\Models\Media;
+
 
 class ProductController extends Controller
 {
@@ -142,8 +143,8 @@ class ProductController extends Controller
             'stock_quantity' => 'required|integer|min:0',
             'stock_status' => 'required|in:in_stock,out_of_stock,backorder',
             'brand_id' => 'nullable|exists:brands,id',
-            'category_ids' => 'required|array', // Accept an array of category IDs
-            'category_ids.*' => 'exists:categories,id', // Validate each category ID
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
             'status' => 'required|in:draft,published,archived',
             'attributes' => 'nullable|array',
             'images' => 'nullable|array',
@@ -153,12 +154,12 @@ class ProductController extends Controller
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
-            'tags' => 'nullable|string', // Tags as a comma-separated string
+            'tags' => 'nullable|string',
             'product_collections' => ['nullable', 'array'],
             'product_collections.*' => ['in:new_arrival,best_sellers,special_offer'],
             'labels' => ['nullable', 'array'],
             'labels.*' => ['in:hot,new,sale'],
-            'related_products' => 'nullable|array',
+            'related_products' => 'nullable|json',
             'is_featured' => 'nullable|boolean',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'discount' => 'nullable|numeric|min:0',
@@ -170,36 +171,47 @@ class ProductController extends Controller
             $validatedData['slug'] = Str::slug($validatedData['name']);
         }
 
+        // Process related products
+        if ($request->filled('related_products')) {
+            $relatedProducts = json_decode($request->input('related_products'), true);
+
+            // Validate related products exist
+            $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
+            $invalidProducts = array_diff($relatedProducts, $existingProducts);
+
+            if (!empty($invalidProducts)) {
+                return back()->withErrors([
+                    'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts)
+                ])->withInput();
+            }
+
+            $validatedData['related_products'] = $relatedProducts;
+        } else {
+            $validatedData['related_products'] = null;
+        }
+
         // Create the product
         $product = Product::create($validatedData);
 
         // Attach categories to the product
         $product->categories()->attach($validatedData['category_ids']);
 
-        // Attach tags to the product
         // Process tags
         if ($request->has('tags')) {
-            $tags = explode(',', $request->input('tags')); // Split the comma-separated string into an array
-            $uniqueTags = []; // Array to store unique tags
+            $tags = explode(',', $request->input('tags'));
+            $uniqueTags = [];
 
             foreach ($tags as $tagName) {
                 $tagName = trim($tagName);
                 if (!empty($tagName)) {
-                    // Normalize the tag name to lowercase
                     $normalizedTagName = Str::lower($tagName);
 
-                    // Check if the tag already exists in the unique tags array
                     if (!in_array($normalizedTagName, $uniqueTags)) {
-                        // Find or create the tag
                         $tag = Tag::firstOrCreate(
-                            ['name' => $normalizedTagName], // Ensure tags are stored in lowercase
-                            ['slug' => Str::slug($tagName)] // Generate a slug for the tag
+                            ['name' => $normalizedTagName],
+                            ['slug' => Str::slug($tagName)]
                         );
-
-                        // Attach the tag to the product
                         $product->tags()->attach($tag->id);
-
-                        // Add the tag to the unique tags array
                         $uniqueTags[] = $normalizedTagName;
                     }
                 }
@@ -270,12 +282,12 @@ class ProductController extends Controller
             }
         }
 
-        // Store SEO metadata using the polymorphic relationship
+        // Store SEO metadata
         $product->seo()->create($seoData);
 
-        // Redirect with success message
         return redirect()->route('product.index')->with('success', 'Product created successfully!');
     }
+
 
     /**
      * Generate a unique file name to avoid conflicts.
@@ -336,40 +348,49 @@ class ProductController extends Controller
     }
 
 
-
+    /**
+     * Update the specified product in storage.
+     *
+     * @param Request $request
+     * @param Product $product
+     * @return RedirectResponse
+     */
     public function update(Request $request, Product $product)
     {
         // Validate the request data for the product
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
-            'slug' => 'nullable|string|max:255|unique:products,slug,',
+            'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
             'price' => 'required|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
-            'sku' => 'nullable|string|max:50|unique:products,sku,',
+            'sku' => 'nullable|string|max:50|unique:products,sku,' . $product->id,
             'short_description' => 'nullable|string',
             'description' => 'required|string',
             'stock_quantity' => 'required|integer|min:0',
             'stock_status' => 'required|in:in_stock,out_of_stock,backorder',
             'brand_id' => 'nullable|exists:brands,id',
-            'category_ids' => 'required|array', // Accept an array of category IDs
-            'category_ids.*' => 'exists:categories,id', // Validate each category ID
+            'category_ids' => 'required|array',
+            'category_ids.*' => 'exists:categories,id',
             'status' => 'required|in:draft,published,archived',
             'attributes' => 'nullable|array',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048', // Validate each image
+            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
             'weight' => 'nullable|string|max:255',
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
             'tags' => 'nullable|array',
-            'related_products' => 'nullable|array',
+            'product_collections' => ['nullable', 'array'],
+            'product_collections.*' => ['in:new_arrival,best_sellers,special_offer'],
+            'labels' => ['nullable', 'array'],
+            'labels.*' => ['in:hot,new,sale'],
+            'related_products' => 'nullable|json',
             'is_featured' => 'nullable|boolean',
-            'barcode' => 'nullable|string|max:100|unique:products,barcode,',
+            'barcode' => 'nullable|string|max:100|unique:products,barcode,' . $product->id,
             'discount' => 'nullable|numeric|min:0',
             'inventory_tracking' => 'nullable|boolean',
-            // SEO Fields
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string',
@@ -387,6 +408,25 @@ class ProductController extends Controller
         // Generate slug if not provided
         if (empty($validatedData['slug'])) {
             $validatedData['slug'] = Str::slug($validatedData['name']);
+        }
+
+        // Process related products
+        if ($request->filled('related_products')) {
+            $relatedProducts = json_decode($request->input('related_products'), true);
+
+            // Validate related products exist
+            $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
+            $invalidProducts = array_diff($relatedProducts, $existingProducts);
+
+            if (!empty($invalidProducts)) {
+                return back()->withErrors([
+                    'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts)
+                ])->withInput();
+            }
+
+            $validatedData['related_products'] = $relatedProducts;
+        } else {
+            $validatedData['related_products'] = null;
         }
 
         // Function to generate a unique filename
@@ -425,16 +465,16 @@ class ProductController extends Controller
 
         // Handle SEO metadata with fallback to product data
         $seoData = [
-            'meta_title' => $validatedData['meta_title'] ?? $validatedData['name'], // Fallback to product name
-            'meta_description' => $validatedData['meta_description'] ?? $validatedData['short_description'] ?? $validatedData['description'], // Fallback to short_description or description
+            'meta_title' => $validatedData['meta_title'] ?? $validatedData['name'],
+            'meta_description' => $validatedData['meta_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
             'meta_keywords' => $validatedData['meta_keywords'] ?? null,
             'canonical_url' => $validatedData['canonical_url'] ?? null,
-            'og_title' => $validatedData['og_title'] ?? $validatedData['name'], // Fallback to product name
-            'og_description' => $validatedData['og_description'] ?? $validatedData['short_description'] ?? $validatedData['description'], // Fallback to short_description or description
-            'twitter_title' => $validatedData['twitter_title'] ?? $validatedData['name'], // Fallback to product name
-            'twitter_description' => $validatedData['twitter_description'] ?? $validatedData['short_description'] ?? $validatedData['description'], // Fallback to short_description or description
+            'og_title' => $validatedData['og_title'] ?? $validatedData['name'],
+            'og_description' => $validatedData['og_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
+            'twitter_title' => $validatedData['twitter_title'] ?? $validatedData['name'],
+            'twitter_description' => $validatedData['twitter_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
             'schema_markup' => $validatedData['schema_markup'] ?? null,
-            'robots' => $validatedData['robots'] ?? 'index, follow', // Default to 'index, follow'
+            'robots' => $validatedData['robots'] ?? 'index, follow',
         ];
 
         // Handle SEO image uploads
@@ -465,9 +505,36 @@ class ProductController extends Controller
             $product->seo()->create($seoData);
         }
 
-        // Redirect with success message
+        // Process tags
+        if ($request->has('tags')) {
+            $tags = is_array($request->tags) ? $request->tags : explode(',', $request->tags);
+            $uniqueTags = [];
+            $tagIds = [];
+
+            foreach ($tags as $tagName) {
+                $tagName = trim($tagName);
+                if (!empty($tagName)) {
+                    $normalizedTagName = Str::lower($tagName);
+
+                    if (!in_array($normalizedTagName, $uniqueTags)) {
+                        $tag = Tag::firstOrCreate(
+                            ['name' => $normalizedTagName],
+                            ['slug' => Str::slug($tagName)]
+                        );
+                        $tagIds[] = $tag->id;
+                        $uniqueTags[] = $normalizedTagName;
+                    }
+                }
+            }
+
+            $product->tags()->sync($tagIds);
+        } else {
+            $product->tags()->detach();
+        }
+
         return redirect()->route('product.index')->with('success', 'Product updated successfully!');
     }
+
     public function restore($id)
     {
         $product = Product::withTrashed()->findOrFail($id);
@@ -475,6 +542,130 @@ class ProductController extends Controller
 
         return redirect()->route('product.index')->with('success', 'Product restored successfully!');
     }
+
+    /**
+     * Search products for related products dropdown
+     */
+    public function search(Request $request)
+    {
+        $search = $request->input('q');
+
+        $products = Product::query()
+            ->when($search, function($query) use ($search) {
+                return $query->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            })
+            ->select('id', 'name', 'sku', 'price')
+            ->where('id', '!=', $request->input('exclude', 0)) // Exclude current product when editing
+            ->limit(10)
+            ->get();
+
+        return response()->json($products);
+    }
+
+    /**
+     * Get brief product info for display
+     */
+    public function getBrief(Product $product)
+    {
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'price' => $product->price
+        ]);
+    }
+
+    public function suggestions(Product $product)
+    {
+        $suggestions = collect();
+
+        // 1. Same brand products (limit 3)
+        if ($product->brand_id) {
+            $brandProducts = Product::where('brand_id', $product->brand_id)
+                ->where('id', '!=', $product->id)
+                ->inRandomOrder()
+                ->take(3)
+                ->get()
+                ->each(function($p) {
+                    $p->reason = 'Same brand';
+                    return $p;
+                });
+
+            $suggestions = $suggestions->merge($brandProducts);
+        }
+
+        // 2. Same collections (limit 3)
+        $collections = $product->product_collections ?? [];
+        if (!empty($collections)) {
+            $collectionProducts = Product::where(function($query) use ($collections) {
+                foreach ($collections as $collection) {
+                    $query->orWhereJsonContains('product_collections', $collection);
+                }
+            })
+                ->where('id', '!=', $product->id)
+                ->inRandomOrder()
+                ->take(3)
+                ->get()
+                ->each(function($p) {
+                    $p->reason = 'Same collection';
+                    return $p;
+                });
+
+            $suggestions = $suggestions->merge($collectionProducts);
+        }
+
+        // 3. Similar price range (±20%) (limit 2)
+        $priceRange = [$product->price * 0.8, $product->price * 1.2];
+        $priceProducts = Product::whereBetween('price', $priceRange)
+            ->where('id', '!=', $product->id)
+            ->inRandomOrder()
+            ->take(2)
+            ->get()
+            ->each(function($p) {
+                $p->reason = 'Similar price';
+                return $p;
+            });
+
+        $suggestions = $suggestions->merge($priceProducts);
+
+        // 4. Same tags (limit 2)
+        $tags = $product->tags ?? [];
+        if (!empty($tags)) {
+            $tagProducts = Product::where(function($query) use ($tags) {
+                foreach ($tags as $tag) {
+                    $query->orWhereJsonContains('tags', $tag);
+                }
+            })
+                ->where('id', '!=', $product->id)
+                ->inRandomOrder()
+                ->take(2)
+                ->get()
+                ->each(function($p) {
+                    $p->reason = 'Same tags';
+                    return $p;
+                });
+
+            $suggestions = $suggestions->merge($tagProducts);
+        }
+
+        // Remove duplicates and randomize
+        return $suggestions
+            ->unique('id')
+            ->shuffle()
+            ->take(10)
+            ->values()
+            ->map(function($product) {
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'sku' => $product->sku,
+                    'price' => $product->price,
+                    'reason' => $product->reason ?? 'Frequently bought together'
+                ];
+            });
+    }
+
     public function upload(Request $request, $productId)
     {
         $request->validate([
