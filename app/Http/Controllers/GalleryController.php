@@ -51,6 +51,12 @@ class GalleryController extends Controller
         $currentPath = $request->get('path', '');
         $searchTerm = $request->get('search', '');
         $isTrash = $request->get('trash', false);
+        $page = $request->get('page', 1);
+        $perPage = $request->get('per_page', 10);
+
+        if (!is_numeric($perPage)) {
+            $perPage = 5;
+        }
 
         if ($isTrash) {
             return $this->getTrashedItems($request);
@@ -60,20 +66,13 @@ class GalleryController extends Controller
             return $this->searchItems($searchTerm, $currentPath);
         }
 
-        $contents = $this->getFolderContents($currentPath);
-
-        // Get counts for current folder
-        $folderCount = count($contents['folders']);
-        $fileCount = count($contents['files']);
+        $result = $this->getFolderContents($currentPath, $page, $perPage);
 
         return response()->json([
             'success' => true,
             'currentPath' => $currentPath,
-            'contents' => $contents,
-            'counts' => [
-                'folders' => $folderCount,
-                'files' => $fileCount,
-            ],
+            'contents' => $result['contents'],
+            'pagination' => $result['pagination'],
             'breadcrumbs' => $this->getBreadcrumbs($currentPath),
             'contextMenu' => $this->getContextMenuOptions($currentPath)
         ]);
@@ -82,7 +81,7 @@ class GalleryController extends Controller
     /**
      * Get folder contents
      */
-    protected function getFolderContents($path = '')
+    protected function getFolderContents($path = '', $page = 1, $perPage = 10)
     {
         $contents = [
             'folders' => [],
@@ -92,11 +91,15 @@ class GalleryController extends Controller
         // Get current folder with parent relationship
         $currentFolder = $path ? MediaFolder::with('parent')->where('path', $path)->first() : null;
 
-        // Get child folders (direct children only)
-        $childFolders = MediaFolder::withCount(['children', 'media'])
+        // Get child folders (direct children only) with pagination
+        $childFoldersQuery = MediaFolder::withCount(['children', 'media'])
             ->where('parent_id', $currentFolder ? $currentFolder->id : null)
             ->whereNull('deleted_at')
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $totalFolders = $childFoldersQuery->count();
+        $childFolders = $childFoldersQuery->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
         foreach ($childFolders as $folder) {
@@ -115,10 +118,14 @@ class GalleryController extends Controller
             ];
         }
 
-        // Get files in current directory
-        $files = Media::where('directory', $path)
+        // Get files in current directory with pagination
+        $filesQuery = Media::where('directory', $path)
             ->whereNull('deleted_at')
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $totalFiles = $filesQuery->count();
+        $files = $filesQuery->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
         foreach ($files as $file) {
@@ -139,8 +146,24 @@ class GalleryController extends Controller
                 'is_featured' => $file->is_featured
             ];
         }
-        return $contents;
+
+        // Calculate pagination info
+        $totalItems = $totalFolders + $totalFiles;
+        $totalPages = ceil($totalItems / $perPage);
+
+        return [
+            'contents' => $contents,
+            'pagination' => [
+                'current_page' => (int)$page,
+                'per_page' => (int)$perPage,
+                'total_items' => $totalItems,
+                'total_pages' => $totalPages,
+                'has_previous' => $page > 1,
+                'has_next' => $page < $totalPages
+            ]
+        ];
     }
+
 
     protected function formatFileSize($bytes)
     {
@@ -985,6 +1008,8 @@ class GalleryController extends Controller
     public function getTrashedItems(Request $request)
     {
         $parentId = $request->input('parent_id', null);
+        $page = $request->input('page', 1);
+        $perPage = $request->input('per_page', 10);
 
         try {
             // Get all trashed folder paths to properly filter files
@@ -992,8 +1017,8 @@ class GalleryController extends Controller
                 ->pluck('path', 'id')
                 ->toArray();
 
-            // Get trashed files - MODIFIED TO PROPERLY SHOW FILES IN NESTED FOLDERS
-            $trashedFiles = Media::onlyTrashed()
+            // Get trashed files with pagination
+            $trashedFilesQuery = Media::onlyTrashed()
                 ->when($parentId, function($query) use ($parentId, $trashedFolderPaths) {
                     // For specific folder, show files that:
                     // 1. Are directly in this folder OR
@@ -1020,8 +1045,12 @@ class GalleryController extends Controller
                         $q->whereNull('directory')
                             ->orWhereNotIn('directory', $trashedFolderPaths);
                     });
-                })
-                ->orderBy('deleted_at', 'desc')
+                });
+
+            $totalFiles = $trashedFilesQuery->count();
+            $trashedFiles = $trashedFilesQuery->orderBy('deleted_at', 'desc')
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
                 ->get()
                 ->map(function($file) {
                     return [
@@ -1039,8 +1068,8 @@ class GalleryController extends Controller
                     ];
                 });
 
-            // Get trashed folders - MODIFIED TO PROPERLY HANDLE HIERARCHY
-            $trashedFolders = MediaFolder::onlyTrashed()
+            // Get trashed folders with pagination
+            $trashedFoldersQuery = MediaFolder::onlyTrashed()
                 ->withCount([
                     'children as trashed_children_count' => function($query) {
                         $query->onlyTrashed();
@@ -1061,8 +1090,12 @@ class GalleryController extends Controller
                         $q->whereNull('parent_id')
                             ->orWhereNotIn('parent_id', $trashedParentIds);
                     });
-                })
-                ->orderBy('deleted_at', 'desc')
+                });
+
+            $totalFolders = $trashedFoldersQuery->count();
+            $trashedFolders = $trashedFoldersQuery->orderBy('deleted_at', 'desc')
+                ->skip(($page - 1) * $perPage)
+                ->take($perPage)
                 ->get()
                 ->map(function($folder) {
                     return [
@@ -1113,11 +1146,23 @@ class GalleryController extends Controller
                 }
             }
 
+            // Calculate pagination info
+            $totalItems = $totalFiles + $totalFolders;
+            $totalPages = ceil($totalItems / $perPage);
+
             return response()->json([
                 'success' => true,
                 'contents' => [
                     'files' => $trashedFiles,
                     'folders' => $goUpFolder ? [$goUpFolder, ...$trashedFolders] : $trashedFolders
+                ],
+                'pagination' => [
+                    'current_page' => $page,
+                    'per_page' => $perPage,
+                    'total_items' => $totalItems,
+                    'total_pages' => $totalPages,
+                    'has_previous' => $page > 1,
+                    'has_next' => $page < $totalPages
                 ],
                 'parent_id' => $parentId,
                 'contextMenu' => $this->getTrashContextMenuOptions(),
@@ -1299,19 +1344,23 @@ class GalleryController extends Controller
     /**
      * Search items
      */
-    protected function searchItems($searchTerm, $currentPath = '')
+    protected function searchItems($searchTerm, $currentPath = '', $page = 1, $perPage = 10)
     {
         $results = [
             'folders' => [],
             'files' => []
         ];
 
-        // Search folders
-        $folders = MediaFolder::where('name', 'like', "%$searchTerm%")
+        // Search folders with pagination
+        $foldersQuery = MediaFolder::where('name', 'like', "%$searchTerm%")
             ->when($currentPath, function($query) use ($currentPath) {
                 return $query->where('path', 'like', "$currentPath%");
             })
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $totalFolders = $foldersQuery->count();
+        $folders = $foldersQuery->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
         foreach ($folders as $folder) {
@@ -1325,12 +1374,16 @@ class GalleryController extends Controller
             ];
         }
 
-        // Search files
-        $files = Media::where('name', 'like', "%$searchTerm%")
+        // Search files with pagination
+        $filesQuery = Media::where('name', 'like', "%$searchTerm%")
             ->when($currentPath, function($query) use ($currentPath) {
                 return $query->where('directory', 'like', "$currentPath%");
             })
-            ->orderBy('name')
+            ->orderBy('name');
+
+        $totalFiles = $filesQuery->count();
+        $files = $filesQuery->skip(($page - 1) * $perPage)
+            ->take($perPage)
             ->get();
 
         foreach ($files as $file) {
@@ -1350,10 +1403,22 @@ class GalleryController extends Controller
             ];
         }
 
+        // Calculate pagination info
+        $totalItems = $totalFolders + $totalFiles;
+        $totalPages = ceil($totalItems / $perPage);
+
         return response()->json([
             'success' => true,
             'searchTerm' => $searchTerm,
-            'contents' => $results
+            'contents' => $results,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_items' => $totalItems,
+                'total_pages' => $totalPages,
+                'has_previous' => $page > 1,
+                'has_next' => $page < $totalPages
+            ]
         ]);
     }
 

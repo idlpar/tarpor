@@ -155,12 +155,11 @@
 
     /* Breadcrumbs */
     .breadcrumb-container {
+        flex: 1;
         display: flex;
         align-items: center;
-        padding: 0.5rem 1rem;
-        background-color: white;
-        border-bottom: 1px solid #e2e8f0;
         overflow-x: auto;
+        padding: 0;
     }
 
     /* Success notification styles */
@@ -477,6 +476,49 @@
         margin: 0.25rem 0;
     }
 
+    .breadcrumb-and-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: white;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
+    .pagination-controls {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0;
+        margin-left: 1rem;
+        background-color: transparent;
+        border-top: none;
+    }
+
+    .pagination-button {
+        padding: 0.5rem 1rem;
+        border-radius: 0.375rem;
+        background-color: #f8fafc;
+        border: 1px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .pagination-button:hover:not(:disabled) {
+        background-color: #e2e8f0;
+    }
+
+    .pagination-button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+
+    #pageInfo {
+        font-size: 0.875rem;
+        color: #64748b;
+    }
+
+
     .shortcut {
         margin-left: auto;
         color: #94a3b8;
@@ -672,12 +714,25 @@
         </div>
 
         <!-- Breadcrumbs -->
-        <div id="breadcrumbContainer" class="breadcrumb-container">
-            <!-- Dynamic breadcrumbs will be inserted here -->
+        <div class="breadcrumb-and-pagination">
+            <div id="breadcrumbContainer" class="breadcrumb-container">
+                <!-- Dynamic breadcrumbs will be inserted here -->
+            </div>
+
+            <div class="pagination-controls">
+                <button id="prevPage" class="pagination-button" disabled>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span id="pageInfo">Page 1 of 1</span>
+                <button id="nextPage" class="pagination-button" disabled>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
         </div>
 
         <!-- Success notification will appear here -->
         <div id="notificationArea"></div>
+
 
         <!-- Main Content -->
         <div class="gallery-content relative">
@@ -795,7 +850,15 @@
                 selectedItems: [],
                 isTrashView: false,
                 clipboard: null,
-                callback: null
+                callback: null,
+                pagination: {
+                    currentPage: 1,
+                    perPage: 10,
+                    totalItems: 0,
+                    totalPages: 1,
+                    hasPrevious: false,
+                    hasNext: false
+                }
             },
 
             // Initialize the gallery
@@ -884,6 +947,23 @@
                 // Keyboard shortcuts
                 document.addEventListener('keydown', (e) => {
                     this.handleKeyboardShortcuts(e);
+                });
+
+                // Pagination controls
+                document.getElementById('prevPage').addEventListener('click', (e) => {  // Add e parameter here
+                    e.preventDefault();
+                    if (this.state.pagination.hasPrevious) {
+                        this.state.pagination.currentPage--;
+                        this.loadContents();
+                    }
+                });
+
+                document.getElementById('nextPage').addEventListener('click', (e) => {  // Add e parameter here
+                    e.preventDefault();
+                    if (this.state.pagination.hasNext) {
+                        this.state.pagination.currentPage++;
+                        this.loadContents();
+                    }
                 });
 
                 // Item selection
@@ -990,6 +1070,7 @@
             // Navigation
             navigateToPath(path) {
                 this.state.currentPath = path;
+                this.state.pagination.currentPage = 1;
                 this.loadContents();
             },
 
@@ -1000,6 +1081,7 @@
                 } else {
                     this.state.currentPath = folderElement.dataset.path;
                     this.state.currentFolderId = folderElement.dataset.id;
+                    this.state.pagination.currentPage = 1;
                     this.loadContents();
                 }
             },
@@ -1009,6 +1091,8 @@
 
                 const url = new URL('{{ route("gallery.index") }}');
                 url.searchParams.append('path', this.state.currentPath);
+                url.searchParams.append('page', this.state.pagination.currentPage);
+                url.searchParams.append('per_page', this.state.pagination.perPage);
 
                 fetch(url, {
                     headers: {
@@ -1020,14 +1104,38 @@
                     .then(data => {
                         if (data.success) {
                             this.state.currentPath = data.currentPath || '';
+                            this.state.pagination = {
+                                currentPage: data.pagination.current_page,
+                                perPage: data.pagination.per_page,
+                                totalItems: data.pagination.total_items,
+                                totalPages: data.pagination.total_pages,
+                                hasPrevious: data.pagination.has_previous,
+                                hasNext: data.pagination.has_next
+                            };
                             this.renderBreadcrumbs(data.breadcrumbs);
                             this.renderContents(data.contents);
+                            this.updatePaginationControls();
                         } else {
                             throw new Error(data.message || 'Failed to load contents');
                         }
                     })
                     .catch(error => this.showError(error.message))
                     .finally(() => this.hideLoading());
+            },
+
+            updatePaginationControls() {
+                const { currentPage, totalPages, hasPrevious, hasNext } = this.state.pagination;
+
+                document.getElementById('prevPage').disabled = !hasPrevious;
+                document.getElementById('nextPage').disabled = !hasNext;
+
+                // Ensure we have valid numbers before displaying
+                if (typeof currentPage !== 'undefined' && typeof totalPages !== 'undefined') {
+                    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
+                } else {
+                    // Fallback if data is missing
+                    document.getElementById('pageInfo').textContent = 'Page 1 of 1';
+                }
             },
 
             loadTrashContents(parentId = null) {
@@ -1037,6 +1145,8 @@
                 if (parentId) {
                     url.searchParams.append('parent_id', parentId);
                 }
+                url.searchParams.append('page', this.state.pagination.currentPage);
+                url.searchParams.append('per_page', this.state.pagination.perPage);
 
                 fetch(url, {
                     headers: {
@@ -1048,7 +1158,16 @@
                     .then(data => {
                         if (data.success) {
                             this.state.currentTrashParent = parentId;
+                            this.state.pagination = data.pagination || {
+                                currentPage: 1,
+                                perPage: 10,
+                                totalItems: 0,
+                                totalPages: 1,
+                                hasPrevious: false,
+                                hasNext: false
+                            };
                             this.renderContents(data.contents);
+                            this.updatePaginationControls();
                         } else {
                             throw new Error(data.message || 'Failed to load trash contents');
                         }
@@ -1607,13 +1726,12 @@
             },
 
             refreshContents() {
+                this.state.pagination.currentPage = 1;
                 if (this.state.isTrashView) {
                     this.loadTrashContents(this.state.currentTrashParent);
                 } else {
                     this.loadContents();
                 }
-
-                // Refresh lazy loading observer after content loads
                 this.refreshLazyObserver();
             },
 
@@ -1943,6 +2061,7 @@
             performSearch() {
                 const query = this.elements.searchInput.value.trim();
                 if (!query) {
+                    this.state.pagination.currentPage = 1;
                     this.loadContents();
                     return;
                 }
@@ -1952,6 +2071,8 @@
                 const url = new URL('{{ route("gallery.index") }}');
                 url.searchParams.append('search', query);
                 if (this.state.currentPath) url.searchParams.append('path', this.state.currentPath);
+                url.searchParams.append('page', this.state.pagination.currentPage);
+                url.searchParams.append('per_page', this.state.pagination.perPage);
 
                 fetch(url, {
                     headers: {
@@ -1962,8 +2083,17 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
+                            this.state.pagination = data.pagination || {
+                                currentPage: 1,
+                                perPage: 10,
+                                totalItems: 0,
+                                totalPages: 1,
+                                hasPrevious: false,
+                                hasNext: false
+                            };
                             this.renderContents(data.contents);
-                            this.refreshLazyObserver(); // Add this line
+                            this.updatePaginationControls();
+                            this.refreshLazyObserver();
                         } else {
                             throw new Error(data.message || 'Search failed');
                         }
