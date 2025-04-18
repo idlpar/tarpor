@@ -576,70 +576,37 @@ class ProductController extends Controller
         ]);
     }
 
-    public function suggestions(Product $product)
+    public function suggestions(Request $request)
     {
+        // For new products (no ID yet), use category/tags from request
+        $categoryId = $request->input('category_id');
+        $tagIds = $request->input('tag_ids', []);
+
         $suggestions = collect();
 
-        // 1. Same brand products (limit 3)
-        if ($product->brand_id) {
-            $brandProducts = Product::where('brand_id', $product->brand_id)
-                ->where('id', '!=', $product->id)
+        // 1. Products from same category (if selected)
+        if ($categoryId) {
+            $categoryProducts = Product::whereHas('categories', function($query) use ($categoryId) {
+                $query->where('categories.id', $categoryId);
+            })
                 ->inRandomOrder()
-                ->take(3)
+                ->take(5)
                 ->get()
                 ->each(function($p) {
-                    $p->reason = 'Same brand';
+                    $p->reason = 'Same category';
                     return $p;
                 });
 
-            $suggestions = $suggestions->merge($brandProducts);
+            $suggestions = $suggestions->merge($categoryProducts);
         }
 
-        // 2. Same collections (limit 3)
-        $collections = $product->product_collections ?? [];
-        if (!empty($collections)) {
-            $collectionProducts = Product::where(function($query) use ($collections) {
-                foreach ($collections as $collection) {
-                    $query->orWhereJsonContains('product_collections', $collection);
-                }
+        // 2. Products with matching tags (if any selected)
+        if (!empty($tagIds)) {
+            $tagProducts = Product::whereHas('tags', function($query) use ($tagIds) {
+                $query->whereIn('tags.id', $tagIds);
             })
-                ->where('id', '!=', $product->id)
                 ->inRandomOrder()
-                ->take(3)
-                ->get()
-                ->each(function($p) {
-                    $p->reason = 'Same collection';
-                    return $p;
-                });
-
-            $suggestions = $suggestions->merge($collectionProducts);
-        }
-
-        // 3. Similar price range (±20%) (limit 2)
-        $priceRange = [$product->price * 0.8, $product->price * 1.2];
-        $priceProducts = Product::whereBetween('price', $priceRange)
-            ->where('id', '!=', $product->id)
-            ->inRandomOrder()
-            ->take(2)
-            ->get()
-            ->each(function($p) {
-                $p->reason = 'Similar price';
-                return $p;
-            });
-
-        $suggestions = $suggestions->merge($priceProducts);
-
-        // 4. Same tags (limit 2)
-        $tags = $product->tags ?? [];
-        if (!empty($tags)) {
-            $tagProducts = Product::where(function($query) use ($tags) {
-                foreach ($tags as $tag) {
-                    $query->orWhereJsonContains('tags', $tag);
-                }
-            })
-                ->where('id', '!=', $product->id)
-                ->inRandomOrder()
-                ->take(2)
+                ->take(5)
                 ->get()
                 ->each(function($p) {
                     $p->reason = 'Same tags';
@@ -649,7 +616,20 @@ class ProductController extends Controller
             $suggestions = $suggestions->merge($tagProducts);
         }
 
-        // Remove duplicates and randomize
+        // 3. Fallback to popular products (best sellers, most viewed, etc.)
+        if ($suggestions->isEmpty()) {
+            $popularProducts = Product::orderBy('views', 'DESC') // Or your popularity metric
+            ->inRandomOrder()
+                ->take(10)
+                ->get()
+                ->each(function($p) {
+                    $p->reason = 'Popular item';
+                    return $p;
+                });
+
+            $suggestions = $popularProducts;
+        }
+
         return $suggestions
             ->unique('id')
             ->shuffle()
@@ -661,10 +641,12 @@ class ProductController extends Controller
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'price' => $product->price,
-                    'reason' => $product->reason ?? 'Frequently bought together'
+                    'reason' => $product->reason,
+                    'thumbnail' => $product->thumbnail
                 ];
             });
     }
+
 
     public function upload(Request $request, $productId)
     {

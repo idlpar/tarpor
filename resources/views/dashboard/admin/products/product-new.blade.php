@@ -41,25 +41,40 @@
         .gradient-bg {
             background: linear-gradient(135deg, #f9fafb, #e5e7eb);
         }
+        .card-content {
+            position: relative;
+        }
         /* Optional highlight when typing Categories */
         .highlight {
             background-color: yellow;
             font-weight: bold;
         }
 
-        /* Optional highlight when typing Brandhs */
+        /* Optional highlight when typing Brands */
         #brand-list li span.highlight {
             background-color: yellow;
         }
 
-
-        /* Related Products Styles */
-        #selected-related-products div {
-            transition: all 0.2s ease;
+        /* Optional highlight when typing Brands */
+        #brand-list li span.highlight {
+            background-color: yellow;
         }
 
-        #selected-related-products div:hover {
-            background-color: #f3f4f6;
+        /* Related Products Styles */
+        #selected-related-products {
+            background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%); /* Subtle gradient */
+            border: 1px solid #d1d5db; /* Stronger border */
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05); /* Subtle shadow for depth */
+        }
+
+        #selected-related-products div.selected-product-item {
+            transition: all 0.2s ease;
+            border-radius: 0.375rem;
+            background: #f1f5f9; /* Slightly darker base for selected items */
+        }
+
+        #selected-related-products div.selected-product-item:hover {
+            background: #e5e7eb; /* Darker hover effect */
         }
 
         .remove-related-product {
@@ -72,11 +87,23 @@
 
         #related-products-results {
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border-top: 0;
+            border-radius: 0 0 0.375rem 0.375rem; /* Match input's bottom corners */
         }
 
         .product-result {
             transition: background-color 0.2s ease;
         }
+
+        /* Ensure tight connection between input and dropdown */
+        #related-products-search {
+            /*border-bottom: none; !* Remove bottom border when dropdown is visible *!*/
+        }
+
+        #related-products-results:not(.hidden) + #selected-related-products {
+            border-top: 0; /* Remove top border of selected products when results are visible */
+        }
+
     </style>
 
 @endpush
@@ -305,7 +332,6 @@
                     </select>
                 </x-form.card>
 
-                <!-- Related Products -->
                 <!-- Related Products Section -->
                 <x-form.card label="Related Products" class="bg-transparent">
                     <div class="relative">
@@ -326,13 +352,18 @@
                             </div>
                         </div>
 
+                        <!-- Search results dropdown -->
+                        <div id="related-products-results" class="absolute z-10 w-full bg-white shadow-lg border border-gray-300 max-h-64 overflow-y-auto hidden">
+                            <!-- Dynamic content will be inserted here -->
+                        </div>
+
                         <!-- Selected products display -->
-                        <div id="selected-related-products" class="mt-3 space-y-2">
+                        <div id="selected-related-products" class="w-full bg-white border border-gray-300 border-t-0 rounded-b-lg space-y-2 p-2">
                             @if(old('related_products'))
                                 @foreach(json_decode(old('related_products')) as $relatedId)
                                     @php $related = App\Models\Product::find($relatedId); @endphp
                                     @if($related)
-                                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded" data-id="{{ $related->id }}">
+                                        <div class="flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item" data-id="{{ $related->id }}">
                                             <span>{{ $related->name }} (SKU: {{ $related->sku }})</span>
                                             <button type="button" class="text-red-500 remove-related-product">
                                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
@@ -347,11 +378,10 @@
 
                         <!-- Hidden input for form submission -->
                         <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', '[]') }}">
-
-                        <!-- Search results dropdown -->
-                        <div id="related-products-results" class="absolute z-10 mt-1 w-full bg-white shadow-lg rounded-lg border border-gray-300 max-h-64 overflow-y-auto hidden"></div>
                     </div>
                 </x-form.card>
+
+
 
                 <!-- Cross-Selling Products -->
                 <x-form.card label="Cross-Selling Products" class="bg-transparent">
@@ -563,6 +593,30 @@
                 <input type="number" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="0">
                 <p class="text-sm text-gray-500 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
             </x-form.card>
+
+            <!-- Tags Card -->
+            <x-form.card label="Tags">
+                <div class="relative" id="tags-container">
+                    <!-- Input for adding new tags -->
+                    <div class="flex flex-wrap gap-2 mb-2 items-center border border-gray-300 rounded-lg p-2 min-h-12" id="tags-input-wrapper">
+                        <!-- Tags will be inserted here by JavaScript -->
+                        <input
+                            type="text"
+                            id="tag-input"
+                            class="flex-grow outline-none min-w-[100px]"
+                            placeholder="Add tags..."
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <!-- Suggestions dropdown -->
+                    <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
+
+                    <!-- Hidden input for form submission -->
+                    <input type="hidden" name="tags" id="tags-hidden-input">
+                </div>
+            </x-form.card>
+
         </div>
 
     </form>
@@ -973,20 +1027,22 @@
             const selectedContainer = document.getElementById('selected-related-products');
             const hiddenInput = document.getElementById('related-products-input');
             const loadingIndicator = document.getElementById('related-products-loading');
-            const currentProductId = document.querySelector('input[name="product_id"]')?.value;
+
+            // Get category and tag elements
+            const categorySelects = document.querySelectorAll('input[name="categories[]"]');
+            const tagSelects = document.querySelectorAll('input[name="tags[]"]');
 
             let selectedProducts = JSON.parse(hiddenInput.value || '[]');
-            let searchController = null; // For aborting previous searches
-            let suggestionsLoaded = false;
+            let searchController = null;
 
             // Initialize selected products display
             updateSelectedProducts();
 
-            // Handle search input focus - load suggestions only on first focus
+            // Handle search input focus
             searchInput.addEventListener('focus', function() {
-                if (!suggestionsLoaded && currentProductId && !searchInput.value) {
-                    loadSmartSuggestions();
-                }
+                this.value = '';
+                loadSmartSuggestions();
+                resultsContainer.classList.remove('hidden');
             });
 
             // Improved debounce with abort controller
@@ -1019,7 +1075,8 @@
                          data-id="${product.id}"
                          data-name="${product.name}"
                          data-sku="${product.sku}">
-                        <img src="${product.image_url || '/placeholder-product.jpg'}" alt="${product.name}" class="w-14 h-14 object-cover rounded-md shadow-sm border border-gray-200">
+                        <img src="${product.thumbnail || '/placeholder-product.jpg'}"
+                             class="w-10 h-10 object-cover rounded-md">
                         <div class="flex-1">
                             <div class="font-medium text-gray-800">${product.name}</div>
                             <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
@@ -1046,25 +1103,36 @@
             // Handle search input
             searchInput.addEventListener('input', function() {
                 const term = this.value.trim();
-                suggestionsLoaded = term.length > 0; // Don't show suggestions when typing
-
                 if (term.length > 1) {
                     searchProducts(term);
                 } else {
+                    resultsContainer.classList.add('hidden'); // Hide when input is cleared or too short
+                }
+            });
+
+            // Hide suggestions when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
                     resultsContainer.classList.add('hidden');
                 }
             });
 
-            // Load smart suggestions
+            // Load smart suggestions based on selected categories/tags
             async function loadSmartSuggestions() {
-                if (!currentProductId) return;
+                // Get selected categories and tags
+                const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(el => el.value);
+                const selectedTags = Array.from(document.querySelectorAll('input[name="tags[]"]:checked')).map(el => el.value);
 
                 loadingIndicator.classList.remove('hidden');
-                resultsContainer.innerHTML = '';
+                resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Loading suggestions...</div>';
                 resultsContainer.classList.remove('hidden');
 
                 try {
-                    const response = await fetch(`/product/${currentProductId}/suggestions`);
+                    const params = new URLSearchParams();
+                    selectedCategories.forEach(id => params.append('category_ids[]', id));
+                    selectedTags.forEach(id => params.append('tag_ids[]', id));
+
+                    const response = await fetch(`/product/suggestions?${params.toString()}`);
 
                     if (!response.ok) throw new Error('Network response was not ok');
 
@@ -1072,12 +1140,16 @@
 
                     if (suggestions.length > 0) {
                         resultsContainer.innerHTML = `
-                    <div class="p-2 text-xs font-semibold text-gray-500 border-b">SUGGESTED RELATED PRODUCTS</div>
+                    <div class="p-2 text-xs font-semibold text-gray-500 border-b">
+                        ${selectedCategories.length || selectedTags.length ? 'RELEVANT PRODUCTS' : 'POPULAR PRODUCTS'}
+                    </div>
                     ${suggestions.map(suggestion => `
                         <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result"
                              data-id="${suggestion.id}"
                              data-name="${suggestion.name}"
                              data-sku="${suggestion.sku}">
+                            <img src="${suggestion.thumbnail || '/placeholder-product.jpg'}"
+                                 class="w-10 h-10 object-cover rounded-md">
                             <div class="flex-1">
                                 <div class="font-medium text-gray-800">${suggestion.name}</div>
                                 <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
@@ -1090,7 +1162,6 @@
                     } else {
                         resultsContainer.innerHTML = '<div class="p-3 text-gray-500">No suggestions available</div>';
                     }
-                    suggestionsLoaded = true;
                 } catch (error) {
                     console.error('Failed to load suggestions:', error);
                     resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading suggestions</div>';
@@ -1098,6 +1169,23 @@
                     loadingIndicator.classList.add('hidden');
                 }
             }
+
+            // Listen for category/tag changes to update suggestions
+            categorySelects.forEach(select => {
+                select.addEventListener('change', () => {
+                    if (searchInput === document.activeElement) {
+                        loadSmartSuggestions();
+                    }
+                });
+            });
+
+            tagSelects.forEach(select => {
+                select.addEventListener('change', () => {
+                    if (searchInput === document.activeElement) {
+                        loadSmartSuggestions();
+                    }
+                });
+            });
 
             // Select a product from results
             resultsContainer.addEventListener('click', function(e) {
@@ -1128,30 +1216,36 @@
             // Update selected products display
             function updateSelectedProducts() {
                 hiddenInput.value = JSON.stringify(selectedProducts);
-                selectedContainer.innerHTML = selectedProducts.length ? '' : '<p class="text-sm text-gray-500">No related products selected</p>';
+                selectedContainer.innerHTML = ''; // Clear container
 
-                // In a real app, you might want to optimize this to fetch all selected products at once
-                selectedProducts.forEach(async productId => {
-                    try {
-                        const response = await fetch(`/product/${productId}/brief`);
-                        const product = await response.json();
+                // Hide container if no products are selected
+                if (selectedProducts.length === 0) {
+                    selectedContainer.classList.add('hidden');
+                } else {
+                    selectedContainer.classList.remove('hidden');
+                    // Fetch and display selected products
+                    selectedProducts.forEach(async productId => {
+                        try {
+                            const response = await fetch(`/product/${productId}/brief`);
+                            const product = await response.json();
 
-                        const productEl = document.createElement('div');
-                        productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
-                        productEl.dataset.id = product.id;
-                        productEl.innerHTML = `
-                    <span>${product.name} (SKU: ${product.sku})</span>
-                    <button type="button" class="text-red-500 remove-related-product">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                `;
-                        selectedContainer.appendChild(productEl);
-                    } catch (error) {
-                        console.error('Failed to fetch product:', error);
-                    }
-                });
+                            const productEl = document.createElement('div');
+                            productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded';
+                            productEl.dataset.id = product.id;
+                            productEl.innerHTML = `
+                        <span>${product.name} (SKU: ${product.sku})</span>
+                        <button type="button" class="text-red-500 remove-related-product">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
+                            selectedContainer.appendChild(productEl);
+                        } catch (error) {
+                            console.error('Failed to fetch product:', error);
+                        }
+                    });
+                }
             }
 
             // Improved debounce function
@@ -1162,6 +1256,271 @@
                     clearTimeout(timeout);
                     timeout = setTimeout(() => func.apply(context, args), wait);
                 };
+            }
+        });
+    </script>
+
+    <!-- Tag Functuion -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const tagsContainer = document.getElementById('tags-container');
+            const tagsInputWrapper = document.getElementById('tags-input-wrapper');
+            const tagInput = document.getElementById('tag-input');
+            const tagSuggestions = document.getElementById('tag-suggestions');
+            const tagsHiddenInput = document.getElementById('tags-hidden-input');
+
+            let tags = [];
+            let suggestions = [];
+            let hoveredIndex = -1;
+            let lastSearch = '';
+
+            // Initialize with existing tags if any
+            if (tagsHiddenInput.value) {
+                try {
+                    tags = JSON.parse(tagsHiddenInput.value).map(tag => ({ name: tag }));
+                    renderTags();
+                } catch (e) {
+                    console.error('Error parsing tags:', e);
+                }
+            }
+
+            // Event listeners
+            tagInput.addEventListener('input', handleInput);
+            tagInput.addEventListener('keydown', handleKeyDown);
+            tagInput.addEventListener('blur', handleBlur);
+
+            function renderTags() {
+                // Clear existing tags
+                const existingTags = tagsInputWrapper.querySelectorAll('.tag-pill');
+                existingTags.forEach(tag => tag.remove());
+
+                // Add tags
+                tags.forEach((tag, index) => {
+                    const tagElement = document.createElement('div');
+                    tagElement.className = `
+                                flex items-center gap-1
+                                bg-blue-100 text-blue-800
+                                px-3 py-1 rounded-full text-sm
+                                tag-pill transition duration-200
+                                hover:bg-blue-200 hover:shadow-md hover:ring-1 hover:ring-blue-400
+                            `.trim();
+                    tagElement.innerHTML = `
+                            <span class="capitalize">${tag.name}</span>
+                            <button type="button" class="text-blue-500 hover:text-red-600 remove-tag" data-index="${index}">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        `;
+                    tagsInputWrapper.insertBefore(tagElement, tagInput);
+                });
+
+                // Add remove tag event listeners
+                document.querySelectorAll('.remove-tag').forEach(button => {
+                    button.addEventListener('click', function() {
+                        const index = parseInt(this.getAttribute('data-index'));
+                        tags.splice(index, 1);
+                        renderTags();
+                        updateHiddenInput();
+                    });
+                });
+
+                updateHiddenInput();
+            }
+
+            function updateHiddenInput() {
+                tagsHiddenInput.value = JSON.stringify(tags.map(tag => tag.name));
+            }
+
+            async function handleInput(e) {
+                const query = tagInput.value.trim();
+
+                if (query === '') {
+                    hideSuggestions();
+                    return;
+                }
+
+                // Don't search on every keystroke
+                if (query.length < 2 || query === lastSearch) {
+                    return;
+                }
+
+                lastSearch = query;
+
+                try {
+                    const response = await fetch(`/tag/suggest?query=${encodeURIComponent(query)}`);
+                    suggestions = await response.json();
+                    showSuggestions();
+                } catch (error) {
+                    console.error('Error fetching tag suggestions:', error);
+                    suggestions = [];
+                    hideSuggestions();
+                }
+            }
+
+            function handleKeyDown(e) {
+                switch (e.key) {
+                    case ' ':
+                        if (tagInput.value.trim() !== '') {
+                            addTag(tagInput.value.trim());
+                            e.preventDefault();
+                        }
+                        break;
+
+                    case 'Tab':
+                        if (suggestions.length > 0) {
+                            if (hoveredIndex >= 0) {
+                                selectSuggestion(suggestions[hoveredIndex]);
+                            } else {
+                                selectSuggestion(suggestions[0]);
+                            }
+                            e.preventDefault();
+                        } else if (tagInput.value.trim() !== '') {
+                            addTag(tagInput.value.trim());
+                            e.preventDefault();
+                        }
+                        break;
+
+                    case 'Backspace':
+                        if (tagInput.value === '' && tags.length > 0) {
+                            tags.pop();
+                            renderTags();
+                        }
+                        break;
+
+                    case 'ArrowUp':
+                        if (suggestions.length > 0) {
+                            hoveredIndex = Math.max(hoveredIndex - 1, 0);
+                            highlightSuggestion();
+                            e.preventDefault();
+                        }
+                        break;
+
+                    case 'ArrowDown':
+                        if (suggestions.length > 0) {
+                            hoveredIndex = Math.min(hoveredIndex + 1, suggestions.length - 1);
+                            highlightSuggestion();
+                            e.preventDefault();
+                        }
+                        break;
+
+                    case 'Enter':
+                        if (suggestions.length > 0 && hoveredIndex >= 0) {
+                            selectSuggestion(suggestions[hoveredIndex]);
+                            e.preventDefault();
+                        } else if (tagInput.value.trim() !== '') {
+                            addTag(tagInput.value.trim());
+                            e.preventDefault();
+                        }
+                        break;
+                }
+            }
+
+            function handleBlur() {
+                setTimeout(() => {
+                    if (!tagsContainer.contains(document.activeElement)) {
+                        hideSuggestions();
+                    }
+                }, 200);
+            }
+
+            function addTag(tagName) {
+                if (tagName === '') return;
+
+                const capitalizedTagName = tagName.charAt(0).toUpperCase() + tagName.slice(1).toLowerCase();
+                const normalizedTagName = capitalizedTagName.toLowerCase();
+
+                if (!tags.some(tag => tag.name.toLowerCase() === normalizedTagName)) {
+                    tags.push({ name: capitalizedTagName });
+                    renderTags();
+                }
+
+
+                tagInput.value = '';
+                hideSuggestions();
+            }
+
+            function showSuggestions() {
+                if (suggestions.length === 0) {
+                    hideSuggestions();
+                    return;
+                }
+
+                tagSuggestions.innerHTML = '';
+                suggestions.forEach((suggestion, index) => {
+                    const suggestionElement = document.createElement('div');
+                    suggestionElement.className = 'px-4 py-2 cursor-pointer hover:bg-blue-50 suggestion-item';
+                    suggestionElement.textContent = suggestion.name;
+                    suggestionElement.dataset.index = index;
+
+                    suggestionElement.addEventListener('mouseenter', () => {
+                        hoveredIndex = index;
+                        highlightSuggestion();
+                    });
+
+                    suggestionElement.addEventListener('click', () => {
+                        selectSuggestion(suggestion);
+                    });
+
+                    tagSuggestions.appendChild(suggestionElement);
+                });
+
+                tagSuggestions.classList.remove('hidden');
+                hoveredIndex = 0;
+                highlightSuggestion();
+            }
+
+            function hideSuggestions() {
+                tagSuggestions.classList.add('hidden');
+                hoveredIndex = -1;
+            }
+
+            function highlightSuggestion() {
+                document.querySelectorAll('.suggestion-item').forEach((item, index) => {
+                    if (index === hoveredIndex) {
+                        item.classList.add('bg-blue-50');
+                    } else {
+                        item.classList.remove('bg-blue-50');
+                    }
+                });
+            }
+
+            function selectSuggestion(suggestion) {
+                if (!tags.some(tag => tag.name.toLowerCase() === suggestion.name.toLowerCase())) {
+                    tags.push({ name: suggestion.name });
+                    renderTags();
+                }
+                tagInput.value = '';
+                hideSuggestions();
+                tagInput.focus();
+            }
+
+            // Handle storing new tags when form is submitted
+            const form = tagsContainer.closest('form');
+            if (form) {
+                form.addEventListener('submit', async function(e) {
+                    // No need to prevent default - we're just adding to the form data
+
+                    // For any tags that don't exist in the database, create them
+                    const tagNames = tags.map(tag => tag.name);
+
+                    try {
+                        const response = await fetch('/tag/store-multiple', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({ tags: tagNames })
+                        });
+
+                        if (!response.ok) {
+                            console.error('Failed to store some tags');
+                        }
+                    } catch (error) {
+                        console.error('Error storing tags:', error);
+                    }
+                });
             }
         });
     </script>

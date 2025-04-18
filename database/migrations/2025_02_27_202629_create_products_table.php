@@ -24,8 +24,8 @@ return new class extends Migration
             $table->integer('stock_quantity')->default(0); // Stock quantity
             $table->enum('stock_status', ['in_stock', 'out_of_stock', 'backorder'])->default('in_stock'); // Stock status
             $table->json('tags')->nullable();
-            $table->json('product_collections')->nullable()->after('tags');
-            $table->json('labels')->nullable()->after('product_collections');
+            $table->json('product_collections')->nullable();
+            $table->json('labels')->nullable();
             $table->json('related_products')->nullable();
             $table->boolean('is_featured')->default(false);
             $table->string('barcode', 100)->nullable()->unique();

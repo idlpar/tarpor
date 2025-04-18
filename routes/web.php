@@ -114,7 +114,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
     Route::prefix('tag')->name('tag.')->group(function () {
         Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
-        Route::post('/store', [TagController::class, 'store'])->name('store');
+        Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');
     });
 
     Route::prefix('gallery')->name('gallery.')->group(function () {

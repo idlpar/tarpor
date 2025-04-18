@@ -14,45 +14,60 @@ class TagController extends Controller
      */
     public function suggest(Request $request)
     {
-        // Validate the request
-        $request->validate([
-            'query' => 'required|string|max:255',
-        ]);
+        $query = strtolower($request->input('query', ''));
 
-        // Get the search query
-        $query = $request->input('query');
-
-        // Fetch matching tags from the database
         $tags = Tag::where('name', 'like', $query . '%')
-            ->distinct('name') // Ensure unique names
-            ->limit(10) // Limit the number of suggestions
+            ->orWhere('name', 'like', '% ' . $query . '%')
+            ->distinct('name')
+            ->limit(10)
             ->get(['id', 'name']);
 
-        // Return the suggestions as JSON
         return response()->json($tags);
     }
+
 
     /**
      * Store a new tag in the database.
      */
-    public function store(Request $request)
+
+    public function storeMultiple(Request $request)
     {
-        // Validate the request
         $request->validate([
-            'name' => 'required|string|max:255|unique:tags,name',
+            'tags' => 'required|array',
+            'tags.*' => 'string|max:255',
         ]);
 
-        // Create the tag
-        $tag = Tag::create([
-            'name' => Str::lower($request->input('name')), // Store in lowercase
-            'slug' => Str::slug($request->input('name')), // Generate a URL-friendly slug
-            'description' => $request->input('description', null), // Optional description
-            'product_count' => 0, // Default product count
-        ]);
+        $storedTags = [];
 
-        // Return the created tag as JSON
-        return response()->json($tag, 201);
+        foreach ($request->input('tags') as $tagName) {
+            $baseName = strtolower(trim($tagName));
+            if (empty($baseName)) continue;
+
+            // Check if exact tag exists
+            $existingTag = Tag::where('name', $baseName)->first();
+
+            if ($existingTag) {
+                $storedTags[] = $existingTag;
+                continue;
+            }
+
+            // Check for similar tags
+            $similarCount = Tag::where('name', 'like', $baseName . '%')->count();
+            $finalTagName = $similarCount > 0 ? $baseName . '-' . ($similarCount + 1) : $baseName;
+
+            $tag = Tag::create([
+                'name' => $finalTagName,
+                'slug' => Str::slug($finalTagName),
+                'product_count' => 0
+            ]);
+
+            $storedTags[] = $tag;
+        }
+
+        return response()->json([
+            'success' => true,
+            'tags' => $storedTags
+        ]);
     }
-
 
 }
