@@ -362,7 +362,7 @@ class GalleryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\-_ ]+$/',
-            'parent_id' => 'nullable|exists:media_folders,id'
+            'current_path' => 'nullable|string' // Add current path parameter
         ]);
 
         if ($validator->fails()) {
@@ -370,7 +370,14 @@ class GalleryController extends Controller
         }
 
         try {
-            $folder = MediaFolder::createWithPath($request->name, $request->parent_id);
+            // Get parent folder based on current path
+            $parentId = null;
+            if (!empty($request->current_path)) {
+                $parentFolder = MediaFolder::where('path', $request->current_path)->first();
+                $parentId = $parentFolder ? $parentFolder->id : null;
+            }
+
+            $folder = MediaFolder::createWithPath($request->name, $parentId);
 
             return response()->json([
                 'success' => true,
@@ -1865,5 +1872,6 @@ class GalleryController extends Controller
             'new_name' => $request->input('name')
         ]));
     }
+
 
 }

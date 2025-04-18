@@ -1036,6 +1036,32 @@
                 });
             },
 
+            showSuccessNotification(message) {
+                // Remove any existing notifications
+                const existingNotif = document.querySelector('.gallery-notification');
+                if (existingNotif) existingNotif.remove();
+
+                // Create notification element
+                const notif = document.createElement('div');
+                notif.className = 'gallery-notification success';
+                notif.textContent = message;
+
+                // Insert after breadcrumb
+                const breadcrumb = document.querySelector('.breadcrumb-container'); // Adjust selector as needed
+                if (breadcrumb) {
+                    breadcrumb.insertAdjacentElement('afterend', notif);
+                } else {
+                    // Fallback if breadcrumb not found
+                    document.body.prepend(notif);
+                }
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    notif.classList.add('fade-out');
+                    setTimeout(() => notif.remove(), 300);
+                }, 5000);
+            },
+
             renderContents(contents) {
                 this.elements.itemsContainer.innerHTML = '';
                 this.clearSelections();
@@ -1353,7 +1379,7 @@
                     });
             },
 
-                showFilePreview(file) {
+            showFilePreview(file) {
                     if (!file) {
                         this.clearPreview();
                         return;
@@ -1609,42 +1635,80 @@
             },
 
             createNewFolder() {
-                const folderName = prompt('Enter folder name:');
-                if (!folderName) return;
-
-                if (!/^[a-zA-Z0-9\-_ ]+$/.test(folderName)) {
-                    this.showError('Folder name can only contain letters, numbers, spaces, hyphens and underscores');
-                    return;
-                }
-
-                this.showProgress('Creating Folder');
-
-                fetch('{{ route("gallery.folder.create") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
+                // Use SweetAlert for better UX
+                Swal.fire({
+                    title: 'Create New Folder',
+                    input: 'text',
+                    inputLabel: 'Folder Name',
+                    inputPlaceholder: 'Enter folder name...',
+                    inputAttributes: {
+                        autocapitalize: 'off'
                     },
-                    body: JSON.stringify({
-                        name: folderName,
-                        parent_id: this.state.currentFolderId
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.showSuccess('Folder created successfully');
-                            this.loadContents();
-                        } else {
-                            throw new Error(data.message || 'Folder creation failed');
+                    showCancelButton: true,
+                    confirmButtonText: 'Create',
+                    cancelButtonText: 'Cancel',
+                    inputValidator: (value) => {
+                        if (!value) {
+                            return 'You need to enter a folder name!';
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        this.showError(error.message);
-                    })
-                    .finally(() => this.hideProgress());
+                        if (!/^[a-zA-Z0-9\-_ ]+$/.test(value)) {
+                            return 'Folder name can only contain letters, numbers, spaces, hyphens and underscores';
+                        }
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const folderName = result.value;
+                        this.showProgress('Creating Folder');
+
+                        fetch('{{ route("gallery.folder.create") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                name: folderName,
+                                parent_id: this.state.currentFolderId,
+                                current_path: this.state.currentPath // Add current path to ensure correct parent
+                            })
+                        })
+                            .then(response => {
+                                if (!response.ok) {
+                                    throw new Error('Network response was not ok');
+                                }
+                                return response.json();
+                            })
+                            .then(data => {
+                                if (data.success) {
+                                    // Show success notification below breadcrumb
+                                    this.showSuccessNotification('Folder created successfully');
+                                    this.loadContents();
+
+                                    // Also show SweetAlert success
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Success',
+                                        text: 'Folder created successfully',
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                } else {
+                                    throw new Error(data.message || 'Folder creation failed');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                this.showError(error.message);
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Error',
+                                    text: error.message
+                                });
+                            })
+                            .finally(() => this.hideProgress());
+                    }
+                });
             },
 
             deleteSelected(permanent = false) {
@@ -2558,7 +2622,26 @@
                     toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
                     setTimeout(() => toast.remove(), 500);
                 }, 3000);
-            }
+            },
+
+            showNotification(type, message) {
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.innerHTML = message;
+
+                // Insert below breadcrumb
+                const breadcrumb = document.querySelector('.breadcrumb');
+                if (breadcrumb) {
+                    breadcrumb.insertAdjacentElement('afterend', notification);
+                }
+
+                // Auto-remove after 5 seconds
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            },
+
+
         };
 
         // Initialize the gallery
@@ -2568,5 +2651,6 @@
         window.openGalleryModal = function(path = '', callback = null) {
             gallery.openModal(path, callback);
         };
+
     });
 </script>

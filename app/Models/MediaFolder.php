@@ -62,32 +62,24 @@ class MediaFolder extends Model
 
     public static function createWithPath($name, $parentId = null)
     {
-        return DB::transaction(function () use ($name, $parentId) {
-            $folder = new self([
-                'name' => $name,
-                'parent_id' => $parentId
-            ]);
+        $parent = $parentId ? self::find($parentId) : null;
 
-            if ($parentId) {
-                $parent = self::find($parentId);
-                if ($parent) {
-                    $folder->appendToNode($parent)->save();
-                    // Explicitly set depth after saving
-                    $folder->depth = $parent->depth + 1;
-                    $folder->save();
-                } else {
-                    $folder->saveAsRoot();
-                    $folder->depth = 0;
-                    $folder->save();
-                }
-            } else {
-                $folder->saveAsRoot();
-                $folder->depth = 0;
-                $folder->save();
-            }
+        $folder = new self([
+            'name' => $name,
+        ]);
 
-            return $folder;
-        });
+        if ($parent) {
+            $folder->path = $parent->path.'/'.Str::slug($name);
+            $folder->appendToNode($parent)->save();
+        } else {
+            $folder->path = Str::slug($name);
+            $folder->saveAsRoot();
+        }
+
+        // Create physical directory
+        Storage::disk('public')->makeDirectory($folder->path);
+
+        return $folder;
     }
 
     // Relationship to child folders
