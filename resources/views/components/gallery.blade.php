@@ -163,6 +163,50 @@
         overflow-x: auto;
     }
 
+    /* Success notification styles */
+    .gallery-notification {
+        padding: 0.75rem 1rem;
+        margin: 0 1rem;
+        border-radius: 0.375rem;
+        font-size: 0.875rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        animation: slideIn 0.3s ease-out;
+        position: relative;
+        z-index: 10;
+    }
+
+    .gallery-notification.success {
+        background-color: #ecfdf5;
+        color: #059669;
+        border: 1px solid #a7f3d0;
+    }
+
+    .gallery-notification.fade-out {
+        animation: fadeOut 0.3s ease-in;
+    }
+
+    @keyframes slideIn {
+        from {
+            transform: translateY(-20px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+
+    @keyframes fadeOut {
+        from {
+            opacity: 1;
+        }
+        to {
+            opacity: 0;
+        }
+    }
+
     .breadcrumb-item {
         display: flex;
         align-items: center;
@@ -632,6 +676,9 @@
             <!-- Dynamic breadcrumbs will be inserted here -->
         </div>
 
+        <!-- Success notification will appear here -->
+        <div id="notificationArea"></div>
+
         <!-- Main Content -->
         <div class="gallery-content relative">
             <!-- Items Grid -->
@@ -702,7 +749,6 @@
     </div>
 </div>
 
-
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
@@ -738,7 +784,8 @@
                 progressModal: document.getElementById('progressModal'),
                 progressTitle: document.getElementById('progressTitle'),
                 progressBar: document.getElementById('progressBar'),
-                progressStatus: document.getElementById('progressStatus')
+                progressStatus: document.getElementById('progressStatus'),
+                notificationArea: document.getElementById('notificationArea')
             },
 
             // State
@@ -1044,10 +1091,13 @@
                 // Create notification element
                 const notif = document.createElement('div');
                 notif.className = 'gallery-notification success';
-                notif.textContent = message;
+                notif.innerHTML = `
+                    <i class="fas fa-check-circle mr-2"></i>
+                    <span>${message}</span>
+                `;
 
                 // Insert after breadcrumb
-                const breadcrumb = document.querySelector('.breadcrumb-container'); // Adjust selector as needed
+                const breadcrumb = document.getElementById('breadcrumbContainer');
                 if (breadcrumb) {
                     breadcrumb.insertAdjacentElement('afterend', notif);
                 } else {
@@ -1380,85 +1430,85 @@
             },
 
             showFilePreview(file) {
-                    if (!file) {
-                        this.clearPreview();
-                        return;
-                    }
+                if (!file) {
+                    this.clearPreview();
+                    return;
+                }
 
-                    // Clear previous preview
-                    this.elements.previewContent.innerHTML = '';
+                // Clear previous preview
+                this.elements.previewContent.innerHTML = '';
 
-                    const previewContainer = document.createElement('div');
-                    previewContainer.className = 'preview-image-container';
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-image-container';
 
-                    if (file.mime_type.startsWith('image/')) {
-                        // Create intersection observer if not exists
-                        if (!this.previewObserver) {
-                            this.previewObserver = new IntersectionObserver((entries) => {
-                                entries.forEach(entry => {
-                                    if (entry.isIntersecting) {
-                                        const container = entry.target;
-                                        const img = new Image();
-                                        img.src = container.dataset.src;
-                                        img.alt = container.dataset.alt;
-                                        img.className = 'preview-image';
+                if (file.mime_type.startsWith('image/')) {
+                    // Create intersection observer if not exists
+                    if (!this.previewObserver) {
+                        this.previewObserver = new IntersectionObserver((entries) => {
+                            entries.forEach(entry => {
+                                if (entry.isIntersecting) {
+                                    const container = entry.target;
+                                    const img = new Image();
+                                    img.src = container.dataset.src;
+                                    img.alt = container.dataset.alt;
+                                    img.className = 'preview-image';
 
-                                        img.onload = () => {
-                                            container.innerHTML = '';
-                                            container.appendChild(img);
-                                        };
+                                    img.onload = () => {
+                                        container.innerHTML = '';
+                                        container.appendChild(img);
+                                    };
 
-                                        img.onerror = () => {
-                                            container.innerHTML = `
+                                    img.onerror = () => {
+                                        container.innerHTML = `
                                 <div class="preview-error-state">
                                     <i class="fas fa-exclamation-triangle"></i>
                                     <span>Image failed to load</span>
                                 </div>
                             `;
-                                        };
+                                    };
 
-                                        this.previewObserver.unobserve(container);
-                                    }
-                                });
-                            }, { threshold: 0.1 });
-                        }
+                                    this.previewObserver.unobserve(container);
+                                }
+                            });
+                        }, { threshold: 0.1 });
+                    }
 
-                        // Create lazy container
-                        const lazyContainer = document.createElement('div');
-                        lazyContainer.className = 'lazy-preview-container';
-                        lazyContainer.dataset.src = file.url;
-                        lazyContainer.dataset.alt = file.name;
+                    // Create lazy container
+                    const lazyContainer = document.createElement('div');
+                    lazyContainer.className = 'lazy-preview-container';
+                    lazyContainer.dataset.src = file.url;
+                    lazyContainer.dataset.alt = file.name;
 
-                        // Show placeholder
-                        lazyContainer.innerHTML = `
+                    // Show placeholder
+                    lazyContainer.innerHTML = `
             <div class="preview-placeholder">
                 <i class="fas fa-image"></i>
             </div>
         `;
 
-                        previewContainer.appendChild(lazyContainer);
-                        this.previewObserver.observe(lazyContainer);
-                    } else {
-                        // Non-image files
-                        const icon = document.createElement('i');
-                        icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
-                        previewContainer.appendChild(icon);
-                    }
+                    previewContainer.appendChild(lazyContainer);
+                    this.previewObserver.observe(lazyContainer);
+                } else {
+                    // Non-image files
+                    const icon = document.createElement('i');
+                    icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
+                    previewContainer.appendChild(icon);
+                }
 
-                    // Rest of the method remains the same...
-                    this.elements.previewContent.appendChild(previewContainer);
-                    this.elements.detailName.textContent = file.name;
-                    this.elements.detailType.textContent = file.mime_type;
-                    this.elements.detailSize.textContent = this.formatFileSize(file.size);
-                    this.elements.detailDimensions.textContent = file.dimensions ?
-                        `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
-                    this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
-                    this.elements.previewDetails.classList.remove('hidden');
-                    this.elements.actionButtons.classList.remove('hidden');
+                // Rest of the method remains the same...
+                this.elements.previewContent.appendChild(previewContainer);
+                this.elements.detailName.textContent = file.name;
+                this.elements.detailType.textContent = file.mime_type;
+                this.elements.detailSize.textContent = this.formatFileSize(file.size);
+                this.elements.detailDimensions.textContent = file.dimensions ?
+                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
+                this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
+                this.elements.previewDetails.classList.remove('hidden');
+                this.elements.actionButtons.classList.remove('hidden');
 
-                    const emptyState = this.elements.previewContent.querySelector('.preview-empty');
-                    if (emptyState) emptyState.classList.add('hidden');
-                },
+                const emptyState = this.elements.previewContent.querySelector('.preview-empty');
+                if (emptyState) emptyState.classList.add('hidden');
+            },
 
             showFolderPreview(folder) {
                 if (!folder) {
@@ -1611,7 +1661,7 @@
                             this.updateProgress(100, 'Processing files...');
                             setTimeout(() => {
                                 this.hideProgress();
-                                this.showSuccess('Files uploaded successfully');
+                                this.showSuccessNotification('Files uploaded successfully');
                                 this.loadContents();
                             }, 500);
                         } else {
@@ -1741,7 +1791,7 @@
                             this.updateProgress(100, 'Completed');
                             setTimeout(() => {
                                 this.hideProgress();
-                                this.showSuccess(data.message);
+                                this.showSuccessNotification(data.message);
                                 this.clearPreview();
                                 this.refreshContents();
                             }, 500);
@@ -1781,7 +1831,7 @@
                             this.updateProgress(100, 'Completed');
                             setTimeout(() => {
                                 this.hideProgress();
-                                this.showSuccess(data.message);
+                                this.showSuccessNotification(data.message);
                                 this.clearPreview();
                                 this.refreshContents();
                             }, 500);
@@ -1818,7 +1868,7 @@
                             this.updateProgress(100, 'Completed');
                             setTimeout(() => {
                                 this.hideProgress();
-                                this.showSuccess(data.message);
+                                this.showSuccessNotification(data.message);
                                 this.clearPreview();
                                 this.loadTrashContents();
                             }, 500);
@@ -1878,7 +1928,7 @@
                         .then(data => {
                             if (data.success) {
                                 this.copyToClipboard(data.url);
-                                this.showSuccess('URL copied to clipboard');
+                                this.showSuccessNotification('URL copied to clipboard');
                             } else {
                                 throw new Error(data.message || 'URL generation failed');
                             }
@@ -2124,7 +2174,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            this.showSuccess(data.message);
+                            this.showSuccessNotification(data.message);
                         } else {
                             throw new Error(data.message || 'Failed to cut items');
                         }
@@ -2157,7 +2207,7 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            this.showSuccess(data.message);
+                            this.showSuccessNotification(data.message);
                         } else {
                             throw new Error(data.message || 'Failed to copy items');
                         }
@@ -2192,7 +2242,7 @@
                             this.updateProgress(100, 'Completed');
                             setTimeout(() => {
                                 this.hideProgress();
-                                this.showSuccess(data.message);
+                                this.showSuccessNotification(data.message);
                                 if (this.state.clipboard.action === 'cut') {
                                     this.state.clipboard = null;
                                 }
@@ -2296,7 +2346,7 @@
                     })
                     .then(data => {
                         if (data.success) {
-                            this.showSuccess(data.message);
+                            this.showSuccessNotification(data.message);
                             this.loadContents();
                         } else {
                             throw new Error(data.message || 'Rename failed');
@@ -2542,13 +2592,13 @@
                 return '';
             },
 
-        // Helper function to format a Date object to dd-mm-yy
-        formatToDDMMYY(date) {
-            const day = String(date.getDate()).padStart(2, '0');
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const year = String(date.getFullYear()).slice(-2);
-            return `${day}-${month}-${year}`;
-        },
+            // Helper function to format a Date object to dd-mm-yy
+            formatToDDMMYY(date) {
+                const day = String(date.getDate()).padStart(2, '0');
+                const month = String(date.getMonth() + 1).padStart(2, '0');
+                const year = String(date.getFullYear()).slice(-2);
+                return `${day}-${month}-${year}`;
+            },
 
 
             copyToClipboard(text) {
