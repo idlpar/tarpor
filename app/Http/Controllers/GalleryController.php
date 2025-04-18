@@ -136,7 +136,6 @@ class GalleryController extends Controller
                 'is_featured' => $file->is_featured
             ];
         }
-
         return $contents;
     }
 

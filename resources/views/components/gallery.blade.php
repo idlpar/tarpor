@@ -59,6 +59,25 @@
         background-color: white;
         border-bottom: 1px solid #e2e8f0;
     }
+    /* Add to your existing styles */
+    .lazy-load-container {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8fafc;
+    }
+
+    .lazy-load-container img {
+        transition: opacity 0.3s ease;
+        opacity: 0;
+    }
+
+    .lazy-load-container img.loaded {
+        opacity: 1;
+    }
 
     .toolbar-group {
         display: flex;
@@ -276,6 +295,7 @@
         border-left: 1px solid #e2e8f0;
     }
 
+    /* Add to your existing styles */
     .preview-image-container {
         max-height: 300px;
         display: flex;
@@ -285,6 +305,7 @@
         border-radius: 0.5rem;
         padding: 1rem;
         margin-bottom: 1rem;
+        overflow: hidden;
     }
 
     .preview-image {
@@ -732,6 +753,7 @@
             init() {
                 this.setupEventListeners();
                 this.setupAccessibility();
+                this.setupLazyLoading();
             },
 
             // Event Listeners
@@ -850,6 +872,72 @@
                 this.elements.itemsContainer.setAttribute('tabindex', '0');
             },
 
+            // Add this to your gallery.init() method
+            setupLazyLoading() {
+                if ('IntersectionObserver' in window) {
+                    this.lazyImageObserver = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const lazyContainer = entry.target;
+                                this.loadLazyImage(lazyContainer);
+                                this.lazyImageObserver.unobserve(lazyContainer);
+                            }
+                        });
+                    }, {
+                        rootMargin: '100px 0px',
+                        threshold: 0.01
+                    });
+
+                    this.observeAllLazyContainers();
+                } else {
+                    this.loadAllImagesImmediately();
+                }
+            },
+
+            loadLazyImage(lazyContainer) {
+                const imgSrc = lazyContainer.dataset.src;
+                const imgAlt = lazyContainer.dataset.alt;
+
+                if (imgSrc) {
+                    // Show loading spinner
+                    lazyContainer.innerHTML = '<i class="fas fa-spinner loading-spinner"></i>';
+
+                    const img = new Image();
+                    img.src = imgSrc;
+                    img.alt = imgAlt;
+                    img.className = 'max-h-full max-w-full';
+                    img.onload = () => {
+                        lazyContainer.innerHTML = '';
+                        img.classList.add('loaded');
+                        lazyContainer.appendChild(img);
+                    };
+                    img.onerror = () => {
+                        lazyContainer.innerHTML = `<i class="fas fa-${this.getFileIcon('')} folder-icon text-4xl text-blue-400"></i>`;
+                    };
+                }
+            },
+
+            observeAllLazyContainers() {
+                document.querySelectorAll('.lazy-load-container').forEach(container => {
+                    if (!container.querySelector('img')) {
+                        this.lazyImageObserver.observe(container);
+                    }
+                });
+            },
+
+            // Fallback method for browsers without IntersectionObserver
+            loadAllImagesImmediately() {
+                document.querySelectorAll('.lazy-load-container[data-src]').forEach(container => {
+                    this.loadLazyImage(container);
+                });
+            },
+
+            refreshLazyObserver() {
+                if (this.lazyImageObserver) {
+                    this.observeAllLazyContainers();
+                }
+            },
+
             // Navigation
             navigateToPath(path) {
                 this.state.currentPath = path;
@@ -955,6 +1043,9 @@
                 } else {
                     this.renderNormalView(contents);
                 }
+
+                // Initialize lazy loading after content is rendered
+                this.setupLazyLoading();
             },
 
             renderTrashView(contents) {
@@ -1048,20 +1139,29 @@
                 if (folder.parent_id) folderItem.dataset.parent_id = folder.parent_id;
 
                 folderItem.innerHTML = `
-                    <div class="item-thumbnail">
-                        <div class="h-full flex items-center justify-center">
+                    <div class="item-thumbnail relative">
+                        <!-- Top Bar: Created At (left) and Checkbox (right) -->
+                        <div class="absolute top-3 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
+                            <span class="bg-blue-50 text-blue-700 font-medium px-2 py-0.5 rounded-md shadow-sm border border-blue-200">
+                                    ${this.formatDate(folder.created_at)}
+                                </span>
+                        </div>
+                        <div class="item-checkbox absolute top-1 right-1">
+                            <input type="checkbox" class="align-middle">
+                        </div>
+
+                        <!-- Folder Icon Centered -->
+                        <div class="h-24 flex items-center justify-center">
                             <i class="fas fa-folder folder-icon text-4xl text-yellow-400"></i>
                         </div>
-                        <div class="item-checkbox">
-                            <input type="checkbox" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}>
-                        </div>
+
+                        <!-- Item Count Bottom Left -->
                         <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
                             ${folder.item_count || 0} items
                         </div>
                     </div>
                     <div class="item-info">
-                        <div class="item-name">${folder.name}</div>
-                        <div class="item-meta">${this.formatDate(folder.created_at)}</div>
+                        <div class="item-name text-center">${folder.name}</div>
                     </div>
                 `;
 
@@ -1092,25 +1192,31 @@
 
                 const thumbnail = file.thumb_url || file.url;
                 const thumbnailContent = thumbnail ?
-                    `<img src="${thumbnail}" alt="${file.name}" class="max-h-full max-w-full">` :
+                    `<div class="lazy-load-container" data-src="${thumbnail}" data-alt="${file.name}">
+            <i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>
+        </div>` :
                     `<i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>`;
 
                 fileItem.innerHTML = `
-                    <div class="item-thumbnail">
-                        ${thumbnailContent}
-                        ${file.is_featured ? '<i class="fas fa-star absolute top-1 left-1 text-yellow-400"></i>' : ''}
-                        <div class="item-checkbox">
-                            <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
-                        </div>
-                        <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
-                            ${this.formatFileSize(file.size)}
-                        </div>
-                    </div>
-                    <div class="item-info">
-                        <div class="item-name">${file.name}</div>
-                        <div class="item-meta">${this.formatDate(file.created_at)}</div>
-                    </div>
-                `;
+        <div class="item-thumbnail">
+            ${thumbnailContent}
+            ${file.is_featured ? '<i class="fas fa-star absolute top-1 left-1 text-yellow-400"></i>' : ''}
+            <div class="absolute top-3 left-1 text-xs">
+                <span class="bg-white/70 text-gray-700 font-medium px-2 py-0.5 rounded-md shadow-sm border border-gray-300">
+                    ${this.formatDate(file.created_at)}
+                </span>
+            </div>
+            <div class="item-checkbox">
+                <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
+            </div>
+            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
+                ${this.formatFileSize(file.size_bytes)}
+            </div>
+        </div>
+        <div class="item-info">
+            <div class="item-name">${file.name}</div>
+        </div>
+    `;
 
                 if (isTrash) {
                     fileItem.classList.add('deleted-item');
@@ -1120,7 +1226,6 @@
                     if (e.shiftKey) {
                         this.toggleItemSelection(file.id, 'file', fileItem);
                     } else {
-                        // Single click just selects the item
                         if (!this.isSelected(file.id, 'file')) {
                             this.clearSelections();
                             this.toggleItemSelection(file.id, 'file', fileItem);
@@ -1227,6 +1332,7 @@
                     .then(data => {
                         if (data.success) {
                             if (type === 'file') {
+                                // Make sure we're passing the complete file object
                                 this.showFilePreview(data.file);
                             } else {
                                 this.showFolderPreview(data.folder);
@@ -1245,44 +1351,86 @@
                     });
             },
 
-            showFilePreview(file) {
-                if (!file) {
-                    this.clearPreview();
-                    return;
-                }
+                showFilePreview(file) {
+                    if (!file) {
+                        this.clearPreview();
+                        return;
+                    }
 
-                this.elements.previewContent.innerHTML = '';
+                    // Clear previous preview
+                    this.elements.previewContent.innerHTML = '';
 
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'preview-image-container';
+                    const previewContainer = document.createElement('div');
+                    previewContainer.className = 'preview-image-container';
 
-                if (file.mime_type.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = file.url;
-                    img.alt = file.name;
-                    img.className = 'preview-image';
-                    previewContainer.appendChild(img);
-                } else {
-                    const icon = document.createElement('i');
-                    icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
-                    previewContainer.appendChild(icon);
-                }
+                    if (file.mime_type.startsWith('image/')) {
+                        // Create intersection observer if not exists
+                        if (!this.previewObserver) {
+                            this.previewObserver = new IntersectionObserver((entries) => {
+                                entries.forEach(entry => {
+                                    if (entry.isIntersecting) {
+                                        const container = entry.target;
+                                        const img = new Image();
+                                        img.src = container.dataset.src;
+                                        img.alt = container.dataset.alt;
+                                        img.className = 'preview-image';
 
-                this.elements.previewContent.appendChild(previewContainer);
+                                        img.onload = () => {
+                                            container.innerHTML = '';
+                                            container.appendChild(img);
+                                        };
 
-                // Update details
-                this.elements.detailName.textContent = file.name;
-                this.elements.detailType.textContent = file.mime_type;
-                this.elements.detailSize.textContent = this.formatFileSize(file.size);
-                this.elements.detailDimensions.textContent = file.dimensions ?
-                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
-                this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
+                                        img.onerror = () => {
+                                            container.innerHTML = `
+                                <div class="preview-error-state">
+                                    <i class="fas fa-exclamation-triangle"></i>
+                                    <span>Image failed to load</span>
+                                </div>
+                            `;
+                                        };
 
-                // Show elements
-                this.elements.previewDetails.classList.remove('hidden');
-                this.elements.actionButtons.classList.remove('hidden');
-                this.elements.previewContent.querySelector('.preview-empty')?.classList.add('hidden');
-            },
+                                        this.previewObserver.unobserve(container);
+                                    }
+                                });
+                            }, { threshold: 0.1 });
+                        }
+
+                        // Create lazy container
+                        const lazyContainer = document.createElement('div');
+                        lazyContainer.className = 'lazy-preview-container';
+                        lazyContainer.dataset.src = file.url;
+                        lazyContainer.dataset.alt = file.name;
+
+                        // Show placeholder
+                        lazyContainer.innerHTML = `
+            <div class="preview-placeholder">
+                <i class="fas fa-image"></i>
+            </div>
+        `;
+
+                        previewContainer.appendChild(lazyContainer);
+                        this.previewObserver.observe(lazyContainer);
+                    } else {
+                        // Non-image files
+                        const icon = document.createElement('i');
+                        icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
+                        previewContainer.appendChild(icon);
+                    }
+
+                    // Rest of the method remains the same...
+                    this.elements.previewContent.appendChild(previewContainer);
+                    this.elements.detailName.textContent = file.name;
+                    this.elements.detailType.textContent = file.mime_type;
+                    this.elements.detailSize.textContent = this.formatFileSize(file.size);
+                    this.elements.detailDimensions.textContent = file.dimensions ?
+                        `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
+                    this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
+                    this.elements.previewDetails.classList.remove('hidden');
+                    this.elements.actionButtons.classList.remove('hidden');
+
+                    const emptyState = this.elements.previewContent.querySelector('.preview-empty');
+                    if (emptyState) emptyState.classList.add('hidden');
+                },
 
             showFolderPreview(folder) {
                 if (!folder) {
@@ -1386,6 +1534,9 @@
                 } else {
                     this.loadContents();
                 }
+
+                // Refresh lazy loading observer after content loads
+                this.refreshLazyObserver();
             },
 
             showUploadDialog() {
@@ -1696,6 +1847,7 @@
                     .then(data => {
                         if (data.success) {
                             this.renderContents(data.contents);
+                            this.refreshLazyObserver(); // Add this line
                         } else {
                             throw new Error(data.message || 'Search failed');
                         }
@@ -2205,16 +2357,73 @@
                 return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
             },
 
-            formatDate(dateString) {
-                if (!dateString) return '';
+            formatDate(dateInput) {
+                // Helper function moved inside
+                const formatToDDMMYY = (date) => {
+                    const day = String(date.getDate()).padStart(2, '0');
+                    const month = String(date.getMonth() + 1).padStart(2, '0');
+                    const year = String(date.getFullYear()).slice(-2);
+                    return `${day}-${month}-${year}`;
+                };
 
-                const date = new Date(dateString);
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = String(date.getFullYear()).slice(-2);
+                if (!dateInput) return '';
 
-                return `${day}-${month}-${year}`;
+                // Handle Unix timestamp (seconds or milliseconds)
+                if (typeof dateInput === 'number') {
+                    const timestamp = dateInput.toString().length === 10 ? dateInput * 1000 : dateInput;
+                    const date = new Date(timestamp);
+                    if (isNaN(date.getTime())) return '';
+                    return formatToDDMMYY(date);
+                }
+
+                // Handle string input
+                if (typeof dateInput === 'string') {
+                    // ISO format (2023-12-31 or 2023-12-31T00:00:00Z)
+                    if (dateInput.includes('T') || /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+                        const date = new Date(dateInput);
+                        if (!isNaN(date.getTime())) {
+                            return formatToDDMMYY(date);
+                        }
+                    }
+
+                    // Handle dd-mm-yyyy or dd/mm/yyyy input
+                    const dashParts = dateInput.split('-');
+                    const slashParts = dateInput.split('/');
+
+                    if (dashParts.length === 3 || slashParts.length === 3) {
+                        const parts = dashParts.length === 3 ? dashParts : slashParts;
+                        if (parts[0].length === 4) { // yyyy-mm-dd
+                            const [year, month, day] = parts;
+                            return `${day}-${month}-${year.slice(-2)}`;
+                        } else { // dd-mm-yyyy
+                            const [day, month, year] = parts;
+                            return `${day}-${month}-${year.slice(-2)}`;
+                        }
+                    }
+
+                    // Fallback for other string formats
+                    const date = new Date(dateInput);
+                    if (!isNaN(date.getTime())) {
+                        return formatToDDMMYY(date);
+                    }
+                }
+
+                // Handle Date object input
+                if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
+                    return formatToDDMMYY(dateInput);
+                }
+
+                return '';
             },
+
+        // Helper function to format a Date object to dd-mm-yy
+        formatToDDMMYY(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = String(date.getFullYear()).slice(-2);
+            return `${day}-${month}-${year}`;
+        },
+
 
             copyToClipboard(text) {
                 const textarea = document.createElement('textarea');
