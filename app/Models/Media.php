@@ -178,4 +178,37 @@ class Media extends Model
     {
         return pathinfo($this->file_name, PATHINFO_EXTENSION);
     }
+
+//    public function verifyFiles()
+//    {
+//        $disk = Storage::disk($this->disk);
+//        $basePath = $this->directory ? $this->directory.'/' : '';
+//
+//        $missing = [];
+//
+//        // Check original file
+//        if (!$disk->exists($basePath.$this->file_name)) {
+//            $missing[] = 'Original file';
+//        }
+//
+//        // Check conversions
+//        foreach ($this->manipulations ?? [] as $conversion => $settings) {
+//            if (!$disk->exists($basePath.$conversion.'/'.$this->file_name)) {
+//                $missing[] = $conversion.' conversion';
+//            }
+//        }
+//
+//        // Check video thumbnail
+//        if (str_starts_with($this->mime_type, 'video/')) {
+//            $thumbPath = $basePath.'thumb/'.$this->file_name.'.jpg';
+//            if (!$disk->exists($thumbPath)) {
+//                $missing[] = 'Video thumbnail';
+//            }
+//        }
+//
+//        return [
+//            'valid' => empty($missing),
+//            'missing' => $missing
+//        ];
+//    }
 }

@@ -702,6 +702,8 @@
     </div>
 </div>
 
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function() {
         // Gallery Controller
@@ -2147,14 +2149,69 @@
                 if (this.state.selectedItems.length !== 1) return;
 
                 const item = this.state.selectedItems[0];
-                const currentName = prompt('Enter new name:');
-                if (!currentName) return;
+                const itemElement = document.querySelector(`.gallery-item[data-id="${item.id}"]`);
+                const currentName = itemElement ? itemElement.querySelector('.item-name').textContent : '';
 
+                Swal.fire({
+                    title: `Rename ${item.type}`,
+                    html: `
+            <div class="text-left mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Current name:</label>
+                <div class="p-2 bg-gray-100 rounded">${currentName}</div>
+            </div>
+            <div class="text-left">
+                <label for="newName" class="block text-sm font-medium text-gray-700 mb-1">New name:</label>
+                <input id="newName" class="swal2-input" value="${currentName}" placeholder="Enter new name">
+            </div>
+            ${item.type === 'file' ? `
+            <div class="text-left mt-3">
+                <label class="inline-flex items-center">
+                    <input type="checkbox" id="updateSlug" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" checked>
+                    <span class="ml-2 text-sm text-gray-700">Update SEO slug automatically</span>
+                </label>
+            </div>
+            ` : ''}
+        `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'Rename',
+                    cancelButtonText: 'Cancel',
+                    preConfirm: () => {
+                        const newNameInput = document.getElementById('newName');
+                        const newName = newNameInput.value.trim();
+
+                        if (!newName) {
+                            Swal.showValidationMessage('Please enter a name');
+                            return false;
+                        }
+
+                        if (newName === currentName) {
+                            Swal.showValidationMessage('New name must be different');
+                            return false;
+                        }
+
+                        const shouldUpdateSlug = item.type === 'file' ?
+                            document.getElementById('updateSlug').checked :
+                            false;
+
+                        return {
+                            newName: newName,
+                            updateSlug: shouldUpdateSlug
+                        };
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const { newName, updateSlug } = result.value;
+                        this.performRename(item, newName, updateSlug);
+                    }
+                });
+            },
+
+            performRename(item, newName, updateSlug) {
                 this.showProgress('Renaming Item');
-                this.updateProgress(30, 'Processing...');
 
-                fetch(`{{ route('gallery.file.rename', ['id' => '__ID__']) }}`.replace('__ID__', item.id), {
-                    method: 'POST',
+                fetch(`/gallery/file/${item.id}/rename`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -2163,28 +2220,33 @@
                     body: JSON.stringify({
                         type: item.type,
                         id: item.id,
-                        new_name: currentName
+                        new_name: newName,
+                        update_slug: updateSlug
                     })
                 })
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
                     .then(data => {
                         if (data.success) {
-                            this.updateProgress(100, 'Completed');
-                            setTimeout(() => {
-                                this.hideProgress();
-                                this.showSuccess(data.message);
-                                this.loadContents();
-                            }, 500);
+                            this.showSuccess(data.message);
+                            this.loadContents();
                         } else {
                             throw new Error(data.message || 'Rename failed');
                         }
                     })
                     .catch(error => {
-                        this.hideProgress();
                         console.error('Rename error:', error);
                         this.showError(error.message);
+                    })
+                    .finally(() => {
+                        this.hideProgress();
                     });
             },
+
 
             selectAllItems() {
                 const items = this.elements.itemsContainer.querySelectorAll('.gallery-item');

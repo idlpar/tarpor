@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\DeleteFolderContents;
+use App\Jobs\RenameFileJob;
+use App\Jobs\RenameFolderJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -17,6 +19,7 @@ use App\Jobs\ProcessImageConversions;
 use App\Jobs\ProcessVideoThumbnail;
 use App\Jobs\DeleteMediaFiles;
 use App\Jobs\RestoreMediaFiles;
+
 
 class GalleryController extends Controller
 {
@@ -703,56 +706,58 @@ class GalleryController extends Controller
     /**
      * Rename a file
      */
-    protected function renameFile($fileId, $newName)
+    public function renameFile($fileId, $newName)
     {
         $media = Media::findOrFail($fileId);
+        // Keep original input for display name
+        $displayName = $newName;
+
         $newBaseName = Str::slug(pathinfo($newName, PATHINFO_FILENAME));
         $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
         $newFileName = $newBaseName.'.'.$extension;
 
-        if ($media->file_name === $newFileName) {
+        if ($media->file_name === $newFileName && $media->name === $displayName) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
-        }
-
-        $oldPath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
-        $newPath = $media->directory ? $media->directory.'/'.$newFileName : $newFileName;
-
-        if (Storage::disk($this->disk)->exists($newPath)) {
-            throw new \Exception("A file with this name already exists in the folder");
         }
 
         DB::beginTransaction();
 
         try {
-            // Rename original file
-            Storage::disk($this->disk)->move($oldPath, $newPath);
+            // Store old filename for job
+            $oldFileName = $media->file_name;
 
-            // Rename conversions
-            foreach ($this->conversions as $conversion => $settings) {
-                $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
-                $newConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$newFileName;
-
-                if (Storage::disk($this->disk)->exists($oldConversionPath)) {
-                    Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
-                }
-            }
-
-            // Update record
-            $media->name = pathinfo($newName, PATHINFO_FILENAME);
+            // Update database record first
             $media->file_name = $newFileName;
+            $media->name = $displayName;
             $media->save();
+
+            // Dispatch rename job with all necessary data
+            RenameFileJob::dispatch(
+                $media->fresh(), // Fresh instance to avoid serialization issues
+                $oldFileName,
+                $newFileName,
+                $this->conversions
+            )->onQueue('media');
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'media' => $media,
-                'message' => 'File renamed successfully'
+                'message' => 'File rename has been queued',
+                'media' => $media
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw $e;
+            Log::error("File rename failed", [
+                'media_id' => $fileId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Rename failed: '.$e->getMessage()
+            ], 500);
         }
     }
 
@@ -762,49 +767,67 @@ class GalleryController extends Controller
     protected function renameFolder($folderId, $newName)
     {
         $folder = MediaFolder::findOrFail($folderId);
+
+        // Keep original input for display name
+        $displayName = $newName;
+
+        // Create slugged version for physical path
         $newFolderName = Str::slug($newName);
 
         $oldPath = $folder->path;
         $parentPath = dirname($oldPath);
         $newPath = ($parentPath !== '.' ? $parentPath.'/' : '').$newFolderName;
 
-        if ($folder->path === $newPath) {
+        if ($folder->path === $newPath && $folder->name === $displayName) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
         }
 
-        if (MediaFolder::where('path', $newPath)->exists()) {
+        // Check for existing folder
+        if (MediaFolder::where('path', $newPath)->where('id', '!=', $folder->id)->exists()) {
             throw new \Exception("A folder with this name already exists in the parent directory");
         }
 
         DB::beginTransaction();
 
         try {
-            // Rename physical folder
-            Storage::disk($this->disk)->move($oldPath, $newPath);
+            // 1. First update the database records
+            $folder->name = $displayName;
+            $folder->path = $newPath;
+            $folder->save();
 
-            // Update folder and all its children in database
+            // Update all child paths in database
             $this->updateFolderPaths($oldPath, $newPath);
 
-            // Update all media records in this folder and subfolders
+            // Update media records
             Media::where('directory', 'like', $oldPath.'%')
-                ->update([
-                    'directory' => DB::raw("REPLACE(directory, '$oldPath', '$newPath')")
-                ]);
+                ->update(['directory' => DB::raw("REPLACE(directory, '$oldPath', '$newPath')")]);
 
             // Fix tree structure
             MediaFolder::fixTree();
+
+            // 2. Dispatch job to rename physical folder
+            RenameFolderJob::dispatch($oldPath, $newPath)
+                ->onQueue('media');
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'folder' => $folder->fresh(),
-                'message' => 'Folder renamed successfully'
+                'folder' => $folder,
+                'message' => 'Folder rename has been queued'
             ]);
 
         } catch (\Exception $e) {
             DB::rollBack();
-            throw $e;
+            Log::error("Folder rename failed", [
+                'folder_id' => $folderId,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Folder rename failed: '.$e->getMessage()
+            ], 500);
         }
     }
 

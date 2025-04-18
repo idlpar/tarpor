@@ -129,8 +129,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
         Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
         Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
-        Route::put('/file/{id}', [GalleryController::class, 'updateFile'])->name('file.update');
-        Route::put('/file/{id}', [GalleryController::class, 'renameItem'])->name('file.rename');
+        Route::put('/file/{id}/rename', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
 
         // Folder operations
