@@ -851,6 +851,8 @@
                 isTrashView: false,
                 clipboard: null,
                 callback: null,
+                productImages: [],
+                featuredImage: null,
                 pagination: {
                     currentPage: 1,
                     perPage: 10,
@@ -858,7 +860,8 @@
                     totalPages: 1,
                     hasPrevious: false,
                     hasNext: false
-                }
+                },
+                _productImageSelectionInitialized: false // Add this flag
             },
 
             // Initialize the gallery
@@ -866,6 +869,7 @@
                 this.setupEventListeners();
                 this.setupAccessibility();
                 this.setupLazyLoading();
+                this.setupProductImageSelection();
             },
 
             // Event Listeners
@@ -919,9 +923,154 @@
                     this.emptyTrash();
                 });
 
+
                 this.elements.insertButton.addEventListener('click', (e) => {
                     e.preventDefault();
-                    this.insertSelected();
+                    console.log('Selected item type:', this.state.selectedItems);
+                    if (this.state.callback) {
+                        // Handle callback mode (for both featured image and product images)
+                        if (this.state.selectedItems.length === 0) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'No Selection',
+                                text: 'Please select at least one item',
+                                confirmButtonColor: '#3b82f6',
+                            });
+                            return;
+                        }
+
+                        // For single selection mode (like featured image)
+                        if (this.state.modalOptions?.mode === 'single') {
+                            if (this.state.selectedItems.length > 1) {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Too Many Items',
+                                    text: 'Please select only one item',
+                                    confirmButtonColor: '#3b82f6',
+                                });
+                                return;
+                            }
+
+                            const item = this.state.selectedItems[0];
+                            console.log('Item:', item);
+                            if (item.type !== 'file') {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Invalid Selection',
+                                    text: 'Please select a file',
+                                    confirmButtonColor: '#3b82f6',
+                                });
+                                return;
+                            }
+
+                            // Get file details and call callback
+                            fetch(`/gallery/file/${item.id}/for-insertion`, {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        // Check if file type matches accept criteria if specified
+                                        if (this.state.modalOptions?.accept) {
+                                            const acceptType = this.state.modalOptions.accept;
+                                            if (acceptType === 'image/*' && !data.file.mime_type.startsWith('image/')) {
+                                                throw new Error('Please select an image file');
+                                            }
+                                            // Add other accept type validations as needed
+                                        }
+
+                                        this.state.callback(data.file);
+                                        this.closeModal();
+                                    } else {
+                                        throw new Error(data.message || 'Failed to get file details');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: error.message,
+                                        confirmButtonColor: '#3b82f6',
+                                    });
+                                });
+                        }
+                        // For multiple selection mode (like product images)
+                        else {
+                            // First fetch all selected files
+                            const fetchPromises = this.state.selectedItems
+                                .filter(item => item.type === 'file')
+                                .map(item => {
+                                    return fetch(`/gallery/file/${item.id}/for-insertion`, {
+                                        headers: {
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest'
+                                        }
+                                    })
+                                        .then(response => response.json())
+                                        .then(data => {
+                                            if (data.success) return data.file;
+                                            throw new Error(data.message || 'Failed to get file details');
+                                        });
+                                });
+
+                            Promise.all(fetchPromises)
+                                .then(files => {
+                                    // Filter files based on accept criteria if specified
+                                    let validFiles = files;
+                                    if (this.state.modalOptions?.accept) {
+                                        const acceptType = this.state.modalOptions.accept;
+                                        if (acceptType === 'image/*') {
+                                            validFiles = files.filter(file => file.mime_type.startsWith('image/'));
+                                        }
+                                    }
+
+                                    if (validFiles.length === 0) {
+                                        throw new Error('No valid files selected based on criteria');
+                                    }
+
+                                    if (this.state.callback) {
+                                        this.state.callback(validFiles.length === 1 ? validFiles[0] : validFiles);
+                                    }
+                                    this.closeModal();
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    Swal.fire({
+                                        icon: 'error',
+                                        title: 'Error',
+                                        text: error.message,
+                                        confirmButtonColor: '#3b82f6',
+                                    });
+                                });
+                        }
+                    } else {
+                        // Default behavior (copy URL) only if no callback and no modal options
+                        if (this.state.selectedItems.length === 1) {
+                            fetch(`{{ route("gallery.generate-url", '') }}/${this.state.selectedItems[0].id}`, {
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        this.copyToClipboard(data.url);
+                                        this.showSuccessNotification('URL copied to clipboard');
+                                    } else {
+                                        throw new Error(data.message || 'URL generation failed');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('URL generation error:', error);
+                                    this.showError(error.message);
+                                });
+                        }
+                    }
                 });
 
                 // Search
@@ -971,6 +1120,7 @@
                     const item = e.target.closest('.gallery-item');
                     if (item) {
                         e.preventDefault();
+                        e.stopPropagation();
                         this.handleItemClick(item, e);
                     }
 
@@ -1439,17 +1589,17 @@
                 const id = item.dataset.id;
                 const type = item.dataset.type;
 
+                // First update the selection state
                 if (event.shiftKey) {
-                    // Handle shift+click for multi-selection
                     this.toggleItemSelection(id, type, item);
                 } else {
-                    // Regular click - just select the item
                     if (!this.isSelected(id, type)) {
                         this.clearSelections();
                         this.toggleItemSelection(id, type, item);
                     }
                 }
 
+                // Then handle the preview
                 if (type === 'file') {
                     this.updatePreview(id, type);
                 }
@@ -1512,6 +1662,10 @@
 
             // Preview Management
             updatePreview(id, type) {
+                // Don't re-fetch if already showing this item
+                if (this.state.currentPreviewId === id) return;
+
+                this.state.currentPreviewId = id;
                 this.clearPreview();
                 this.showLoadingPreview();
 
@@ -1529,7 +1683,6 @@
                     .then(data => {
                         if (data.success) {
                             if (type === 'file') {
-                                // Make sure we're passing the complete file object
                                 this.showFilePreview(data.file);
                             } else {
                                 this.showFolderPreview(data.folder);
@@ -1548,86 +1701,6 @@
                     });
             },
 
-            showFilePreview(file) {
-                if (!file) {
-                    this.clearPreview();
-                    return;
-                }
-
-                // Clear previous preview
-                this.elements.previewContent.innerHTML = '';
-
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'preview-image-container';
-
-                if (file.mime_type.startsWith('image/')) {
-                    // Create intersection observer if not exists
-                    if (!this.previewObserver) {
-                        this.previewObserver = new IntersectionObserver((entries) => {
-                            entries.forEach(entry => {
-                                if (entry.isIntersecting) {
-                                    const container = entry.target;
-                                    const img = new Image();
-                                    img.src = container.dataset.src;
-                                    img.alt = container.dataset.alt;
-                                    img.className = 'preview-image';
-
-                                    img.onload = () => {
-                                        container.innerHTML = '';
-                                        container.appendChild(img);
-                                    };
-
-                                    img.onerror = () => {
-                                        container.innerHTML = `
-                                <div class="preview-error-state">
-                                    <i class="fas fa-exclamation-triangle"></i>
-                                    <span>Image failed to load</span>
-                                </div>
-                            `;
-                                    };
-
-                                    this.previewObserver.unobserve(container);
-                                }
-                            });
-                        }, { threshold: 0.1 });
-                    }
-
-                    // Create lazy container
-                    const lazyContainer = document.createElement('div');
-                    lazyContainer.className = 'lazy-preview-container';
-                    lazyContainer.dataset.src = file.url;
-                    lazyContainer.dataset.alt = file.name;
-
-                    // Show placeholder
-                    lazyContainer.innerHTML = `
-            <div class="preview-placeholder">
-                <i class="fas fa-image"></i>
-            </div>
-        `;
-
-                    previewContainer.appendChild(lazyContainer);
-                    this.previewObserver.observe(lazyContainer);
-                } else {
-                    // Non-image files
-                    const icon = document.createElement('i');
-                    icon.className = `fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400`;
-                    previewContainer.appendChild(icon);
-                }
-
-                // Rest of the method remains the same...
-                this.elements.previewContent.appendChild(previewContainer);
-                this.elements.detailName.textContent = file.name;
-                this.elements.detailType.textContent = file.mime_type;
-                this.elements.detailSize.textContent = this.formatFileSize(file.size);
-                this.elements.detailDimensions.textContent = file.dimensions ?
-                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
-                this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
-                this.elements.previewDetails.classList.remove('hidden');
-                this.elements.actionButtons.classList.remove('hidden');
-
-                const emptyState = this.elements.previewContent.querySelector('.preview-empty');
-                if (emptyState) emptyState.classList.add('hidden');
-            },
 
             showFolderPreview(folder) {
                 if (!folder) {
@@ -1705,6 +1778,93 @@
                         this.showError('Could not load file details');
                         this.clearPreview();
                     });
+            },
+            showFilePreview(file) {
+                if (!file) {
+                    this.clearPreview();
+                    return;
+                }
+
+                this.elements.previewContent.innerHTML = '';
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-image-container';
+
+                // Ensure we have proper URLs
+                const imageUrl = file.url || file.thumb_url;
+                const altText = file.name || 'Preview image';
+
+                if (file.mime_type?.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = imageUrl;
+                    img.alt = altText;
+                    img.className = 'preview-image';
+
+                    // Add loading state
+                    const loadingOverlay = document.createElement('div');
+                    loadingOverlay.className = 'loading-overlay';
+                    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    previewContainer.appendChild(loadingOverlay);
+
+                    img.onload = () => {
+                        loadingOverlay.remove();
+                        img.classList.add('loaded');
+                    };
+                    img.onerror = () => {
+                        loadingOverlay.remove();
+                        previewContainer.innerHTML = `
+                <div class="text-red-500 text-center p-4">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Failed to load image
+                </div>
+            `;
+                    };
+
+                    previewContainer.appendChild(img);
+                } else {
+                    // Non-image preview
+                    previewContainer.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full">
+                <i class="fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400 mb-2"></i>
+                <span class="text-sm text-gray-600">No preview available</span>
+            </div>
+        `;
+                }
+
+                // Update details panel
+                this.updatePreviewDetails(file);
+                this.elements.previewContent.appendChild(previewContainer);
+                this.elements.previewDetails.classList.remove('hidden');
+                this.elements.actionButtons.classList.remove('hidden');
+            },
+
+            // Add this helper method
+            updatePreviewDetails(file) {
+                if (!file) return;
+
+                this.elements.detailName.textContent = file.name || 'Unknown';
+                this.elements.detailType.textContent = file.mime_type || 'Unknown';
+
+                // Format file size
+                let sizeText = 'N/A';
+                if (file.size_bytes) {
+                    sizeText = this.formatFileSize(file.size_bytes);
+                } else if (file.size) {
+                    sizeText = file.size;
+                }
+                this.elements.detailSize.textContent = sizeText;
+
+                // Format dimensions
+                let dimensionsText = 'N/A';
+                if (file.dimensions) {
+                    dimensionsText = `${file.dimensions.width} × ${file.dimensions.height}`;
+                    if (file.dimensions.aspect_ratio) {
+                        dimensionsText += ` (${file.dimensions.aspect_ratio.toFixed(2)})`;
+                    }
+                }
+                this.elements.detailDimensions.textContent = dimensionsText;
+
+                // Format date
+                this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
             },
 
             // Gallery Operations
@@ -2055,6 +2215,233 @@
                             console.error('URL generation error:', error);
                             this.showError(error.message);
                         });
+                }
+            },
+
+            setupProductImageSelection() {
+                // Only initialize once
+                if (this.state._productImageSelectionInitialized) return;
+                this.state._productImageSelectionInitialized = true;
+
+                // Store selected images for the product
+                this.state.productImages = [];
+                this.state.featuredImage = null;
+
+                // Handle insert button click
+                const insertHandler = (e) => {
+                    e.preventDefault();
+                    this.insertSelectedForProduct();
+                };
+
+                // Remove existing listener first to prevent duplicates
+                this.elements.insertButton.removeEventListener('click', insertHandler);
+                this.elements.insertButton.addEventListener('click', insertHandler);
+
+                // Handle add more images button
+                const addMoreHandler = () => {
+                    this.openModal('', (file) => {
+                        if (file) this.addProductImage(file);
+                    }, { mode: 'multiple', accept: 'image/*' });
+                };
+
+                const addMoreBtn = document.getElementById('addMoreImages');
+                if (addMoreBtn) {
+                    addMoreBtn.removeEventListener('click', addMoreHandler);
+                    addMoreBtn.addEventListener('click', addMoreHandler);
+                }
+            },
+
+            // Add this method to handle inserting images for product
+            insertSelectedForProduct() {
+                if (!this.state.selectedItems || this.state.selectedItems.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'No Selection',
+                        text: 'Please select at least one image',
+                        confirmButtonColor: '#3b82f6',
+                    });
+                    return;
+                }
+
+                // Filter only valid image files
+                const validItems = this.state.selectedItems.filter(item => {
+                    if (!item || item.type !== 'file') return false;
+                    const itemElement = document.querySelector(`.gallery-item[data-id="${item.id}"]`);
+                    return !!itemElement;
+                });
+
+                if (validItems.length === 0) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Invalid Selection',
+                        text: 'Please select valid image files',
+                        confirmButtonColor: '#3b82f6',
+                    });
+                    return;
+                }
+
+                // Fetch details for each selected image
+                const fetchPromises = validItems.map(item => {
+                    return fetch(`/gallery/file/${item.id}/for-insertion`, {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        }
+                    })
+                        .then(response => {
+                            if (!response.ok) {
+                                throw new Error(`HTTP error! status: ${response.status}`);
+                            }
+                            return response.json();
+                        })
+                        .then(data => {
+                            if (data.success && data.file) {
+                                // Validate MIME type if accept option is specified
+                                if (this.state.modalOptions?.accept === 'image/*' && !data.file.mime_type.startsWith('image/')) {
+                                    throw new Error(`File ${data.file.name} is not an image`);
+                                }
+                                return data.file;
+                            }
+                            throw new Error(data.message || 'Failed to get file details');
+                        });
+                });
+
+                Promise.all(fetchPromises)
+                    .then(files => {
+                        // Filter out any null or undefined files
+                        const validFiles = files.filter(file => file && file.id);
+                        if (validFiles.length === 0) {
+                            throw new Error('No valid image files selected');
+                        }
+
+                        // Handle single vs. multiple selection based on modal options
+                        if (this.state.modalOptions?.mode === 'single') {
+                            if (validFiles.length > 1) {
+                                throw new Error('Please select only one image');
+                            }
+                            this.state.callback(validFiles[0]);
+                        } else {
+                            validFiles.forEach(file => {
+                                this.addProductImage(file);
+                            });
+                        }
+
+                        this.closeModal();
+                    })
+                    .catch(error => {
+                        console.error('Error in insertSelectedForProduct:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: error.message || 'Failed to insert images',
+                            confirmButtonColor: '#3b82f6',
+                        });
+                    });
+            },
+
+
+            // Add product image to the collection
+            addProductImage(file) {
+                if (!this.state.productImages.some(img => img.id === file.id)) {
+                    this.state.productImages.push(file);
+                    this.renderSelectedImagesPreview();
+                    this.toggleImageActionButtons();
+                }
+            },
+
+            // Set featured image
+            setFeaturedImage(file) {
+                this.state.featuredImage = file;
+                document.getElementById('featuredImageInput').value = file.id;
+                this.renderFeaturedImagePreview();
+                this.closeModal();
+            },
+
+            // Remove featured image
+            removeFeaturedImage() {
+                this.state.featuredImage = null;
+                document.getElementById('featuredImageInput').value = '';
+                document.getElementById('featuredImagePreview').classList.add('hidden');
+                document.querySelector('.featured-image-upload-area').classList.remove('hidden');
+            },
+
+// Render selected images preview
+            renderSelectedImagesPreview() {
+                const previewContainer = document.getElementById('selectedImagesPreview');
+                if (!previewContainer) return;
+
+                previewContainer.innerHTML = '';
+
+                if (this.state.productImages.length === 0) {
+                    previewContainer.classList.add('hidden');
+                    return;
+                }
+
+                this.state.productImages.forEach((image, index) => {
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200';
+
+                    imageWrapper.innerHTML = `
+            <img src="${image.thumb_url || image.url}" alt="${image.name}" class="w-full h-full object-cover">
+            <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image" data-index="${index}">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                </svg>
+            </button>
+        `;
+
+                    previewContainer.appendChild(imageWrapper);
+                });
+
+                // Add event listeners for remove buttons
+                document.querySelectorAll('.remove-image').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const index = parseInt(button.dataset.index);
+                        this.state.productImages.splice(index, 1);
+                        this.renderSelectedImagesPreview();
+                        this.toggleImageActionButtons();
+                    });
+                });
+
+                previewContainer.classList.remove('hidden');
+                this.updateProductImagesInput();
+            },
+
+            // Render featured image preview
+            renderFeaturedImagePreview() {
+                console.log('Featured image data:', this.state.featuredImage);
+                if (!this.state.featuredImage) return;
+
+                const previewContainer = document.getElementById('featuredImagePreview');
+                const thumbnail = document.getElementById('featuredImageThumbnail');
+                const uploadArea = document.querySelector('.featured-image-upload-area');
+
+                thumbnail.src = this.state.featuredImage.thumb_url || this.state.featuredImage.url;
+                thumbnail.alt = this.state.featuredImage.name;
+
+                previewContainer.classList.remove('hidden');
+                uploadArea.classList.add('hidden');
+            },
+
+            // Toggle action buttons visibility based on whether there are images
+            toggleImageActionButtons() {
+                const actionButtons = document.getElementById('imageActionButtons');
+                if (!actionButtons) return;
+
+                if (this.state.productImages.length > 0) {
+                    actionButtons.classList.remove('hidden');
+                } else {
+                    actionButtons.classList.add('hidden');
+                }
+            },
+
+// Update hidden input with selected image IDs
+            updateProductImagesInput() {
+                const input = document.getElementById('productImagesInput');
+                if (input) {
+                    input.value = JSON.stringify(this.state.productImages.map(img => img.id));
                 }
             },
 
@@ -2595,11 +2982,21 @@
             },
 
             // Modal Management
-            openModal(path = '', callback = null) {
+            openModal(path = '', callback = null, options = {}) {
                 this.state.currentPath = path;
                 this.state.isTrashView = false;
                 this.state.selectedItems = [];
                 this.state.callback = callback;
+                this.state.modalOptions = options; // Store modal options
+
+                // Set insert button text based on mode
+                const insertBtn = this.elements.insertButton;
+                if (options.mode === 'single') {
+                    insertBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Select Image';
+                } else {
+                    insertBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Insert Selected';
+                }
+
                 this.elements.modal.classList.remove('hidden');
                 this.loadContents();
             },
@@ -2607,6 +3004,10 @@
             closeModal() {
                 this.elements.modal.classList.add('hidden');
                 this.state.callback = null;
+                this.state.selectedItems = [];
+                this.state.modalOptions = {};
+                this.clearPreview();
+                this.updateSelectionDisplay();
             },
 
             // Progress Management
@@ -2828,9 +3229,16 @@
         gallery.init();
 
         // Expose the open function to window
-        window.openGalleryModal = function(path = '', callback = null) {
-            gallery.openModal(path, callback);
+        window.openGalleryModal = function(path = '', callback = null, options = {}) {
+            gallery.openModal(path, callback, options);
         };
+
+        // Fix for layout forced before load
+        document.addEventListener('readystatechange', () => {
+            if (document.readyState === 'complete') {
+                document.body.classList.remove('loading');
+            }
+        });
 
     });
 </script>

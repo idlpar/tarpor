@@ -1733,22 +1733,36 @@ class GalleryController extends Controller
      */
     public function getFileForInsertion($id)
     {
-        $file = Media::findOrFail($id);
 
-        return response()->json([
-            'success' => true,
-            'file' => [
-                'id' => $file->id,
-                'name' => $file->name,
-                'url' => Storage::disk($this->disk)->url($file->path),
-                'thumb_url' => $this->getThumbUrl($file),
-                'type' => 'file',
-                'mime_type' => $file->mime_type,
-                'size' => $this->formatFileSize($file->size),
-                'dimensions' => $file->dimensions,
-                'created_at' => $file->created_at->format('d-m-Y')
-            ]
-        ]);
+        try {
+            $file = Media::findOrFail($id); // Adjust to your model
+            if ($file->trashed()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'File is in trash'
+                ], 404);
+            }
+
+            return response()->json([
+                    'success' => true,
+                    'file' => [
+                        'id' => $file->id,
+                        'name' => $file->name,
+                        'url' => Storage::disk($this->disk)->url($file->path),
+                        'thumb_url' => $this->getThumbUrl($file),
+                        'type' => 'file',
+                        'mime_type' => $file->mime_type,
+                        'size' => $this->formatFileSize($file->size),
+                        'dimensions' => $file->dimensions,
+                        'created_at' => $file->created_at->format('d-m-Y')
+                    ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'File not found or error occurred'
+            ], 404);
+        }
     }
 
 

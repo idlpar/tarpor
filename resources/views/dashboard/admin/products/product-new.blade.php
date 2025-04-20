@@ -175,23 +175,45 @@
                 </div>
 
                 <!-- Images -->
-                <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg text-center">
+                <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg">
                     <label class="block font-semibold text-left text-gray-700 mb-4">Images</label>
+
                     <!-- Clickable Upload Box -->
-                    <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40 clickable-upload-area">
-                        <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                            <path d="M15 8h.01"></path>
-                            <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
-                            <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
-                            <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
-                            <path d="M16 19h6"></path>
-                            <path d="M19 16v6"></path>
-                        </svg>
-                        <span class="text-gray-500 text-lg">Click here to add more images.</span>
+                    <div class="border-dashed border-2 border-gray-300 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all clickable-upload-area">
+                        <!-- Default State: SVG and Text -->
+                        <div id="defaultUploadContent" class="flex flex-col items-center justify-center gap-3 min-h-[120px]">
+                            <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                <path d="M15 8h.01"></path>
+                                <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
+                                <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
+                                <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
+                                <path d="M16 19h6"></path>
+                                <path d="M19 16v6"></path>
+                            </svg>
+                            <span class="text-gray-500 text-lg">Click here to add images.</span>
+                        </div>
+
+                        <!-- Preview of Selected Images -->
+                        <div id="selectedImagesPreview" class="hidden flex flex-wrap gap-4 mb-4">
+                            <!-- Selected images will appear here -->
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div id="imageActionButtons" class="hidden flex justify-start gap-4 mt-4">
+                            <button type="button" id="addMoreImages" class="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-indigo-700 text-white rounded-lg font-semibold text-sm shadow-md hover:from-indigo-700 hover:to-indigo-800 hover:shadow-lg hover:scale-105 transition-all duration-200">
+                                Add Images
+                            </button>
+                            <button type="button" id="resetImages" class="px-5 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold text-sm shadow-md hover:from-red-600 hover:to-red-700 hover:shadow-lg hover:scale-105 transition-all duration-200">
+                                Reset
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Hidden input for form submission -->
+                    <input type="hidden" name="images" id="productImagesInput" value="">
                 </div>
-                <x-gallery />
+
             </div>
 
             <!-- Second Div (bg-gray-300) -->
@@ -512,7 +534,7 @@
 
             <!-- Featured Image Card -->
             <x-form.card label="Featured Image (Optional)">
-                <div class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                <div id="featuredImageContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40" onclick="openFeaturedImageGallery()">
                     <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                         <path d="M15 8h.01"></path>
@@ -524,7 +546,24 @@
                     </svg>
                     <span class="text-gray-500 text-md">Choose Image</span>
                 </div>
+
+                <!-- Featured image preview (hidden by default) -->
+                <div id="featuredImagePreview" class="mt-4 hidden">
+                    <div class="relative w-full max-w-xs mx-auto">
+                        <img id="featuredImageThumbnail" src="" alt="Featured Image" class="w-full h-auto rounded-lg border border-gray-200">
+                        <button type="button" id="removeFeaturedImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden input for featured image -->
+                <input type="hidden" name="featured_image" id="featuredImageInput" value="">
             </x-form.card>
+
+            <x-gallery />
 
             <!-- Product Collections Card -->
             @php
@@ -629,9 +668,20 @@
     <!-- CKEditor Script -->
     <script src="{{ asset('ckeditor/ckeditor.js') }}" defer></script>
     <script>
+        document.querySelector('.featured-image-upload-area').addEventListener('click', () => {
+            openGalleryModal('', (file) => {
+                gallery.setFeaturedImage(file);
+            }, { mode: 'single', accept: 'image/*' });
+        });
         // Add event listener to the upload area
         document.querySelector('.clickable-upload-area').addEventListener('click', () => {
-            window.openGalleryModal(); // Open the gallery modal
+            openGalleryModal('', (file) => {
+                if (Array.isArray(file)) {
+                    file.forEach(f => gallery.addProductImage(f));
+                } else {
+                    gallery.addProductImage(file);
+                }
+            }, { mode: 'multiple', accept: 'image/*' });
         });
     </script>
 
@@ -1522,6 +1572,96 @@
                     }
                 });
             }
+        });
+    </script>
+
+    <script>
+        // Global function to open gallery for featured image
+        function openFeaturedImageGallery() {
+            window.openGalleryModal('', function(file) {
+                if (file) {
+                    // Set featured image
+                    document.getElementById('featuredImageThumbnail').src = file.thumb_url || file.url;
+                    document.getElementById('featuredImageThumbnail').alt = file.name;
+                    document.getElementById('featuredImagePreview').classList.remove('hidden');
+                    document.getElementById('featuredImageContainer').classList.add('hidden');
+                    document.getElementById('featuredImageInput').value = file.id;
+                }
+            }, { mode: 'single', accept: 'image/*' });
+        }
+
+        // Global function to open gallery for product images
+        function openProductImagesGallery() {
+            window.openGalleryModal('', function(file) {
+                if (file) {
+                    // Add to product images
+                    const previewContainer = document.getElementById('selectedImagesPreview');
+                    const defaultContent = document.getElementById('defaultUploadContent');
+                    const imageActionButtons = document.getElementById('imageActionButtons');
+                    const imageWrapper = document.createElement('div');
+                    imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-300 hover:shadow-lg hover:scale-105 transition-all duration-200';
+
+                    imageWrapper.innerHTML = `
+                    <img src="${file.thumb_url || file.url}" alt="${file.id}" class="w-full h-full object-cover">
+                    <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+
+                    previewContainer.appendChild(imageWrapper);
+                    previewContainer.classList.remove('hidden');
+                    defaultContent.classList.add('hidden'); // Hide default SVG and text
+                    imageActionButtons.classList.remove('hidden'); // Show action buttons
+
+                    // Update hidden input
+                    const currentImages = JSON.parse(document.getElementById('productImagesInput').value || '[]');
+                    if (!currentImages.includes(file.id)) {
+                        currentImages.push(file.id);
+                        document.getElementById('productImagesInput').value = JSON.stringify(currentImages);
+                    }
+
+                    // Add event listener for the new remove button
+                    imageWrapper.querySelector('.remove-image').addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        imageWrapper.remove();
+
+                        // Update hidden input
+                        const updatedImages = JSON.parse(document.getElementById('productImagesInput').value || '[]').filter(id => id !== file.id);
+                        document.getElementById('productImagesInput').value = JSON.stringify(updatedImages);
+
+                        // Hide preview and buttons if no images left
+                        if (updatedImages.length === 0) {
+                            previewContainer.classList.add('hidden');
+                            defaultContent.classList.remove('hidden');
+                            imageActionButtons.classList.add('hidden');
+                        }
+                    });
+                }
+            }, { mode: 'multiple', accept: 'image/*' });
+        }
+
+        // Initialize click handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            // Product images upload area
+            document.querySelector('.clickable-upload-area').addEventListener('click', openProductImagesGallery);
+
+            // Add more images button
+            document.getElementById('addMoreImages')?.addEventListener('click', openProductImagesGallery);
+
+            // Reset images button
+            document.getElementById('resetImages')?.addEventListener('click', function() {
+                const previewContainer = document.getElementById('selectedImagesPreview');
+                const defaultContent = document.getElementById('defaultUploadContent');
+                const imageActionButtons = document.getElementById('imageActionButtons');
+
+                previewContainer.innerHTML = '';
+                previewContainer.classList.add('hidden');
+                defaultContent.classList.remove('hidden');
+                imageActionButtons.classList.add('hidden');
+                document.getElementById('productImagesInput').value = '[]';
+            });
         });
     </script>
 
