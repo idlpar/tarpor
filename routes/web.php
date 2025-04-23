@@ -128,9 +128,11 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::get('/folder/{id}', [GalleryController::class, 'showFolder'])->name('folder.show');
         Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
         Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
-        Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
+        Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion'); // Keep for single-file fetching
+        Route::post('/files/for-insertion', [GalleryController::class, 'getFilesForInsertion'])->name('files.for-insertion'); // Add for batch fetching
         Route::put('/file/{id}/rename', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
+        Route::get('/file/{id}/download', [GalleryController::class, 'downloadFile'])->name('file.download'); // Add for downloading
 
         // Folder operations
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
@@ -142,6 +144,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
         Route::post('/copy', [GalleryController::class, 'copyItems'])->name('copy');
         Route::post('/cut', [GalleryController::class, 'cutItems'])->name('cut');
         Route::post('/paste', [GalleryController::class, 'pasteItems'])->name('paste');
+        Route::post('/batch/paste', [GalleryController::class, 'batchPaste'])->name('batch.paste'); // Add for batch paste
 
         // Batch operations
         Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
@@ -157,7 +160,7 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Context menu
         Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
-        Route::post('/gallery/navigate-up', [GalleryController::class, 'navigateUp'])->name('navigate-up');
+        Route::post('/navigate-up', [GalleryController::class, 'navigateUp'])->name('navigate-up');
 
         // Featured media routes
         Route::post('/set-featured/{id}', [GalleryController::class, 'setFeatured'])->name('set-featured');
@@ -165,6 +168,9 @@ Route::middleware(['auth', 'verified', 'auto.logout'])->group(function () {
 
         // Force delete (bypass soft delete)
         Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
+
+        // Rename operation (unified endpoint for files and folders)
+        Route::post('/rename', [GalleryController::class, 'rename'])->name('rename'); // Add for unified rename
     });
 
     // Temporary test route

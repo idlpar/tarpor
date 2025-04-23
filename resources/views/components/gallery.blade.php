@@ -1,3 +1,5 @@
+<meta name="csrf-token" content="{{ csrf_token() }}">
+
 <style>
     /* Gallery Container */
     .gallery-container {
@@ -59,7 +61,7 @@
         background-color: white;
         border-bottom: 1px solid #e2e8f0;
     }
-    /* Add to your existing styles */
+
     .lazy-load-container {
         position: relative;
         width: 100%;
@@ -154,6 +156,15 @@
     }
 
     /* Breadcrumbs */
+    .breadcrumb-and-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background-color: white;
+        border-bottom: 1px solid #e2e8f0;
+    }
+
     .breadcrumb-container {
         flex: 1;
         display: flex;
@@ -162,7 +173,6 @@
         padding: 0;
     }
 
-    /* Success notification styles */
     .gallery-notification {
         padding: 0.75rem 1rem;
         margin: 0 1rem;
@@ -182,28 +192,24 @@
         border: 1px solid #a7f3d0;
     }
 
+    .gallery-notification.error {
+        background-color: #fee2e2;
+        color: #dc2626;
+        border: 1px solid #f87171;
+    }
+
     .gallery-notification.fade-out {
         animation: fadeOut 0.3s ease-in;
     }
 
     @keyframes slideIn {
-        from {
-            transform: translateY(-20px);
-            opacity: 0;
-        }
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+        from { transform: translateY(-20px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
     }
 
     @keyframes fadeOut {
-        from {
-            opacity: 1;
-        }
-        to {
-            opacity: 0;
-        }
+        from { opacity: 1; }
+        to { opacity: 0; }
     }
 
     .breadcrumb-item {
@@ -249,6 +255,11 @@
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 1rem;
         align-content: start;
+    }
+
+    .items-grid.drop-active {
+        border: 2px dashed #4f46e5;
+        background-color: rgba(79, 70, 229, 0.1);
     }
 
     .empty-state {
@@ -338,7 +349,6 @@
         border-left: 1px solid #e2e8f0;
     }
 
-    /* Add to your existing styles */
     .preview-image-container {
         max-height: 300px;
         display: flex;
@@ -476,15 +486,6 @@
         margin: 0.25rem 0;
     }
 
-    .breadcrumb-and-pagination {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0.5rem 1rem;
-        background-color: white;
-        border-bottom: 1px solid #e2e8f0;
-    }
-
     .pagination-controls {
         display: flex;
         align-items: center;
@@ -517,7 +518,6 @@
         font-size: 0.875rem;
         color: #64748b;
     }
-
 
     .shortcut {
         margin-left: auto;
@@ -639,6 +639,17 @@
         pointer-events: none;
     }
 
+    /* Sortable Images */
+    .sortable-image {
+        cursor: move;
+        transition: transform 0.2s;
+    }
+
+    .sortable-image.dragging {
+        opacity: 0.5;
+        transform: scale(0.95);
+    }
+
     /* Responsive Adjustments */
     @media (max-width: 768px) {
         .gallery-content {
@@ -652,15 +663,15 @@
 </style>
 
 <!-- Gallery Modal -->
-<div id="galleryModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 flex justify-center items-center p-4">
+<div id="galleryModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 overflow-y-auto transition-opacity duration-300 flex justify-center items-center p-4" aria-modal="true" role="dialog" aria-labelledby="galleryTitle">
     <div class="gallery-container w-full max-w-6xl bg-white rounded-lg shadow-xl overflow-hidden">
         <!-- Header -->
         <div class="gallery-header">
-            <div class="gallery-title">
+            <div class="gallery-title" id="galleryTitle">
                 <i class="fas fa-images"></i>
                 <span>Media Gallery</span>
             </div>
-            <button type="button" id="closeGalleryModal" class="gallery-close">
+            <button type="button" id="closeGalleryModal" class="gallery-close" aria-label="Close Gallery">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -668,77 +679,76 @@
         <!-- Toolbar -->
         <div class="gallery-toolbar">
             <div class="toolbar-group normal-actions">
-                <button type="button" id="refreshButton" class="toolbar-button secondary">
+                <button type="button" id="refreshButton" class="toolbar-button secondary" aria-label="Refresh Gallery">
                     <i class="fas fa-sync-alt"></i>
                     <span>Refresh</span>
                 </button>
-                <button type="button" id="newFolderButton" class="toolbar-button secondary">
+                <button type="button" id="newFolderButton" class="toolbar-button secondary" aria-label="Create New Folder">
                     <i class="fas fa-folder-plus"></i>
                     <span>New Folder</span>
                 </button>
-                <button type="button" id="uploadButton" class="toolbar-button secondary">
+                <button type="button" id="uploadButton" class="toolbar-button secondary" aria-label="Upload Files">
                     <i class="fas fa-upload"></i>
                     <span>Upload</span>
                 </button>
-                <button type="button" id="deleteButton" class="toolbar-button danger hidden">
+                <button type="button" id="deleteButton" class="toolbar-button danger hidden" aria-label="Delete Selected Items">
                     <i class="fas fa-trash"></i>
                     <span>Delete</span>
                 </button>
             </div>
 
             <div class="toolbar-group trash-actions">
-                <button type="button" id="restoreButton" class="toolbar-button secondary">
+                <button type="button" id="restoreButton" class="toolbar-button secondary" aria-label="Restore Selected Items">
                     <i class="fas fa-trash-restore"></i>
                     <span>Restore</span>
                 </button>
-                <button type="button" id="permanentDeleteButton" class="toolbar-button danger">
+                <button type="button" id="permanentDeleteButton" class="toolbar-button danger" aria-label="Delete Permanently">
                     <i class="fas fa-trash"></i>
                     <span>Delete Permanently</span>
                 </button>
-                <button type="button" id="emptyTrashButton" class="toolbar-button danger">
+                <button type="button" id="emptyTrashButton" class="toolbar-button danger" aria-label="Empty Trash">
                     <i class="fas fa-broom"></i>
                     <span>Empty Trash</span>
                 </button>
             </div>
 
             <div class="toolbar-group">
-                <button type="button" id="toggleTrashButton" class="toolbar-button secondary">
+                <button type="button" id="toggleTrashButton" class="toolbar-button secondary" aria-label="Toggle Trash View">
                     <i class="fas fa-trash"></i>
                     <span id="trashButtonText">Trash</span>
                 </button>
                 <div class="search-container">
-                    <input type="text" id="searchInput" class="search-input" placeholder="Search...">
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search..." aria-label="Search Media">
                     <i class="fas fa-search search-icon"></i>
                 </div>
             </div>
         </div>
 
-        <!-- Breadcrumbs -->
+        <!-- Breadcrumbs and Pagination -->
         <div class="breadcrumb-and-pagination">
             <div id="breadcrumbContainer" class="breadcrumb-container">
-                <!-- Dynamic breadcrumbs will be inserted here -->
+                <!-- Dynamic breadcrumbs -->
             </div>
 
             <div class="pagination-controls">
-                <button id="prevPage" class="pagination-button" disabled>
+                <button id="prevPage" class="pagination-button" disabled aria-label="Previous Page">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <span id="pageInfo">Page 1 of 1</span>
-                <button id="nextPage" class="pagination-button" disabled>
+                <button id="nextPage" class="pagination-button" disabled aria-label="Next Page">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Success notification will appear here -->
+        <!-- Notifications -->
         <div id="notificationArea"></div>
-
 
         <!-- Main Content -->
         <div class="gallery-content relative">
             <!-- Items Grid -->
-            <div class="items-grid" id="galleryItems">
-                <!-- Dynamic content will be inserted here -->
+            <div class="items-grid" id="galleryItems" tabindex="0" aria-label="Media Items">
+                <!-- Dynamic content -->
             </div>
 
             <!-- Preview Panel -->
@@ -775,15 +785,15 @@
                 </div>
 
                 <div id="actionButtons" class="action-buttons hidden">
-                    <button class="action-button primary" id="insertButton">
+                    <button class="action-button primary" id="insertButton" aria-label="Insert Selected Media">
                         <i class="fas fa-check mr-2"></i>
                         Insert
                     </button>
-                    <button class="action-button secondary" id="downloadButton">
+                    <button class="action-button secondary" id="downloadButton" aria-label="Download Media">
                         <i class="fas fa-download mr-2"></i>
                         Download
                     </button>
-                    <button class="action-button danger" id="deleteSingleButton">
+                    <button class="action-button danger" id="deleteSingleButton" aria-label="Delete Media">
                         <i class="fas fa-trash mr-2"></i>
                         Delete
                     </button>
@@ -805,11 +815,20 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Gallery Controller
+    document.addEventListener('DOMContentLoaded', function () {
+        // Utility Functions
+        const debounce = (func, wait) => {
+            let timeout;
+            return (...args) => {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func(...args), wait);
+            };
+        };
+
         const gallery = {
-            // DOM Elements
+            // Cached DOM Elements
             elements: {
                 modal: document.getElementById('galleryModal'),
                 closeBtn: document.getElementById('closeGalleryModal'),
@@ -840,36 +859,42 @@
                 progressTitle: document.getElementById('progressTitle'),
                 progressBar: document.getElementById('progressBar'),
                 progressStatus: document.getElementById('progressStatus'),
-                notificationArea: document.getElementById('notificationArea')
+                notificationArea: document.getElementById('notificationArea'),
+                prevPage: document.getElementById('prevPage'),
+                nextPage: document.getElementById('nextPage'),
+                pageInfo: document.getElementById('pageInfo')
             },
 
             // State
             state: {
                 currentPath: '',
                 currentFolderId: null,
-                selectedItems: [],
+                selectedItems: new Set(), // Use Set to prevent duplicates
                 isTrashView: false,
                 clipboard: null,
                 callback: null,
+                modalOptions: {},
                 productImages: [],
                 featuredImage: null,
                 pagination: {
                     currentPage: 1,
-                    perPage: 10,
+                    perPage: 12,
                     totalItems: 0,
                     totalPages: 1,
                     hasPrevious: false,
                     hasNext: false
                 },
-                _productImageSelectionInitialized: false // Add this flag
+                _productImageSelectionInitialized: false
             },
 
-            // Initialize the gallery
+            // Initialize
             init() {
                 this.setupEventListeners();
                 this.setupAccessibility();
                 this.setupLazyLoading();
                 this.setupProductImageSelection();
+                this.setupDragAndDrop();
+                this.setupImageSorting();
             },
 
             // Event Listeners
@@ -923,163 +948,10 @@
                     this.emptyTrash();
                 });
 
-
-                this.elements.insertButton.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    console.log('Selected item type:', this.state.selectedItems);
-                    if (this.state.callback) {
-                        // Handle callback mode (for both featured image and product images)
-                        if (this.state.selectedItems.length === 0) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'No Selection',
-                                text: 'Please select at least one item',
-                                confirmButtonColor: '#3b82f6',
-                            });
-                            return;
-                        }
-
-                        // For single selection mode (like featured image)
-                        if (this.state.modalOptions?.mode === 'single') {
-                            if (this.state.selectedItems.length > 1) {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Too Many Items',
-                                    text: 'Please select only one item',
-                                    confirmButtonColor: '#3b82f6',
-                                });
-                                return;
-                            }
-
-                            const item = this.state.selectedItems[0];
-                            console.log('Item:', item);
-                            if (item.type !== 'file') {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Invalid Selection',
-                                    text: 'Please select a file',
-                                    confirmButtonColor: '#3b82f6',
-                                });
-                                return;
-                            }
-
-                            // Get file details and call callback
-                            fetch(`/gallery/file/${item.id}/for-insertion`, {
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        // Check if file type matches accept criteria if specified
-                                        if (this.state.modalOptions?.accept) {
-                                            const acceptType = this.state.modalOptions.accept;
-                                            if (acceptType === 'image/*' && !data.file.mime_type.startsWith('image/')) {
-                                                throw new Error('Please select an image file');
-                                            }
-                                            // Add other accept type validations as needed
-                                        }
-
-                                        this.state.callback(data.file);
-                                        this.closeModal();
-                                    } else {
-                                        throw new Error(data.message || 'Failed to get file details');
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: error.message,
-                                        confirmButtonColor: '#3b82f6',
-                                    });
-                                });
-                        }
-                        // For multiple selection mode (like product images)
-                        else {
-                            // First fetch all selected files
-                            const fetchPromises = this.state.selectedItems
-                                .filter(item => item.type === 'file')
-                                .map(item => {
-                                    return fetch(`/gallery/file/${item.id}/for-insertion`, {
-                                        headers: {
-                                            'Accept': 'application/json',
-                                            'X-Requested-With': 'XMLHttpRequest'
-                                        }
-                                    })
-                                        .then(response => response.json())
-                                        .then(data => {
-                                            if (data.success) return data.file;
-                                            throw new Error(data.message || 'Failed to get file details');
-                                        });
-                                });
-
-                            Promise.all(fetchPromises)
-                                .then(files => {
-                                    // Filter files based on accept criteria if specified
-                                    let validFiles = files;
-                                    if (this.state.modalOptions?.accept) {
-                                        const acceptType = this.state.modalOptions.accept;
-                                        if (acceptType === 'image/*') {
-                                            validFiles = files.filter(file => file.mime_type.startsWith('image/'));
-                                        }
-                                    }
-
-                                    if (validFiles.length === 0) {
-                                        throw new Error('No valid files selected based on criteria');
-                                    }
-
-                                    if (this.state.callback) {
-                                        this.state.callback(validFiles.length === 1 ? validFiles[0] : validFiles);
-                                    }
-                                    this.closeModal();
-                                })
-                                .catch(error => {
-                                    console.error('Error:', error);
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Error',
-                                        text: error.message,
-                                        confirmButtonColor: '#3b82f6',
-                                    });
-                                });
-                        }
-                    } else {
-                        // Default behavior (copy URL) only if no callback and no modal options
-                        if (this.state.selectedItems.length === 1) {
-                            fetch(`{{ route("gallery.generate-url", '') }}/${this.state.selectedItems[0].id}`, {
-                                headers: {
-                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                                    'X-Requested-With': 'XMLHttpRequest'
-                                }
-                            })
-                                .then(response => response.json())
-                                .then(data => {
-                                    if (data.success) {
-                                        this.copyToClipboard(data.url);
-                                        this.showSuccessNotification('URL copied to clipboard');
-                                    } else {
-                                        throw new Error(data.message || 'URL generation failed');
-                                    }
-                                })
-                                .catch(error => {
-                                    console.error('URL generation error:', error);
-                                    this.showError(error.message);
-                                });
-                        }
-                    }
-                });
-
-                // Search
-                this.elements.searchInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        this.performSearch();
-                    }
-                });
+                // Search with debounce
+                this.elements.searchInput.addEventListener('input', debounce(() => {
+                    this.performSearch();
+                }, 300));
 
                 // Context menu
                 this.elements.itemsContainer.addEventListener('contextmenu', (e) => {
@@ -1098,8 +970,8 @@
                     this.handleKeyboardShortcuts(e);
                 });
 
-                // Pagination controls
-                document.getElementById('prevPage').addEventListener('click', (e) => {  // Add e parameter here
+                // Pagination
+                this.elements.prevPage.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (this.state.pagination.hasPrevious) {
                         this.state.pagination.currentPage--;
@@ -1107,7 +979,7 @@
                     }
                 });
 
-                document.getElementById('nextPage').addEventListener('click', (e) => {  // Add e parameter here
+                this.elements.nextPage.addEventListener('click', (e) => {
                     e.preventDefault();
                     if (this.state.pagination.hasNext) {
                         this.state.pagination.currentPage++;
@@ -1134,7 +1006,6 @@
                     }
                 });
 
-                // Double click for opening folders
                 this.elements.itemsContainer.addEventListener('dblclick', (e) => {
                     const item = e.target.closest('.gallery-item');
                     if (item && item.dataset.type === 'folder') {
@@ -1142,8 +1013,61 @@
                         this.navigateToFolder(item);
                     }
                 });
+
+                // Insert button
+                this.elements.insertButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.insertSelectedForProduct();
+                });
             },
 
+            // Drag-and-Drop Upload
+            setupDragAndDrop() {
+                const dropZone = this.elements.itemsContainer;
+                ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                    dropZone.addEventListener(eventName, (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    });
+                });
+
+                dropZone.addEventListener('dragenter', () => {
+                    dropZone.classList.add('drop-active');
+                });
+
+                dropZone.addEventListener('dragleave', () => {
+                    dropZone.classList.remove('drop-active');
+                });
+
+                dropZone.addEventListener('drop', (e) => {
+                    dropZone.classList.remove('drop-active');
+                    const files = Array.from(e.dataTransfer.files);
+                    if (files.length > 0) {
+                        this.uploadFiles(files);
+                    }
+                });
+            },
+
+            // Image Sorting
+            setupImageSorting() {
+                const previewContainer = document.getElementById('selectedImagesPreview');
+                if (previewContainer) {
+                    new Sortable(previewContainer, {
+                        animation: 150,
+                        ghostClass: 'sortable-ghost',
+                        dragClass: 'sortable-image',
+                        onEnd: () => {
+                            const images = Array.from(previewContainer.children).map((_, index) => {
+                                return this.state.productImages[index];
+                            });
+                            this.state.productImages = images;
+                            this.updateProductImagesInput();
+                        }
+                    });
+                }
+            },
+
+            // Accessibility
             setupAccessibility() {
                 this.elements.modal.setAttribute('aria-modal', 'true');
                 this.elements.modal.setAttribute('role', 'dialog');
@@ -1151,70 +1075,60 @@
                 this.elements.itemsContainer.setAttribute('tabindex', '0');
             },
 
-            // Add this to your gallery.init() method
+            // Lazy Loading
             setupLazyLoading() {
                 if ('IntersectionObserver' in window) {
-                    this.lazyImageObserver = new IntersectionObserver((entries, observer) => {
+                    this.lazyImageObserver = new IntersectionObserver((entries) => {
                         entries.forEach(entry => {
                             if (entry.isIntersecting) {
-                                const lazyContainer = entry.target;
-                                this.loadLazyImage(lazyContainer);
-                                this.lazyImageObserver.unobserve(lazyContainer);
+                                const container = entry.target;
+                                this.loadLazyImage(container);
+                                this.lazyImageObserver.unobserve(container);
                             }
                         });
                     }, {
-                        rootMargin: '100px 0px',
+                        rootMargin: '100px',
                         threshold: 0.01
                     });
-
-                    this.observeAllLazyContainers();
+                    this.observeLazyContainers();
                 } else {
-                    this.loadAllImagesImmediately();
+                    this.loadAllImages();
                 }
             },
 
-            loadLazyImage(lazyContainer) {
-                const imgSrc = lazyContainer.dataset.src;
-                const imgAlt = lazyContainer.dataset.alt;
+            loadLazyImage(container) {
+                const imgSrc = container.dataset.src;
+                const imgAlt = container.dataset.alt;
 
                 if (imgSrc) {
-                    // Show loading spinner
-                    lazyContainer.innerHTML = '<i class="fas fa-spinner loading-spinner"></i>';
-
+                    container.innerHTML = '<i class="fas fa-spinner loading-spinner"></i>';
                     const img = new Image();
                     img.src = imgSrc;
                     img.alt = imgAlt;
                     img.className = 'max-h-full max-w-full';
                     img.onload = () => {
-                        lazyContainer.innerHTML = '';
+                        container.innerHTML = '';
                         img.classList.add('loaded');
-                        lazyContainer.appendChild(img);
+                        container.appendChild(img);
                     };
                     img.onerror = () => {
-                        lazyContainer.innerHTML = `<i class="fas fa-${this.getFileIcon('')} folder-icon text-4xl text-blue-400"></i>`;
+                        container.innerHTML = `<i class="fas fa-${this.getFileIcon('')} folder-icon text-4xl text-blue-400"></i>`;
                     };
                 }
             },
 
-            observeAllLazyContainers() {
+            observeLazyContainers() {
                 document.querySelectorAll('.lazy-load-container').forEach(container => {
-                    if (!container.querySelector('img')) {
+                    if (!container.querySelector('img.loaded')) {
                         this.lazyImageObserver.observe(container);
                     }
                 });
             },
 
-            // Fallback method for browsers without IntersectionObserver
-            loadAllImagesImmediately() {
+            loadAllImages() {
                 document.querySelectorAll('.lazy-load-container[data-src]').forEach(container => {
                     this.loadLazyImage(container);
                 });
-            },
-
-            refreshLazyObserver() {
-                if (this.lazyImageObserver) {
-                    this.observeAllLazyContainers();
-                }
             },
 
             // Navigation
@@ -1238,7 +1152,6 @@
 
             loadContents() {
                 this.showLoading();
-
                 const url = new URL('{{ route("gallery.index") }}');
                 url.searchParams.append('path', this.state.currentPath);
                 url.searchParams.append('page', this.state.pagination.currentPage);
@@ -1247,7 +1160,8 @@
                 fetch(url, {
                     headers: {
                         'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     }
                 })
                     .then(response => response.json())
@@ -1265,6 +1179,7 @@
                             this.renderBreadcrumbs(data.breadcrumbs);
                             this.renderContents(data.contents);
                             this.updatePaginationControls();
+                            this.observeLazyContainers();
                         } else {
                             throw new Error(data.message || 'Failed to load contents');
                         }
@@ -1273,28 +1188,10 @@
                     .finally(() => this.hideLoading());
             },
 
-            updatePaginationControls() {
-                const { currentPage, totalPages, hasPrevious, hasNext } = this.state.pagination;
-
-                document.getElementById('prevPage').disabled = !hasPrevious;
-                document.getElementById('nextPage').disabled = !hasNext;
-
-                // Ensure we have valid numbers before displaying
-                if (typeof currentPage !== 'undefined' && typeof totalPages !== 'undefined') {
-                    document.getElementById('pageInfo').textContent = `Page ${currentPage} of ${totalPages}`;
-                } else {
-                    // Fallback if data is missing
-                    document.getElementById('pageInfo').textContent = 'Page 1 of 1';
-                }
-            },
-
             loadTrashContents(parentId = null) {
                 this.showLoading();
-
                 const url = new URL('{{ route("gallery.trash") }}');
-                if (parentId) {
-                    url.searchParams.append('parent_id', parentId);
-                }
+                if (parentId) url.searchParams.append('parent_id', parentId);
                 url.searchParams.append('page', this.state.pagination.currentPage);
                 url.searchParams.append('per_page', this.state.pagination.perPage);
 
@@ -1310,7 +1207,7 @@
                             this.state.currentTrashParent = parentId;
                             this.state.pagination = data.pagination || {
                                 currentPage: 1,
-                                perPage: 10,
+                                perPage: 12,
                                 totalItems: 0,
                                 totalPages: 1,
                                 hasPrevious: false,
@@ -1318,6 +1215,7 @@
                             };
                             this.renderContents(data.contents);
                             this.updatePaginationControls();
+                            this.observeLazyContainers();
                         } else {
                             throw new Error(data.message || 'Failed to load trash contents');
                         }
@@ -1326,9 +1224,15 @@
                     .finally(() => this.hideLoading());
             },
 
+            updatePaginationControls() {
+                const { currentPage, totalPages, hasPrevious, hasNext } = this.state.pagination;
+                this.elements.prevPage.disabled = !hasPrevious;
+                this.elements.nextPage.disabled = !hasNext;
+                this.elements.pageInfo.textContent = `Page ${currentPage} of ${totalPages || 1}`;
+            },
+
             renderBreadcrumbs(breadcrumbs) {
                 this.elements.breadcrumbs.innerHTML = '';
-
                 breadcrumbs.forEach((crumb, index) => {
                     if (index > 0) {
                         const separator = document.createElement('span');
@@ -1352,35 +1256,6 @@
                 });
             },
 
-            showSuccessNotification(message) {
-                // Remove any existing notifications
-                const existingNotif = document.querySelector('.gallery-notification');
-                if (existingNotif) existingNotif.remove();
-
-                // Create notification element
-                const notif = document.createElement('div');
-                notif.className = 'gallery-notification success';
-                notif.innerHTML = `
-                    <i class="fas fa-check-circle mr-2"></i>
-                    <span>${message}</span>
-                `;
-
-                // Insert after breadcrumb
-                const breadcrumb = document.getElementById('breadcrumbContainer');
-                if (breadcrumb) {
-                    breadcrumb.insertAdjacentElement('afterend', notif);
-                } else {
-                    // Fallback if breadcrumb not found
-                    document.body.prepend(notif);
-                }
-
-                // Auto-remove after 5 seconds
-                setTimeout(() => {
-                    notif.classList.add('fade-out');
-                    setTimeout(() => notif.remove(), 300);
-                }, 5000);
-            },
-
             renderContents(contents) {
                 this.elements.itemsContainer.innerHTML = '';
                 this.clearSelections();
@@ -1390,9 +1265,6 @@
                 } else {
                     this.renderNormalView(contents);
                 }
-
-                // Initialize lazy loading after content is rendered
-                this.setupLazyLoading();
             },
 
             renderTrashView(contents) {
@@ -1402,16 +1274,11 @@
                     return;
                 }
 
-                if (contents.folders && contents.folders.length > 0) {
-                    contents.folders.forEach(folder => {
-                        this.createFolderItem(folder, true);
-                    });
+                if (contents.folders?.length) {
+                    contents.folders.forEach(folder => this.createFolderItem(folder, true));
                 }
-
-                if (contents.files && contents.files.length > 0) {
-                    contents.files.forEach(file => {
-                        this.createFileItem(file, true);
-                    });
+                if (contents.files?.length) {
+                    contents.files.forEach(file => this.createFileItem(file, true));
                 }
             },
 
@@ -1426,16 +1293,11 @@
                     this.createGoUpItem();
                 }
 
-                if (contents.folders && contents.folders.length > 0) {
-                    contents.folders.forEach(folder => {
-                        this.createFolderItem(folder, false);
-                    });
+                if (contents.folders?.length) {
+                    contents.folders.forEach(folder => this.createFolderItem(folder, false));
                 }
-
-                if (contents.files && contents.files.length > 0) {
-                    contents.files.forEach(file => {
-                        this.createFileItem(file, false);
-                    });
+                if (contents.files?.length) {
+                    contents.files.forEach(file => this.createFileItem(file, false));
                 }
             },
 
@@ -1467,7 +1329,7 @@
 
                 goUpItem.addEventListener('click', (e) => {
                     e.preventDefault();
-                    const parts = this.state.currentPath.split('/');
+                    const parts = this.state.currentPath.split('/').filter(Boolean);
                     parts.pop();
                     this.state.currentPath = parts.join('/');
                     this.state.currentFolderId = null;
@@ -1487,22 +1349,17 @@
 
                 folderItem.innerHTML = `
                     <div class="item-thumbnail relative">
-                        <!-- Top Bar: Created At (left) and Checkbox (right) -->
                         <div class="absolute top-3 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
                             <span class="bg-blue-50 text-blue-700 font-medium px-2 py-0.5 rounded-md shadow-sm border border-blue-200">
-                                    ${this.formatDate(folder.created_at)}
-                                </span>
+                                ${this.formatDate(folder.created_at)}
+                            </span>
                         </div>
                         <div class="item-checkbox absolute top-1 right-1">
-                            <input type="checkbox" class="align-middle">
+                            <input type="checkbox" class="align-middle" ${this.isSelected(folder.id, 'folder') ? 'checked' : ''}>
                         </div>
-
-                        <!-- Folder Icon Centered -->
                         <div class="h-24 flex items-center justify-center">
                             <i class="fas fa-folder folder-icon text-4xl text-yellow-400"></i>
                         </div>
-
-                        <!-- Item Count Bottom Left -->
                         <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
                             ${folder.item_count || 0} items
                         </div>
@@ -1512,22 +1369,7 @@
                     </div>
                 `;
 
-                if (isTrash) {
-                    folderItem.classList.add('deleted-item');
-                }
-
-                folderItem.addEventListener('click', (e) => {
-                    if (e.shiftKey) {
-                        this.toggleItemSelection(folder.id, 'folder', folderItem);
-                    } else {
-                        // Single click just selects the item
-                        if (!this.isSelected(folder.id, 'folder')) {
-                            this.clearSelections();
-                            this.toggleItemSelection(folder.id, 'folder', folderItem);
-                        }
-                    }
-                });
-
+                if (isTrash) folderItem.classList.add('deleted-item');
                 this.elements.itemsContainer.appendChild(folderItem);
             },
 
@@ -1540,47 +1382,32 @@
                 const thumbnail = file.thumb_url || file.url;
                 const thumbnailContent = thumbnail ?
                     `<div class="lazy-load-container" data-src="${thumbnail}" data-alt="${file.name}">
-            <i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>
-        </div>` :
+                        <i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>
+                    </div>` :
                     `<i class="fas fa-${this.getFileIcon(file.mime_type)} folder-icon text-4xl text-blue-400"></i>`;
 
                 fileItem.innerHTML = `
-        <div class="item-thumbnail">
-            ${thumbnailContent}
-            ${file.is_featured ? '<i class="fas fa-star absolute top-1 left-1 text-yellow-400"></i>' : ''}
-            <div class="absolute top-3 left-1 text-xs">
-                <span class="bg-white/70 text-gray-700 font-medium px-2 py-0.5 rounded-md shadow-sm border border-gray-300">
-                    ${this.formatDate(file.created_at)}
-                </span>
-            </div>
-            <div class="item-checkbox">
-                <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
-            </div>
-            <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
-                ${this.formatFileSize(file.size_bytes)}
-            </div>
-        </div>
-        <div class="item-info">
-            <div class="item-name">${file.name}</div>
-        </div>
-    `;
+                    <div class="item-thumbnail">
+                        ${thumbnailContent}
+                        ${file.is_featured ? '<i class="fas fa-star absolute top-1 left-1 text-yellow-400"></i>' : ''}
+                        <div class="absolute top-3 left-1 text-xs">
+                            <span class="bg-white/70 text-gray-700 font-medium px-2 py-0.5 rounded-md shadow-sm border border-gray-300">
+                                ${this.formatDate(file.created_at)}
+                            </span>
+                        </div>
+                        <div class="item-checkbox">
+                            <input type="checkbox" ${this.isSelected(file.id, 'file') ? 'checked' : ''}>
+                        </div>
+                        <div class="absolute bottom-1 left-1 text-xs text-gray-600 bg-white/70 px-1 rounded">
+                            ${this.formatFileSize(file.size_bytes)}
+                        </div>
+                    </div>
+                    <div class="item-info">
+                        <div class="item-name">${file.name}</div>
+                    </div>
+                `;
 
-                if (isTrash) {
-                    fileItem.classList.add('deleted-item');
-                }
-
-                fileItem.addEventListener('click', (e) => {
-                    if (e.shiftKey) {
-                        this.toggleItemSelection(file.id, 'file', fileItem);
-                    } else {
-                        if (!this.isSelected(file.id, 'file')) {
-                            this.clearSelections();
-                            this.toggleItemSelection(file.id, 'file', fileItem);
-                        }
-                    }
-                    this.updatePreview(file.id, 'file');
-                });
-
+                if (isTrash) fileItem.classList.add('deleted-item');
                 this.elements.itemsContainer.appendChild(fileItem);
             },
 
@@ -1589,7 +1416,6 @@
                 const id = item.dataset.id;
                 const type = item.dataset.type;
 
-                // First update the selection state
                 if (event.shiftKey) {
                     this.toggleItemSelection(id, type, item);
                 } else {
@@ -1599,24 +1425,22 @@
                     }
                 }
 
-                // Then handle the preview
                 if (type === 'file') {
                     this.updatePreview(id, type);
                 }
             },
 
             toggleItemSelection(id, type, element) {
-                const index = this.state.selectedItems.findIndex(item =>
-                    item.id === id && item.type === type
-                );
+                const itemKey = `${type}:${id}`;
+                const wasSelected = this.state.selectedItems.has(itemKey);
 
-                if (index === -1) {
-                    this.state.selectedItems.push({ id, type });
+                if (!wasSelected) {
+                    this.state.selectedItems.add(itemKey);
                     element.classList.add('selected');
                     const checkbox = element.querySelector('.item-checkbox input');
                     if (checkbox) checkbox.checked = true;
                 } else {
-                    this.state.selectedItems.splice(index, 1);
+                    this.state.selectedItems.delete(itemKey);
                     element.classList.remove('selected');
                     const checkbox = element.querySelector('.item-checkbox input');
                     if (checkbox) checkbox.checked = false;
@@ -1626,9 +1450,7 @@
             },
 
             isSelected(id, type) {
-                return this.state.selectedItems.some(item =>
-                    item.id === id && item.type === type
-                );
+                return this.state.selectedItems.has(`${type}:${id}`);
             },
 
             clearSelections() {
@@ -1637,24 +1459,23 @@
                     const checkbox = el.querySelector('.item-checkbox input');
                     if (checkbox) checkbox.checked = false;
                 });
-                this.state.selectedItems = [];
+                this.state.selectedItems.clear();
                 this.updateSelectionDisplay();
                 this.clearPreview();
             },
 
             updateSelectionDisplay() {
-                const hasSelection = this.state.selectedItems.length > 0;
-                const singleSelection = this.state.selectedItems.length === 1;
+                const hasSelection = this.state.selectedItems.size > 0;
+                const singleSelection = this.state.selectedItems.size === 1;
                 const isTrashView = this.state.isTrashView;
 
-                // Update action buttons visibility
                 this.elements.deleteButton.classList.toggle('hidden', !hasSelection || isTrashView);
                 this.elements.restoreButton.classList.toggle('hidden', !isTrashView || !hasSelection);
                 this.elements.permanentDeleteButton.classList.toggle('hidden', !isTrashView || !hasSelection);
 
-                // Update preview if single file is selected
-                if (singleSelection && this.state.selectedItems[0].type === 'file') {
-                    this.fetchFileDetails(this.state.selectedItems[0].id);
+                if (singleSelection && Array.from(this.state.selectedItems)[0].startsWith('file:')) {
+                    const fileId = Array.from(this.state.selectedItems)[0].split(':')[1];
+                    this.fetchFileDetails(fileId);
                 } else if (!hasSelection) {
                     this.clearPreview();
                 }
@@ -1662,9 +1483,7 @@
 
             // Preview Management
             updatePreview(id, type) {
-                // Don't re-fetch if already showing this item
                 if (this.state.currentPreviewId === id) return;
-
                 this.state.currentPreviewId = id;
                 this.clearPreview();
                 this.showLoadingPreview();
@@ -1682,25 +1501,80 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            if (type === 'file') {
-                                this.showFilePreview(data.file);
-                            } else {
-                                this.showFolderPreview(data.folder);
-                            }
+                            type === 'file' ? this.showFilePreview(data.file) : this.showFolderPreview(data.folder);
                         } else {
                             throw new Error(data.message || 'Failed to load preview');
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        this.showError('Could not load preview details');
+                        this.showError(error.message);
                         this.clearPreview();
                     })
-                    .finally(() => {
-                        this.hideLoadingPreview();
-                    });
+                    .finally(() => this.hideLoadingPreview());
             },
 
+            showFilePreview(file) {
+                if (!file) {
+                    this.clearPreview();
+                    return;
+                }
+
+                this.elements.previewContent.innerHTML = '';
+                const previewContainer = document.createElement('div');
+                previewContainer.className = 'preview-image-container';
+
+                const mimeType = file.mime_type || '';
+                const url = file.thumb_url || file.url;
+                const altText = file.name || 'Preview';
+
+                if (mimeType.startsWith('image/')) {
+                    const img = document.createElement('img');
+                    img.src = url;
+                    img.alt = altText;
+                    img.className = 'preview-image';
+                    const loadingOverlay = document.createElement('div');
+                    loadingOverlay.className = 'loading-overlay';
+                    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    previewContainer.appendChild(loadingOverlay);
+
+                    img.onload = () => {
+                        loadingOverlay.remove();
+                        img.classList.add('loaded');
+                    };
+                    img.onerror = () => {
+                        loadingOverlay.remove();
+                        previewContainer.innerHTML = `
+                            <div class="text-red-500 text-center p-4">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                Failed to load image
+                            </div>`;
+                    };
+                    previewContainer.appendChild(img);
+                } else if (mimeType.startsWith('video/')) {
+                    previewContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <i class="fas fa-video text-6xl text-gray-400 mb-2"></i>
+                            <span class="text-sm text-gray-600">Video Preview</span>
+                        </div>`;
+                } else if (mimeType.includes('pdf')) {
+                    previewContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <i class="fas fa-file-pdf text-6xl text-red-400 mb-2"></i>
+                            <span class="text-sm text-gray-600">PDF Document</span>
+                        </div>`;
+                } else {
+                    previewContainer.innerHTML = `
+                        <div class="flex flex-col items-center justify-center h-full">
+                            <i class="fas fa-${this.getFileIcon(mimeType)} text-6xl text-gray-400 mb-2"></i>
+                            <span class="text-sm text-gray-600">No preview available</span>
+                        </div>`;
+                }
+
+                this.updatePreviewDetails(file);
+                this.elements.previewContent.appendChild(previewContainer);
+                this.elements.previewDetails.classList.remove('hidden');
+                this.elements.actionButtons.classList.remove('hidden');
+            },
 
             showFolderPreview(folder) {
                 if (!folder) {
@@ -1709,42 +1583,31 @@
                 }
 
                 this.elements.previewContent.innerHTML = '';
-
                 const previewContainer = document.createElement('div');
                 previewContainer.className = 'preview-image-container flex items-center justify-center';
-
-                const icon = document.createElement('i');
-                icon.className = 'fas fa-folder text-6xl text-yellow-400';
-                previewContainer.appendChild(icon);
-
+                previewContainer.innerHTML = '<i class="fas fa-folder text-6xl text-yellow-400"></i>';
                 this.elements.previewContent.appendChild(previewContainer);
 
-                // Update details
                 this.elements.detailName.textContent = folder.name;
                 this.elements.detailType.textContent = 'Folder';
                 this.elements.detailSize.textContent = '-';
                 this.elements.detailDimensions.textContent = '-';
                 this.elements.detailUploaded.textContent = this.formatDate(folder.created_at);
 
-                // Show elements
                 this.elements.previewDetails.classList.remove('hidden');
                 this.elements.actionButtons.classList.remove('hidden');
-                this.elements.previewContent.querySelector('.preview-empty')?.classList.add('hidden');
             },
 
             showLoadingPreview() {
                 const loadingOverlay = document.createElement('div');
                 loadingOverlay.className = 'loading-overlay flex items-center justify-center';
                 loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin text-4xl text-blue-500"></i>';
-
                 this.elements.previewContent.appendChild(loadingOverlay);
             },
 
             hideLoadingPreview() {
                 const loadingOverlay = this.elements.previewContent.querySelector('.loading-overlay');
-                if (loadingOverlay) {
-                    loadingOverlay.remove();
-                }
+                if (loadingOverlay) loadingOverlay.remove();
             },
 
             clearPreview() {
@@ -1752,8 +1615,7 @@
                     <div class="preview-empty">
                         <i class="fas fa-image text-4xl mb-2"></i>
                         <p>No item selected</p>
-                    </div>
-                `;
+                    </div>`;
                 this.elements.previewDetails.classList.add('hidden');
                 this.elements.actionButtons.classList.add('hidden');
             },
@@ -1774,96 +1636,17 @@
                         }
                     })
                     .catch(error => {
-                        console.error('Error:', error);
-                        this.showError('Could not load file details');
+                        this.showError(error.message);
                         this.clearPreview();
                     });
             },
-            showFilePreview(file) {
-                if (!file) {
-                    this.clearPreview();
-                    return;
-                }
 
-                this.elements.previewContent.innerHTML = '';
-                const previewContainer = document.createElement('div');
-                previewContainer.className = 'preview-image-container';
-
-                // Ensure we have proper URLs
-                const imageUrl = file.url || file.thumb_url;
-                const altText = file.name || 'Preview image';
-
-                if (file.mime_type?.startsWith('image/')) {
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.alt = altText;
-                    img.className = 'preview-image';
-
-                    // Add loading state
-                    const loadingOverlay = document.createElement('div');
-                    loadingOverlay.className = 'loading-overlay';
-                    loadingOverlay.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    previewContainer.appendChild(loadingOverlay);
-
-                    img.onload = () => {
-                        loadingOverlay.remove();
-                        img.classList.add('loaded');
-                    };
-                    img.onerror = () => {
-                        loadingOverlay.remove();
-                        previewContainer.innerHTML = `
-                <div class="text-red-500 text-center p-4">
-                    <i class="fas fa-exclamation-triangle mr-2"></i>
-                    Failed to load image
-                </div>
-            `;
-                    };
-
-                    previewContainer.appendChild(img);
-                } else {
-                    // Non-image preview
-                    previewContainer.innerHTML = `
-            <div class="flex flex-col items-center justify-center h-full">
-                <i class="fas fa-${this.getFileIcon(file.mime_type)} text-6xl text-gray-400 mb-2"></i>
-                <span class="text-sm text-gray-600">No preview available</span>
-            </div>
-        `;
-                }
-
-                // Update details panel
-                this.updatePreviewDetails(file);
-                this.elements.previewContent.appendChild(previewContainer);
-                this.elements.previewDetails.classList.remove('hidden');
-                this.elements.actionButtons.classList.remove('hidden');
-            },
-
-            // Add this helper method
             updatePreviewDetails(file) {
-                if (!file) return;
-
                 this.elements.detailName.textContent = file.name || 'Unknown';
                 this.elements.detailType.textContent = file.mime_type || 'Unknown';
-
-                // Format file size
-                let sizeText = 'N/A';
-                if (file.size_bytes) {
-                    sizeText = this.formatFileSize(file.size_bytes);
-                } else if (file.size) {
-                    sizeText = file.size;
-                }
-                this.elements.detailSize.textContent = sizeText;
-
-                // Format dimensions
-                let dimensionsText = 'N/A';
-                if (file.dimensions) {
-                    dimensionsText = `${file.dimensions.width} × ${file.dimensions.height}`;
-                    if (file.dimensions.aspect_ratio) {
-                        dimensionsText += ` (${file.dimensions.aspect_ratio.toFixed(2)})`;
-                    }
-                }
-                this.elements.detailDimensions.textContent = dimensionsText;
-
-                // Format date
+                this.elements.detailSize.textContent = file.size_bytes ? this.formatFileSize(file.size_bytes) : 'N/A';
+                this.elements.detailDimensions.textContent = file.dimensions ?
+                    `${file.dimensions.width} × ${file.dimensions.height}` : 'N/A';
                 this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
             },
 
@@ -1871,28 +1654,15 @@
             toggleTrashView() {
                 this.state.isTrashView = !this.state.isTrashView;
                 this.state.currentPath = '';
-                this.state.selectedItems = [];
-
-                // Update UI
+                this.state.selectedItems.clear();
                 document.querySelector('.gallery-container').classList.toggle('trash-view', this.state.isTrashView);
                 this.elements.trashButtonText.textContent = this.state.isTrashView ? 'Back to Gallery' : 'Trash';
-
-                // Load the appropriate content
-                if (this.state.isTrashView) {
-                    this.loadTrashContents();
-                } else {
-                    this.loadContents();
-                }
+                this.state.isTrashView ? this.loadTrashContents() : this.loadContents();
             },
 
             refreshContents() {
                 this.state.pagination.currentPage = 1;
-                if (this.state.isTrashView) {
-                    this.loadTrashContents(this.state.currentTrashParent);
-                } else {
-                    this.loadContents();
-                }
-                this.refreshLazyObserver();
+                this.state.isTrashView ? this.loadTrashContents(this.state.currentTrashParent) : this.loadContents();
             },
 
             showUploadDialog() {
@@ -1900,31 +1670,20 @@
                 input.type = 'file';
                 input.multiple = true;
                 input.accept = 'image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx';
-
                 input.onchange = (e) => {
                     const files = Array.from(e.target.files);
-                    if (files.length > 0) {
-                        this.uploadFiles(files);
-                    }
+                    if (files.length > 0) this.uploadFiles(files);
                 };
-
                 input.click();
             },
 
             uploadFiles(files) {
                 this.showProgress('Uploading Files');
-
                 const formData = new FormData();
-                files.forEach(file => {
-                    formData.append('files[]', file);
-                });
-
-                if (this.state.currentPath) {
-                    formData.append('path', this.state.currentPath);
-                }
+                files.forEach(file => formData.append('files[]', file));
+                if (this.state.currentPath) formData.append('path', this.state.currentPath);
 
                 const xhr = new XMLHttpRequest();
-
                 xhr.upload.addEventListener('progress', (e) => {
                     if (e.lengthComputable) {
                         const percent = Math.round((e.loaded / e.total) * 100);
@@ -1963,31 +1722,23 @@
             },
 
             createNewFolder() {
-                // Use SweetAlert for better UX
                 Swal.fire({
                     title: 'Create New Folder',
                     input: 'text',
                     inputLabel: 'Folder Name',
                     inputPlaceholder: 'Enter folder name...',
-                    inputAttributes: {
-                        autocapitalize: 'off'
-                    },
+                    inputAttributes: { autocapitalize: 'off' },
                     showCancelButton: true,
                     confirmButtonText: 'Create',
                     cancelButtonText: 'Cancel',
                     inputValidator: (value) => {
-                        if (!value) {
-                            return 'You need to enter a folder name!';
-                        }
-                        if (!/^[a-zA-Z0-9\-_ ]+$/.test(value)) {
-                            return 'Folder name can only contain letters, numbers, spaces, hyphens and underscores';
-                        }
+                        if (!value) return 'You need to enter a folder name!';
+                        if (!/^[a-zA-Z0-9\-_ ]+$/.test(value)) return 'Folder name can only contain letters, numbers, spaces, hyphens, and underscores';
                     }
-                }).then((result) => {
+                }).then(result => {
                     if (result.isConfirmed) {
                         const folderName = result.value;
                         this.showProgress('Creating Folder');
-
                         fetch('{{ route("gallery.folder.create") }}', {
                             method: 'POST',
                             headers: {
@@ -1998,22 +1749,14 @@
                             body: JSON.stringify({
                                 name: folderName,
                                 parent_id: this.state.currentFolderId,
-                                current_path: this.state.currentPath // Add current path to ensure correct parent
+                                current_path: this.state.currentPath
                             })
                         })
-                            .then(response => {
-                                if (!response.ok) {
-                                    throw new Error('Network response was not ok');
-                                }
-                                return response.json();
-                            })
+                            .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    // Show success notification below breadcrumb
                                     this.showSuccessNotification('Folder created successfully');
                                     this.loadContents();
-
-                                    // Also show SweetAlert success
                                     Swal.fire({
                                         icon: 'success',
                                         title: 'Success',
@@ -2026,13 +1769,8 @@
                                 }
                             })
                             .catch(error => {
-                                console.error('Error:', error);
                                 this.showError(error.message);
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Error',
-                                    text: error.message
-                                });
+                                Swal.fire({ icon: 'error', title: 'Error', text: error.message });
                             })
                             .finally(() => this.hideProgress());
                     }
@@ -2040,339 +1778,272 @@
             },
 
             deleteSelected(permanent = false) {
-                if (this.state.selectedItems.length === 0) return;
+                if (this.state.selectedItems.size === 0) return;
 
-                const message = permanent
-                    ? `Are you sure you want to permanently delete ${this.state.selectedItems.length} item(s)? This cannot be undone.`
-                    : `Move ${this.state.selectedItems.length} item(s) to trash?`;
+                const items = Array.from(this.state.selectedItems).map(key => {
+                    const [type, id] = key.split(':');
+                    return { id, type };
+                });
 
-                if (!confirm(message)) return;
-
-                this.showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
-                this.updateProgress(30, 'Processing...');
-
-                fetch('{{ route("gallery.batch.delete") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        items: this.state.selectedItems,
-                        permanent: permanent
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.updateProgress(100, 'Completed');
-                            setTimeout(() => {
+                Swal.fire({
+                    title: permanent ? 'Delete Permanently?' : 'Move to Trash?',
+                    text: permanent ?
+                        `Are you sure you want to permanently delete ${items.length} item(s)? This cannot be undone.` :
+                        `Move ${items.length} item(s) to trash?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: permanent ? 'Delete Permanently' : 'Move to Trash'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        this.showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
+                        fetch('{{ route("gallery.batch.delete") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ items, permanent })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.updateProgress(100, 'Completed');
+                                    setTimeout(() => {
+                                        this.hideProgress();
+                                        this.showSuccessNotification(data.message);
+                                        this.clearPreview();
+                                        this.refreshContents();
+                                    }, 500);
+                                } else {
+                                    throw new Error(data.message || 'Delete failed');
+                                }
+                            })
+                            .catch(error => {
                                 this.hideProgress();
-                                this.showSuccessNotification(data.message);
-                                this.clearPreview();
-                                this.refreshContents();
-                            }, 500);
-                        } else {
-                            throw new Error(data.message || 'Delete failed');
-                        }
-                    })
-                    .catch(error => {
-                        this.hideProgress();
-                        console.error('Delete error:', error);
-                        this.showError(error.message);
-                    });
+                                this.showError(error.message);
+                            });
+                    }
+                });
             },
 
             restoreSelected() {
-                if (this.state.selectedItems.length === 0) return;
+                if (this.state.selectedItems.size === 0) return;
 
-                if (!confirm(`Restore ${this.state.selectedItems.length} item(s) from trash?`)) return;
+                const items = Array.from(this.state.selectedItems).map(key => {
+                    const [type, id] = key.split(':');
+                    return { id, type };
+                });
 
-                this.showProgress('Restoring Items');
-                this.updateProgress(30, 'Processing...');
-
-                fetch('{{ route("gallery.batch.restore") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        items: this.state.selectedItems
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.updateProgress(100, 'Completed');
-                            setTimeout(() => {
+                Swal.fire({
+                    title: 'Restore Items?',
+                    text: `Restore ${items.length} item(s) from trash?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#4f46e5',
+                    confirmButtonText: 'Restore'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        this.showProgress('Restoring Items');
+                        fetch('{{ route("gallery.batch.restore") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({ items })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.updateProgress(100, 'Completed');
+                                    setTimeout(() => {
+                                        this.hideProgress();
+                                        this.showSuccessNotification(data.message);
+                                        this.clearPreview();
+                                        this.refreshContents();
+                                    }, 500);
+                                } else {
+                                    throw new Error(data.message || 'Restore failed');
+                                }
+                            })
+                            .catch(error => {
                                 this.hideProgress();
-                                this.showSuccessNotification(data.message);
-                                this.clearPreview();
-                                this.refreshContents();
-                            }, 500);
-                        } else {
-                            throw new Error(data.message || 'Restore failed');
-                        }
-                    })
-                    .catch(error => {
-                        this.hideProgress();
-                        console.error('Restore error:', error);
-                        this.showError(error.message);
-                    });
+                                this.showError(error.message);
+                            });
+                    }
+                });
             },
 
             emptyTrash() {
-                if (!confirm('Are you sure you want to permanently delete all items in the trash? This cannot be undone.')) {
-                    return;
-                }
-
-                this.showProgress('Emptying Trash');
-                this.updateProgress(30, 'Processing...');
-
-                fetch('{{ route("gallery.empty-trash") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.updateProgress(100, 'Completed');
-                            setTimeout(() => {
+                Swal.fire({
+                    title: 'Empty Trash?',
+                    text: 'Are you sure you want to permanently delete all items in the trash? This cannot be undone.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#ef4444',
+                    confirmButtonText: 'Empty Trash'
+                }).then(result => {
+                    if (result.isConfirmed) {
+                        this.showProgress('Emptying Trash');
+                        fetch('{{ route("gallery.empty-trash") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.updateProgress(100, 'Completed');
+                                    setTimeout(() => {
+                                        this.hideProgress();
+                                        this.showSuccessNotification(data.message);
+                                        this.clearPreview();
+                                        this.loadTrashContents();
+                                    }, 500);
+                                } else {
+                                    throw new Error(data.message || 'Failed to empty trash');
+                                }
+                            })
+                            .catch(error => {
                                 this.hideProgress();
-                                this.showSuccessNotification(data.message);
-                                this.clearPreview();
-                                this.loadTrashContents();
-                            }, 500);
-                        } else {
-                            throw new Error(data.message || 'Failed to empty trash');
-                        }
-                    })
-                    .catch(error => {
-                        this.hideProgress();
-                        console.error('Empty trash error:', error);
-                        this.showError(error.message);
-                    });
+                                this.showError(error.message);
+                            });
+                    }
+                });
             },
 
-            insertSelected() {
-                if (this.state.selectedItems.length !== 1) {
-                    alert('Please select exactly one item');
-                    return;
-                }
-
-                const item = this.state.selectedItems[0];
-
-                if (item.type !== 'file') {
-                    alert('Please select a file to insert');
-                    return;
-                }
-
-                if (this.state.callback) {
-                    fetch(`{{ route("gallery.file.for-insertion", '') }}/${item.id}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                this.state.callback(data.file);
-                                this.closeModal();
-                            } else {
-                                throw new Error(data.message || 'Failed to get file details');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            this.showError(error.message);
-                        });
-                } else {
-                    // Default behavior if no callback provided
-                    fetch(`{{ route("gallery.generate-url", '') }}/${item.id}`, {
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                this.copyToClipboard(data.url);
-                                this.showSuccessNotification('URL copied to clipboard');
-                            } else {
-                                throw new Error(data.message || 'URL generation failed');
-                            }
-                        })
-                        .catch(error => {
-                            console.error('URL generation error:', error);
-                            this.showError(error.message);
-                        });
-                }
-            },
-
-            setupProductImageSelection() {
-                // Only initialize once
-                if (this.state._productImageSelectionInitialized) return;
-                this.state._productImageSelectionInitialized = true;
-
-                // Store selected images for the product
-                this.state.productImages = [];
-                this.state.featuredImage = null;
-
-                // Handle insert button click
-                const insertHandler = (e) => {
-                    e.preventDefault();
-                    this.insertSelectedForProduct();
-                };
-
-                // Remove existing listener first to prevent duplicates
-                this.elements.insertButton.removeEventListener('click', insertHandler);
-                this.elements.insertButton.addEventListener('click', insertHandler);
-
-                // Handle add more images button
-                const addMoreHandler = () => {
-                    this.openModal('', (file) => {
-                        if (file) this.addProductImage(file);
-                    }, { mode: 'multiple', accept: 'image/*' });
-                };
-
-                const addMoreBtn = document.getElementById('addMoreImages');
-                if (addMoreBtn) {
-                    addMoreBtn.removeEventListener('click', addMoreHandler);
-                    addMoreBtn.addEventListener('click', addMoreHandler);
-                }
-            },
-
-            // Add this method to handle inserting images for product
             insertSelectedForProduct() {
-                if (!this.state.selectedItems || this.state.selectedItems.length === 0) {
+                if (this.state.selectedItems.size === 0) {
                     Swal.fire({
                         icon: 'error',
                         title: 'No Selection',
                         text: 'Please select at least one image',
-                        confirmButtonColor: '#3b82f6',
+                        confirmButtonColor: '#3b82f6'
                     });
                     return;
                 }
 
-                // Filter only valid image files
-                const validItems = this.state.selectedItems.filter(item => {
-                    if (!item || item.type !== 'file') return false;
-                    const itemElement = document.querySelector(`.gallery-item[data-id="${item.id}"]`);
-                    return !!itemElement;
-                });
+                const items = Array.from(this.state.selectedItems)
+                    .filter(key => key.startsWith('file:'))
+                    .map(key => ({ id: key.split(':')[1], type: 'file' }));
 
-                if (validItems.length === 0) {
+                if (items.length === 0) {
                     Swal.fire({
                         icon: 'error',
                         title: 'Invalid Selection',
                         text: 'Please select valid image files',
-                        confirmButtonColor: '#3b82f6',
+                        confirmButtonColor: '#3b82f6'
                     });
                     return;
                 }
 
-                // Fetch details for each selected image
-                const fetchPromises = validItems.map(item => {
-                    return fetch(`/gallery/file/${item.id}/for-insertion`, {
+                if (this.state.modalOptions?.mode === 'single' && items.length > 1) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Too Many Items',
+                        text: 'Please select only one image',
+                        confirmButtonColor: '#3b82f6'
+                    });
+                    return;
+                }
+
+                this.showProgress('Fetching Files');
+                const fetchPromises = items.map(item =>
+                    fetch(`{{ route("gallery.file.for-insertion", ":id") }}`.replace(':id', item.id), {
+                        method: 'GET',
                         headers: {
                             'Accept': 'application/json',
                             'X-Requested-With': 'XMLHttpRequest',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         }
                     })
-                        .then(response => {
-                            if (!response.ok) {
-                                throw new Error(`HTTP error! status: ${response.status}`);
-                            }
-                            return response.json();
-                        })
+                        .then(response => response.json())
                         .then(data => {
-                            if (data.success && data.file) {
-                                // Validate MIME type if accept option is specified
-                                if (this.state.modalOptions?.accept === 'image/*' && !data.file.mime_type.startsWith('image/')) {
-                                    throw new Error(`File ${data.file.name} is not an image`);
-                                }
+                            if (data.success) {
                                 return data.file;
+                            } else {
+                                throw new Error(data.message || 'Failed to fetch file');
                             }
-                            throw new Error(data.message || 'Failed to get file details');
-                        });
-                });
+                        })
+                );
 
                 Promise.all(fetchPromises)
                     .then(files => {
-                        // Filter out any null or undefined files
-                        const validFiles = files.filter(file => file && file.id);
+                        const validFiles = files.filter(file => file.mime_type.startsWith('image/'));
                         if (validFiles.length === 0) {
                             throw new Error('No valid image files selected');
                         }
 
-                        // Handle single vs. multiple selection based on modal options
                         if (this.state.modalOptions?.mode === 'single') {
-                            if (validFiles.length > 1) {
-                                throw new Error('Please select only one image');
-                            }
                             this.state.callback(validFiles[0]);
                         } else {
-                            validFiles.forEach(file => {
-                                this.addProductImage(file);
-                            });
+                            validFiles.forEach(file => this.addProductImage(file));
                         }
 
-                        this.closeModal();
+                        this.updateProgress(100, 'Completed');
+                        setTimeout(() => {
+                            this.hideProgress();
+                            this.showSuccessNotification('Images inserted successfully');
+                            this.closeModal();
+                        }, 500);
                     })
                     .catch(error => {
-                        console.error('Error in insertSelectedForProduct:', error);
+                        this.hideProgress();
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
-                            text: error.message || 'Failed to insert images',
+                            text: error.message,
                             confirmButtonColor: '#3b82f6',
+                            showCancelButton: true,
+                            cancelButtonText: 'Retry',
+                            cancelButtonColor: '#4f46e5'
+                        }).then(result => {
+                            if (result.isDismissed) this.insertSelectedForProduct();
                         });
                     });
             },
 
+            setupProductImageSelection() {
+                if (this.state._productImageSelectionInitialized) return;
+                this.state._productImageSelectionInitialized = true;
 
-            // Add product image to the collection
+                this.state.productImages = [];
+                this.state.featuredImage = null;
+
+                const addMoreBtn = document.getElementById('addMoreImages');
+                if (addMoreBtn) {
+                    addMoreBtn.addEventListener('click', () => {
+                        this.openModal('', (file) => {
+                            if (Array.isArray(file)) {
+                                file.forEach(f => this.addProductImage(f));
+                            } else {
+                                this.addProductImage(file);
+                            }
+                        }, { mode: 'multiple', accept: 'image/*' });
+                    });
+                }
+            },
+
             addProductImage(file) {
                 if (!this.state.productImages.some(img => img.id === file.id)) {
                     this.state.productImages.push(file);
                     this.renderSelectedImagesPreview();
                     this.toggleImageActionButtons();
+                    this.updateProductImagesInput();
                 }
             },
 
-            // Set featured image
-            setFeaturedImage(file) {
-                this.state.featuredImage = file;
-                document.getElementById('featuredImageInput').value = file.id;
-                this.renderFeaturedImagePreview();
-                this.closeModal();
-            },
-
-            // Remove featured image
-            removeFeaturedImage() {
-                this.state.featuredImage = null;
-                document.getElementById('featuredImageInput').value = '';
-                document.getElementById('featuredImagePreview').classList.add('hidden');
-                document.querySelector('.featured-image-upload-area').classList.remove('hidden');
-            },
-
-// Render selected images preview
             renderSelectedImagesPreview() {
                 const previewContainer = document.getElementById('selectedImagesPreview');
                 if (!previewContainer) return;
 
                 previewContainer.innerHTML = '';
-
                 if (this.state.productImages.length === 0) {
                     previewContainer.classList.add('hidden');
                     return;
@@ -2380,21 +2051,18 @@
 
                 this.state.productImages.forEach((image, index) => {
                     const imageWrapper = document.createElement('div');
-                    imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200';
-
+                    imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 sortable-image';
                     imageWrapper.innerHTML = `
-            <img src="${image.thumb_url || image.url}" alt="${image.name}" class="w-full h-full object-cover">
-            <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image" data-index="${index}">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                </svg>
-            </button>
-        `;
-
+                        <img src="${image.thumb_url || image.url}" alt="${image.name}" class="w-full h-full object-cover">
+                        <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image" data-index="${index}">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    `;
                     previewContainer.appendChild(imageWrapper);
                 });
 
-                // Add event listeners for remove buttons
                 document.querySelectorAll('.remove-image').forEach(button => {
                     button.addEventListener('click', (e) => {
                         e.stopPropagation();
@@ -2406,38 +2074,15 @@
                 });
 
                 previewContainer.classList.remove('hidden');
-                this.updateProductImagesInput();
             },
 
-            // Render featured image preview
-            renderFeaturedImagePreview() {
-                console.log('Featured image data:', this.state.featuredImage);
-                if (!this.state.featuredImage) return;
-
-                const previewContainer = document.getElementById('featuredImagePreview');
-                const thumbnail = document.getElementById('featuredImageThumbnail');
-                const uploadArea = document.querySelector('.featured-image-upload-area');
-
-                thumbnail.src = this.state.featuredImage.thumb_url || this.state.featuredImage.url;
-                thumbnail.alt = this.state.featuredImage.name;
-
-                previewContainer.classList.remove('hidden');
-                uploadArea.classList.add('hidden');
-            },
-
-            // Toggle action buttons visibility based on whether there are images
             toggleImageActionButtons() {
                 const actionButtons = document.getElementById('imageActionButtons');
-                if (!actionButtons) return;
-
-                if (this.state.productImages.length > 0) {
-                    actionButtons.classList.remove('hidden');
-                } else {
-                    actionButtons.classList.add('hidden');
+                if (actionButtons) {
+                    actionButtons.classList.toggle('hidden', this.state.productImages.length === 0);
                 }
             },
 
-// Update hidden input with selected image IDs
             updateProductImagesInput() {
                 const input = document.getElementById('productImagesInput');
                 if (input) {
@@ -2447,20 +2092,15 @@
 
             performSearch() {
                 const query = this.elements.searchInput.value.trim();
-                if (!query) {
-                    this.state.pagination.currentPage = 1;
-                    this.loadContents();
-                    return;
-                }
-
-                this.showLoading();
+                this.state.pagination.currentPage = 1;
 
                 const url = new URL('{{ route("gallery.index") }}');
-                url.searchParams.append('search', query);
+                if (query) url.searchParams.append('search', query);
                 if (this.state.currentPath) url.searchParams.append('path', this.state.currentPath);
                 url.searchParams.append('page', this.state.pagination.currentPage);
                 url.searchParams.append('per_page', this.state.pagination.perPage);
 
+                this.showLoading();
                 fetch(url, {
                     headers: {
                         'Accept': 'application/json',
@@ -2472,7 +2112,7 @@
                         if (data.success) {
                             this.state.pagination = data.pagination || {
                                 currentPage: 1,
-                                perPage: 10,
+                                perPage: 12,
                                 totalItems: 0,
                                 totalPages: 1,
                                 hasPrevious: false,
@@ -2480,15 +2120,12 @@
                             };
                             this.renderContents(data.contents);
                             this.updatePaginationControls();
-                            this.refreshLazyObserver();
+                            this.observeLazyContainers();
                         } else {
                             throw new Error(data.message || 'Search failed');
                         }
                     })
-                    .catch(error => {
-                        console.error('Search error:', error);
-                        this.showError(error.message);
-                    })
+                    .catch(error => this.showError(error.message))
                     .finally(() => this.hideLoading());
             },
 
@@ -2502,33 +2139,22 @@
 
                 const id = item.dataset.id;
                 const type = item.dataset.type;
-                const isSelected = this.isSelected(id, type);
-
-                if (!isSelected) {
+                if (!this.isSelected(id, type)) {
                     this.clearSelections();
-                    this.state.selectedItems = [{ id, type }];
-                    item.classList.add('selected');
-                    const checkbox = item.querySelector('.item-checkbox input');
-                    if (checkbox) checkbox.checked = true;
+                    this.toggleItemSelection(id, type, item);
                 }
 
-                this.updateSelectionDisplay();
                 this.showContextMenu(e);
             },
 
             showContextMenu(e) {
-                e.preventDefault();
                 this.closeContextMenu();
-
                 const menu = document.createElement('div');
                 menu.className = 'context-menu';
                 menu.style.left = `${Math.min(e.clientX, window.innerWidth - 200)}px`;
                 menu.style.top = `${Math.min(e.clientY, window.innerHeight - 300)}px`;
 
-                // Get context menu items
-                const items = this.getContextMenuItems();
-
-                items.forEach(item => {
+                this.getContextMenuItems().forEach(item => {
                     if (item.type === 'separator') {
                         const sep = document.createElement('div');
                         sep.className = 'context-menu-separator';
@@ -2559,189 +2185,149 @@
             },
 
             getContextMenuItems() {
-                const { selectedItems, isTrashView, clipboard } = this.state;
-                const hasSelection = selectedItems.length > 0;
-                const singleSelection = selectedItems.length === 1;
+                const hasSelection = this.state.selectedItems.size > 0;
+                const singleSelection = this.state.selectedItems.size === 1;
 
                 return [
                     {
                         label: 'Open',
                         icon: 'folder-open',
                         action: 'openItem',
-                        available: singleSelection && selectedItems[0].type === 'folder'
+                        available: singleSelection && Array.from(this.state.selectedItems)[0].startsWith('folder:')
                     },
                     { type: 'separator' },
                     {
                         label: 'New Folder',
                         icon: 'folder-plus',
                         action: 'createFolder',
-                        available: !isTrashView
+                        available: !this.state.isTrashView
                     },
                     {
                         label: 'Upload Files',
                         icon: 'upload',
                         action: 'uploadFiles',
-                        available: !isTrashView
+                        available: !this.state.isTrashView
                     },
                     { type: 'separator' },
                     {
                         label: 'Cut',
                         icon: 'cut',
                         action: 'cutItems',
-                        available: !isTrashView && hasSelection,
+                        available: !this.state.isTrashView && hasSelection,
                         shortcut: 'Ctrl+X'
                     },
                     {
                         label: 'Copy',
                         icon: 'copy',
                         action: 'copyItems',
-                        available: !isTrashView && hasSelection,
+                        available: !this.state.isTrashView && hasSelection,
                         shortcut: 'Ctrl+C'
                     },
                     {
                         label: 'Paste',
                         icon: 'paste',
                         action: 'pasteItems',
-                        available: !isTrashView && clipboard !== null,
+                        available: !this.state.isTrashView && this.state.clipboard,
                         shortcut: 'Ctrl+V'
                     },
                     { type: 'separator' },
                     {
                         label: 'Rename',
-                        icon: 'i-cursor',
+                        icon: 'edit',
                         action: 'renameItem',
-                        available: singleSelection,
-                        shortcut: 'F2'
+                        available: !this.state.isTrashView && singleSelection
                     },
                     {
-                        label: isTrashView ? 'Delete Permanently' : 'Delete',
-                        icon: 'trash',
-                        action: 'deleteItems',
-                        available: hasSelection,
-                        danger: true,
-                        shortcut: 'Del'
-                    },
-                    {
-                        label: 'Restore',
-                        icon: 'trash-restore',
-                        action: 'restoreItems',
-                        available: isTrashView && hasSelection
+                        label: 'Download',
+                        icon: 'download',
+                        action: 'downloadItem',
+                        available: !this.state.isTrashView && singleSelection && Array.from(this.state.selectedItems)[0].startsWith('file:')
                     },
                     { type: 'separator' },
                     {
-                        label: 'Select All',
-                        icon: 'check-square',
-                        action: 'selectAll',
-                        available: true,
-                        shortcut: 'Ctrl+A'
+                        label: this.state.isTrashView ? 'Restore' : 'Delete',
+                        icon: this.state.isTrashView ? 'trash-restore' : 'trash',
+                        action: this.state.isTrashView ? 'restoreItems' : 'deleteItems',
+                        danger: true,
+                        available: hasSelection
                     },
                     {
-                        label: 'Properties',
-                        icon: 'info-circle',
-                        action: 'showProperties',
-                        available: singleSelection
+                        label: 'Delete Permanently',
+                        icon: 'trash',
+                        action: 'deletePermanently',
+                        danger: true,
+                        available: this.state.isTrashView && hasSelection
                     }
                 ].filter(item => item.available !== false);
             },
 
             executeMenuAction(action) {
-                const actions = {
-                    openItem: () => {
-                        if (this.state.selectedItems.length === 1 && this.state.selectedItems[0].type === 'folder') {
-                            const item = document.querySelector(`.gallery-item[data-id="${this.state.selectedItems[0].id}"]`);
-                            this.navigateToFolder(item);
-                        }
-                    },
-                    createFolder: () => this.createNewFolder(),
-                    uploadFiles: () => this.showUploadDialog(),
-                    cutItems: () => this.cutItems(),
-                    copyItems: () => this.copyItems(),
-                    pasteItems: () => this.pasteItems(),
-                    renameItem: () => this.renameItem(),
-                    deleteItems: () => this.deleteSelected(),
-                    restoreItems: () => this.restoreSelected(),
-                    selectAll: () => this.selectAllItems(),
-                    showProperties: () => this.showProperties()
-                };
-
-                if (actions[action]) {
-                    actions[action]();
+                switch (action) {
+                    case 'openItem':
+                        const folderItem = document.querySelector(`.gallery-item[data-id="${Array.from(this.state.selectedItems)[0].split(':')[1]}"]`);
+                        if (folderItem) this.navigateToFolder(folderItem);
+                        break;
+                    case 'createFolder':
+                        this.createNewFolder();
+                        break;
+                    case 'uploadFiles':
+                        this.showUploadDialog();
+                        break;
+                    case 'cutItems':
+                        this.cutItems();
+                        break;
+                    case 'copyItems':
+                        this.copyItems();
+                        break;
+                    case 'pasteItems':
+                        this.pasteItems();
+                        break;
+                    case 'renameItem':
+                        this.renameItem();
+                        break;
+                    case 'downloadItem':
+                        this.downloadItem();
+                        break;
+                    case 'deleteItems':
+                        this.deleteSelected();
+                        break;
+                    case 'restoreItems':
+                        this.restoreSelected();
+                        break;
+                    case 'deletePermanently':
+                        this.deleteSelected(true);
+                        break;
                 }
             },
 
+            // Clipboard Operations
             cutItems() {
-                if (this.state.selectedItems.length === 0) return;
-
                 this.state.clipboard = {
-                    action: 'cut',
-                    items: this.state.selectedItems
+                    items: Array.from(this.state.selectedItems).map(key => {
+                        const [type, id] = key.split(':');
+                        return { id, type };
+                    }),
+                    action: 'cut'
                 };
-
-                fetch('{{ route("gallery.cut") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        items: this.state.selectedItems
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.showSuccessNotification(data.message);
-                        } else {
-                            throw new Error(data.message || 'Failed to cut items');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Cut error:', error);
-                        this.showError(error.message);
-                    });
+                this.showSuccessNotification('Items copied to clipboard (cut)');
             },
 
             copyItems() {
-                if (this.state.selectedItems.length === 0) return;
-
                 this.state.clipboard = {
-                    action: 'copy',
-                    items: this.state.selectedItems
+                    items: Array.from(this.state.selectedItems).map(key => {
+                        const [type, id] = key.split(':');
+                        return { id, type };
+                    }),
+                    action: 'copy'
                 };
-
-                fetch('{{ route("gallery.copy") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        items: this.state.selectedItems
-                    })
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.showSuccessNotification(data.message);
-                        } else {
-                            throw new Error(data.message || 'Failed to copy items');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Copy error:', error);
-                        this.showError(error.message);
-                    });
+                this.showSuccessNotification('Items copied to clipboard');
             },
 
             pasteItems() {
-                if (!this.state.clipboard || this.state.clipboard.items.length === 0) return;
+                if (!this.state.clipboard) return;
 
                 this.showProgress('Pasting Items');
-                this.updateProgress(30, 'Processing...');
-
-                fetch('{{ route("gallery.paste") }}', {
+                fetch('{{ route("gallery.batch.paste") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2750,7 +2336,9 @@
                     },
                     body: JSON.stringify({
                         items: this.state.clipboard.items,
-                        target_path: this.state.currentPath
+                        action: this.state.clipboard.action,
+                        target_path: this.state.currentPath,
+                        target_folder_id: this.state.currentFolderId
                     })
                 })
                     .then(response => response.json())
@@ -2763,7 +2351,7 @@
                                 if (this.state.clipboard.action === 'cut') {
                                     this.state.clipboard = null;
                                 }
-                                this.loadContents();
+                                this.refreshContents();
                             }, 500);
                         } else {
                             throw new Error(data.message || 'Paste failed');
@@ -2771,246 +2359,106 @@
                     })
                     .catch(error => {
                         this.hideProgress();
-                        console.error('Paste error:', error);
                         this.showError(error.message);
                     });
             },
 
+            // Rename Operation
             renameItem() {
-                if (this.state.selectedItems.length !== 1) return;
-
-                const item = this.state.selectedItems[0];
-                const itemElement = document.querySelector(`.gallery-item[data-id="${item.id}"]`);
-                const currentName = itemElement ? itemElement.querySelector('.item-name').textContent : '';
+                if (this.state.selectedItems.size !== 1) return;
+                const [type, id] = Array.from(this.state.selectedItems)[0].split(':');
 
                 Swal.fire({
-                    title: `Rename ${item.type}`,
-                    html: `
-            <div class="text-left mb-4">
-                <label class="block text-sm font-medium text-gray-700 mb-1">Current name:</label>
-                <div class="p-2 bg-gray-100 rounded">${currentName}</div>
-            </div>
-            <div class="text-left">
-                <label for="newName" class="block text-sm font-medium text-gray-700 mb-1">New name:</label>
-                <input id="newName" class="swal2-input" value="${currentName}" placeholder="Enter new name">
-            </div>
-            ${item.type === 'file' ? `
-            <div class="text-left mt-3">
-                <label class="inline-flex items-center">
-                    <input type="checkbox" id="updateSlug" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50" checked>
-                    <span class="ml-2 text-sm text-gray-700">Update SEO slug automatically</span>
-                </label>
-            </div>
-            ` : ''}
-        `,
-                    focusConfirm: false,
+                    title: 'Rename Item',
+                    input: 'text',
+                    inputLabel: 'New Name',
+                    inputPlaceholder: 'Enter new name...',
+                    inputAttributes: { autocapitalize: 'off' },
                     showCancelButton: true,
                     confirmButtonText: 'Rename',
                     cancelButtonText: 'Cancel',
-                    preConfirm: () => {
-                        const newNameInput = document.getElementById('newName');
-                        const newName = newNameInput.value.trim();
-
-                        if (!newName) {
-                            Swal.showValidationMessage('Please enter a name');
-                            return false;
-                        }
-
-                        if (newName === currentName) {
-                            Swal.showValidationMessage('New name must be different');
-                            return false;
-                        }
-
-                        const shouldUpdateSlug = item.type === 'file' ?
-                            document.getElementById('updateSlug').checked :
-                            false;
-
-                        return {
-                            newName: newName,
-                            updateSlug: shouldUpdateSlug
-                        };
+                    inputValidator: (value) => {
+                        if (!value) return 'You need to enter a name!';
+                        if (!/^[a-zA-Z0-9\-_ .]+$/.test(value)) return 'Name can only contain letters, numbers, spaces, hyphens, underscores, and periods';
                     }
-                }).then((result) => {
+                }).then(result => {
                     if (result.isConfirmed) {
-                        const { newName, updateSlug } = result.value;
-                        this.performRename(item, newName, updateSlug);
+                        this.showProgress('Renaming Item');
+                        fetch(`{{ route("gallery.rename") }}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                                'X-Requested-With': 'XMLHttpRequest'
+                            },
+                            body: JSON.stringify({
+                                id,
+                                type,
+                                name: result.value,
+                                current_path: this.state.currentPath
+                            })
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    this.updateProgress(100, 'Completed');
+                                    setTimeout(() => {
+                                        this.hideProgress();
+                                        this.showSuccessNotification('Item renamed successfully');
+                                        this.refreshContents();
+                                    }, 500);
+                                } else {
+                                    throw new Error(data.message || 'Rename failed');
+                                }
+                            })
+                            .catch(error => {
+                                this.hideProgress();
+                                this.showError(error.message);
+                            });
                     }
                 });
             },
 
-            performRename(item, newName, updateSlug) {
-                this.showProgress('Renaming Item');
+            // Download Operation
+            downloadItem() {
+                if (this.state.selectedItems.size !== 1) return;
+                const [, id] = Array.from(this.state.selectedItems)[0].split(':');
 
-                fetch(`/gallery/file/${item.id}/rename`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        type: item.type,
-                        id: item.id,
-                        new_name: newName,
-                        update_slug: updateSlug
-                    })
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.json();
-                    })
-                    .then(data => {
-                        if (data.success) {
-                            this.showSuccessNotification(data.message);
-                            this.loadContents();
-                        } else {
-                            throw new Error(data.message || 'Rename failed');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Rename error:', error);
-                        this.showError(error.message);
-                    })
-                    .finally(() => {
-                        this.hideProgress();
-                    });
+                const downloadUrl = `{{ route("gallery.file.download", '') }}/${id}`;
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = '';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                this.showSuccessNotification('Download started');
             },
 
-
-            selectAllItems() {
-                const items = this.elements.itemsContainer.querySelectorAll('.gallery-item');
-                this.state.selectedItems = [];
-
-                items.forEach(item => {
-                    const id = item.dataset.id;
-                    const type = item.dataset.type;
-
-                    if (type === 'go-up') return;
-
-                    this.state.selectedItems.push({ id, type });
-                    item.classList.add('selected');
-                    const checkbox = item.querySelector('.item-checkbox input');
-                    if (checkbox) checkbox.checked = true;
-                });
-
-                this.updateSelectionDisplay();
+            // Notifications
+            showSuccessNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'gallery-notification success';
+                notification.textContent = message;
+                this.elements.notificationArea.appendChild(notification);
+                setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
             },
 
-            showProperties() {
-                if (this.state.selectedItems.length !== 1) return;
-
-                const item = this.state.selectedItems[0];
-
-                fetch(`/gallery/properties/${item.type}/${item.id}`, {
-                    headers: {
-                        'Accept': 'application/json',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            this.showPropertiesModal(data.properties, item.type);
-                        } else {
-                            throw new Error(data.message || 'Failed to get properties');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Properties error:', error);
-                        this.showError(error.message);
-                    });
-            },
-
-            showPropertiesModal(properties, type) {
-                const modal = document.createElement('div');
-                modal.className = 'fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50';
-
-                const content = document.createElement('div');
-                content.className = 'bg-white rounded-lg shadow-xl w-full max-w-md';
-
-                const header = document.createElement('div');
-                header.className = 'px-6 py-4 border-b border-gray-200 flex justify-between items-center';
-                header.innerHTML = `
-                    <h3 class="text-lg font-medium text-gray-900">
-                        ${type === 'file' ? 'File' : 'Folder'} Properties
-                    </h3>
-                    <button type="button" class="text-gray-400 hover:text-gray-500" aria-label="Close">
+            showErrorNotification(message) {
+                const notification = document.createElement('div');
+                notification.className = 'gallery-notification error';
+                notification.innerHTML = `
+                    ${message}
+                    <button class="ml-2 text-red-700 hover:text-red-900" onclick="this.parentElement.remove()">
                         <i class="fas fa-times"></i>
                     </button>
                 `;
-
-                const body = document.createElement('div');
-                body.className = 'px-6 py-4';
-
-                let propertiesHTML = '';
-                for (const [key, value] of Object.entries(properties)) {
-                    propertiesHTML += `
-                        <div class="mb-3">
-                            <div class="text-sm font-medium text-gray-500 capitalize">${key.replace('_', ' ')}</div>
-                            <div class="mt-1 text-sm text-gray-900">${value || 'N/A'}</div>
-                        </div>
-                    `;
-                }
-
-                body.innerHTML = propertiesHTML;
-
-                const footer = document.createElement('div');
-                footer.className = 'px-6 py-3 border-t border-gray-200 flex justify-end';
-                footer.innerHTML = `
-                    <button type="button" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">
-                        OK
-                    </button>
-                `;
-
-                content.appendChild(header);
-                content.appendChild(body);
-                content.appendChild(footer);
-                modal.appendChild(content);
-                document.body.appendChild(modal);
-
-                const closeButton = header.querySelector('button');
-                const okButton = footer.querySelector('button');
-
-                const closeModal = () => {
-                    modal.remove();
-                };
-
-                closeButton.addEventListener('click', closeModal);
-                okButton.addEventListener('click', closeModal);
+                this.elements.notificationArea.appendChild(notification);
             },
 
-            // Modal Management
-            openModal(path = '', callback = null, options = {}) {
-                this.state.currentPath = path;
-                this.state.isTrashView = false;
-                this.state.selectedItems = [];
-                this.state.callback = callback;
-                this.state.modalOptions = options; // Store modal options
-
-                // Set insert button text based on mode
-                const insertBtn = this.elements.insertButton;
-                if (options.mode === 'single') {
-                    insertBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Select Image';
-                } else {
-                    insertBtn.innerHTML = '<i class="fas fa-check mr-2"></i> Insert Selected';
-                }
-
-                this.elements.modal.classList.remove('hidden');
-                this.loadContents();
-            },
-
-            closeModal() {
-                this.elements.modal.classList.add('hidden');
-                this.state.callback = null;
-                this.state.selectedItems = [];
-                this.state.modalOptions = {};
-                this.clearPreview();
-                this.updateSelectionDisplay();
-            },
-
-            // Progress Management
+            // Progress Modal
             showProgress(title) {
                 this.elements.progressTitle.textContent = title;
                 this.elements.progressBar.style.width = '0%';
@@ -3020,14 +2468,114 @@
 
             updateProgress(percent, status) {
                 this.elements.progressBar.style.width = `${percent}%`;
-                this.elements.progressStatus.textContent = status || `${percent}% Complete`;
+                this.elements.progressStatus.textContent = status;
             },
 
             hideProgress() {
                 this.elements.progressModal.classList.remove('show');
             },
 
-            // Utility Functions
+            // Utility Methods
+            formatFileSize(bytes) {
+                if (!bytes) return '0 B';
+                const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${sizes[i]}`;
+            },
+
+            formatDate(date) {
+                if (!date) return '';
+                // Input: '23-04-2025' (d-m-Y)
+                // Split by '-' to get [day, month, year]
+                const [day, month, year] = date.split('-');
+                // Ensure two-digit day and month, take last two digits of year
+                const formattedDay = day.padStart(2, '0'); // e.g., '23'
+                const formattedMonth = month.padStart(2, '0'); // e.g., '04'
+                const formattedYear = year.slice(-2); // e.g., '2025' -> '25'
+                // Return as dd-mm-yy
+                return `${formattedDay}-${formattedMonth}-${formattedYear}`;
+            },
+
+            // formatDate(dateString) {
+            //     if (!dateString) return 'N/A';
+            //     const date = new Date(dateString);
+            //     return date.toLocaleDateString('en-US', {
+            //         year: 'numeric',
+            //         month: 'short',
+            //         day: 'numeric'
+            //     });
+            // },
+
+            getFileIcon(mimeType) {
+                if (!mimeType) return 'file';
+                if (mimeType.startsWith('image/')) return 'image';
+                if (mimeType.startsWith('video/')) return 'video';
+                if (mimeType.includes('pdf')) return 'file-pdf';
+                if (mimeType.includes('word')) return 'file-word';
+                if (mimeType.includes('excel')) return 'file-excel';
+                return 'file';
+            },
+
+            // Keyboard Shortcuts
+            handleKeyboardShortcuts(e) {
+                if (!this.elements.modal.classList.contains('hidden')) {
+                    if (e.ctrlKey && e.key === 'x') {
+                        e.preventDefault();
+                        if (!this.state.isTrashView && this.state.selectedItems.size > 0) this.cutItems();
+                    }
+                    if (e.ctrlKey && e.key === 'c') {
+                        e.preventDefault();
+                        if (!this.state.isTrashView && this.state.selectedItems.size > 0) this.copyItems();
+                    }
+                    if (e.ctrlKey && e.key === 'v') {
+                        e.preventDefault();
+                        if (!this.state.isTrashView && this.state.clipboard) this.pasteItems();
+                    }
+                    if (e.key === 'Delete') {
+                        e.preventDefault();
+                        if (this.state.selectedItems.size > 0) {
+                            this.state.isTrashView ? this.deleteSelected(true) : this.deleteSelected();
+                        }
+                    }
+                    if (e.key === 'F2' && this.state.selectedItems.size === 1) {
+                        e.preventDefault();
+                        if (!this.state.isTrashView) this.renameItem();
+                    }
+                    if (e.key === 'Escape') {
+                        e.preventDefault();
+                        this.closeModal();
+                    }
+                }
+            },
+
+            // Modal Control
+            openModal(path = '', callback = null, options = {}) {
+                this.state.currentPath = path;
+                this.state.callback = callback;
+                this.state.modalOptions = options;
+                this.state.pagination.currentPage = 1;
+                this.elements.modal.classList.remove('hidden');
+                this.loadContents();
+                this.elements.itemsContainer.focus();
+            },
+
+            closeModal() {
+                this.elements.modal.classList.add('hidden');
+                this.clearSelections();
+                this.state.currentPath = '';
+                this.state.currentFolderId = null;
+                this.state.isTrashView = false;
+                this.state.clipboard = null;
+                this.state.callback = null;
+                this.state.modalOptions = {};
+                this.elements.itemsContainer.innerHTML = '';
+                this.elements.breadcrumbs.innerHTML = '';
+                this.clearPreview();
+                document.querySelector('.gallery-container').classList.remove('trash-view');
+                this.elements.trashButtonText.textContent = 'Trash';
+            },
+
+            // Loading State
             showLoading() {
                 const loadingOverlay = document.createElement('div');
                 loadingOverlay.className = 'loading-overlay';
@@ -3037,208 +2585,22 @@
 
             hideLoading() {
                 const loadingOverlay = this.elements.itemsContainer.querySelector('.loading-overlay');
-                if (loadingOverlay) {
-                    loadingOverlay.remove();
-                }
+                if (loadingOverlay) loadingOverlay.remove();
             },
 
-            getFileIcon(mimeType) {
-                if (!mimeType) return 'file';
-
-                if (mimeType.startsWith('image/')) return 'file-image';
-                if (mimeType.startsWith('video/')) return 'file-video';
-                if (mimeType.startsWith('audio/')) return 'file-audio';
-                if (mimeType.includes('pdf')) return 'file-pdf';
-                if (mimeType.includes('zip') || mimeType.includes('compressed')) return 'file-archive';
-                if (mimeType.includes('word')) return 'file-word';
-                if (mimeType.includes('excel')) return 'file-excel';
-                if (mimeType.includes('powerpoint')) return 'file-powerpoint';
-                return 'file';
-            },
-
-            formatFileSize(bytes) {
-                if (!bytes) return '0 B';
-
-                const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-                const i = Math.floor(Math.log(bytes) / Math.log(1024));
-                return `${(bytes / Math.pow(1024, i)).toFixed(1)} ${units[i]}`;
-            },
-
-            formatDate(dateInput) {
-                // Helper function moved inside
-                const formatToDDMMYY = (date) => {
-                    const day = String(date.getDate()).padStart(2, '0');
-                    const month = String(date.getMonth() + 1).padStart(2, '0');
-                    const year = String(date.getFullYear()).slice(-2);
-                    return `${day}-${month}-${year}`;
-                };
-
-                if (!dateInput) return '';
-
-                // Handle Unix timestamp (seconds or milliseconds)
-                if (typeof dateInput === 'number') {
-                    const timestamp = dateInput.toString().length === 10 ? dateInput * 1000 : dateInput;
-                    const date = new Date(timestamp);
-                    if (isNaN(date.getTime())) return '';
-                    return formatToDDMMYY(date);
-                }
-
-                // Handle string input
-                if (typeof dateInput === 'string') {
-                    // ISO format (2023-12-31 or 2023-12-31T00:00:00Z)
-                    if (dateInput.includes('T') || /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
-                        const date = new Date(dateInput);
-                        if (!isNaN(date.getTime())) {
-                            return formatToDDMMYY(date);
-                        }
-                    }
-
-                    // Handle dd-mm-yyyy or dd/mm/yyyy input
-                    const dashParts = dateInput.split('-');
-                    const slashParts = dateInput.split('/');
-
-                    if (dashParts.length === 3 || slashParts.length === 3) {
-                        const parts = dashParts.length === 3 ? dashParts : slashParts;
-                        if (parts[0].length === 4) { // yyyy-mm-dd
-                            const [year, month, day] = parts;
-                            return `${day}-${month}-${year.slice(-2)}`;
-                        } else { // dd-mm-yyyy
-                            const [day, month, year] = parts;
-                            return `${day}-${month}-${year.slice(-2)}`;
-                        }
-                    }
-
-                    // Fallback for other string formats
-                    const date = new Date(dateInput);
-                    if (!isNaN(date.getTime())) {
-                        return formatToDDMMYY(date);
-                    }
-                }
-
-                // Handle Date object input
-                if (dateInput instanceof Date && !isNaN(dateInput.getTime())) {
-                    return formatToDDMMYY(dateInput);
-                }
-
-                return '';
-            },
-
-            // Helper function to format a Date object to dd-mm-yy
-            formatToDDMMYY(date) {
-                const day = String(date.getDate()).padStart(2, '0');
-                const month = String(date.getMonth() + 1).padStart(2, '0');
-                const year = String(date.getFullYear()).slice(-2);
-                return `${day}-${month}-${year}`;
-            },
-
-
-            copyToClipboard(text) {
-                const textarea = document.createElement('textarea');
-                textarea.value = text;
-                document.body.appendChild(textarea);
-                textarea.select();
-                document.execCommand('copy');
-                document.body.removeChild(textarea);
-            },
-
-            handleKeyboardShortcuts(e) {
-                if (!this.elements.modal.classList.contains('hidden')) {
-                    if (e.ctrlKey || e.metaKey) {
-                        switch (e.key.toLowerCase()) {
-                            case 'a':
-                                e.preventDefault();
-                                this.selectAllItems();
-                                break;
-                            case 'c':
-                                e.preventDefault();
-                                this.copyItems();
-                                break;
-                            case 'x':
-                                e.preventDefault();
-                                this.cutItems();
-                                break;
-                            case 'v':
-                                e.preventDefault();
-                                this.pasteItems();
-                                break;
-                        }
-                    }
-
-                    switch (e.key) {
-                        case 'F2':
-                            e.preventDefault();
-                            this.renameItem();
-                            break;
-                        case 'Delete':
-                            e.preventDefault();
-                            this.deleteSelected();
-                            break;
-                        case 'Escape':
-                            e.preventDefault();
-                            this.closeContextMenu();
-                            break;
-                    }
-                }
-            },
-
-            showSuccess(message) {
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
-                toast.innerHTML = `<i class="fas fa-check-circle mr-2"></i> ${message}`;
-                document.body.appendChild(toast);
-
-                setTimeout(() => {
-                    toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-                    setTimeout(() => toast.remove(), 500);
-                }, 3000);
-            },
-
+            // Error Handling
             showError(message) {
-                const toast = document.createElement('div');
-                toast.className = 'fixed top-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center';
-                toast.innerHTML = `<i class="fas fa-exclamation-circle mr-2"></i> ${message}`;
-                document.body.appendChild(toast);
-
-                setTimeout(() => {
-                    toast.classList.add('opacity-0', 'transition-opacity', 'duration-500');
-                    setTimeout(() => toast.remove(), 500);
-                }, 3000);
-            },
-
-            showNotification(type, message) {
-                const notification = document.createElement('div');
-                notification.className = `notification notification-${type}`;
-                notification.innerHTML = message;
-
-                // Insert below breadcrumb
-                const breadcrumb = document.querySelector('.breadcrumb');
-                if (breadcrumb) {
-                    breadcrumb.insertAdjacentElement('afterend', notification);
-                }
-
-                // Auto-remove after 5 seconds
-                setTimeout(() => {
-                    notification.remove();
-                }, 5000);
-            },
-
-
+                this.showErrorNotification(message);
+                console.error('Gallery Error:', message);
+            }
         };
 
-        // Initialize the gallery
-        gallery.init();
-
-        // Expose the open function to window
-        window.openGalleryModal = function(path = '', callback = null, options = {}) {
+        // Expose global function for external access
+        window.openGalleryModal = (path, callback, options) => {
             gallery.openModal(path, callback, options);
         };
 
-        // Fix for layout forced before load
-        document.addEventListener('readystatechange', () => {
-            if (document.readyState === 'complete') {
-                document.body.classList.remove('loading');
-            }
-        });
-
+        // Initialize gallery
+        gallery.init();
     });
 </script>

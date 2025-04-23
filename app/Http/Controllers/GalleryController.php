@@ -5,21 +5,20 @@ namespace App\Http\Controllers;
 use App\Jobs\DeleteFolderContents;
 use App\Jobs\RenameFileJob;
 use App\Jobs\RenameFolderJob;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
-use Intervention\Image\Drivers\Gd\Driver;
-use App\Models\Media;
-use App\Models\MediaFolder;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 use App\Jobs\ProcessImageConversions;
 use App\Jobs\ProcessVideoThumbnail;
 use App\Jobs\DeleteMediaFiles;
 use App\Jobs\RestoreMediaFiles;
-
+use App\Models\Media;
+use App\Models\MediaFolder;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class GalleryController extends Controller
 {
@@ -51,11 +50,11 @@ class GalleryController extends Controller
         $currentPath = $request->get('path', '');
         $searchTerm = $request->get('search', '');
         $isTrash = $request->get('trash', false);
-        $page = $request->get('page', 1);
-        $perPage = $request->get('per_page', 10);
+        $page = (int) $request->get('page', 1);
+        $perPage = (int) $request->get('per_page', 10);
 
-        if (!is_numeric($perPage)) {
-            $perPage = 5;
+        if ($perPage <= 0) {
+            $perPage = 10;
         }
 
         if ($isTrash) {
@@ -63,7 +62,7 @@ class GalleryController extends Controller
         }
 
         if ($searchTerm) {
-            return $this->searchItems($searchTerm, $currentPath);
+            return $this->searchItems($searchTerm, $currentPath, $page, $perPage);
         }
 
         $result = $this->getFolderContents($currentPath, $page, $perPage);
@@ -83,15 +82,12 @@ class GalleryController extends Controller
      */
     protected function getFolderContents($path = '', $page = 1, $perPage = 10)
     {
-        $contents = [
-            'folders' => [],
-            'files' => []
-        ];
+        $contents = ['folders' => [], 'files' => []];
 
-        // Get current folder with parent relationship
-        $currentFolder = $path ? MediaFolder::with('parent')->where('path', $path)->first() : null;
+        // Get current folder
+        $currentFolder = $path ? MediaFolder::where('path', $path)->first() : null;
 
-        // Get child folders (direct children only) with pagination
+        // Get child folders with pagination
         $childFoldersQuery = MediaFolder::withCount(['children', 'media'])
             ->where('parent_id', $currentFolder ? $currentFolder->id : null)
             ->whereNull('deleted_at')
@@ -114,11 +110,11 @@ class GalleryController extends Controller
                 'updated_at' => $folder->updated_at->format('d-m-Y'),
                 'folder_count' => $folder->children_count,
                 'file_count' => $folder->media_count,
-                'item_count' => $folder->media_count + $folder->children_count
+                'item_count' => $folder->children_count + $folder->media_count
             ];
         }
 
-        // Get files in current directory with pagination
+        // Get files with pagination
         $filesQuery = Media::where('directory', $path)
             ->whereNull('deleted_at')
             ->orderBy('name');
@@ -133,29 +129,28 @@ class GalleryController extends Controller
                 'id' => $file->id,
                 'name' => $file->name,
                 'file_name' => $file->file_name,
-                'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                'path' => $file->directory ? $file->directory . '/' . $file->file_name : $file->file_name,
+                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name),
                 'thumb_url' => $this->getThumbUrl($file),
                 'type' => 'file',
                 'mime_type' => $file->mime_type,
                 'size' => $this->formatFileSize($file->size),
                 'size_bytes' => $file->size,
-                'dimensions' => $file->dimensions,
+                'dimensions' => $file->dimensions ? $file->dimensions['width'] . 'x' . $file->dimensions['height'] : null,
                 'created_at' => $file->created_at->format('d-m-Y'),
                 'updated_at' => $file->updated_at->format('d-m-Y'),
                 'is_featured' => $file->is_featured
             ];
         }
 
-        // Calculate pagination info
         $totalItems = $totalFolders + $totalFiles;
         $totalPages = ceil($totalItems / $perPage);
 
         return [
             'contents' => $contents,
             'pagination' => [
-                'current_page' => (int)$page,
-                'per_page' => (int)$perPage,
+                'current_page' => $page,
+                'per_page' => $perPage,
                 'total_items' => $totalItems,
                 'total_pages' => $totalPages,
                 'has_previous' => $page > 1,
@@ -164,22 +159,17 @@ class GalleryController extends Controller
         ];
     }
 
-
+    /**
+     * Format file size for display
+     */
     protected function formatFileSize($bytes)
     {
-        if ($bytes >= 1073741824) {
-            return number_format($bytes / 1073741824, 2) . ' GB';
-        } elseif ($bytes >= 1048576) {
-            return number_format($bytes / 1048576, 2) . ' MB';
-        } elseif ($bytes >= 1024) {
-            return number_format($bytes / 1024, 2) . ' KB';
-        } elseif ($bytes > 1) {
-            return $bytes . ' bytes';
-        } elseif ($bytes == 1) {
-            return $bytes . ' byte';
-        } else {
-            return '0 bytes';
+        if ($bytes === null || $bytes <= 0) {
+            return '0 B';
         }
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = floor(log($bytes, 1024));
+        return round($bytes / pow(1024, $i), 2) . ' ' . $units[$i];
     }
 
     /**
@@ -188,26 +178,21 @@ class GalleryController extends Controller
     protected function getThumbUrl($file)
     {
         if (Str::startsWith($file->mime_type, 'image/')) {
-            $thumbPath = $file->directory ? $file->directory.'/thumb/'.$file->file_name : 'thumb/'.$file->file_name;
-            return Storage::disk($this->disk)->exists($thumbPath) ?
-                Storage::disk($this->disk)->url($thumbPath) :
-                Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name);
+            $thumbPath = $file->directory ? $file->directory . '/thumb/' . $file->file_name : 'thumb/' . $file->file_name;
+            return Storage::disk($this->disk)->exists($thumbPath)
+                ? Storage::disk($this->disk)->url($thumbPath)
+                : Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name);
         }
         return null;
     }
 
     /**
-     * Count items in a folder
+     * Get folder item count
      */
     protected function getFolderItemCount($path)
     {
-        $fileCount = Media::where('directory', $path)->count();
-        $folderCount = MediaFolder::where('parent_id', function($query) use ($path) {
-            $query->select('id')
-                ->from('media_folders')
-                ->where('path', $path);
-        })->count();
-
+        $fileCount = Media::where('directory', $path)->whereNull('deleted_at')->count();
+        $folderCount = MediaFolder::where('path', $path . '%')->whereNull('deleted_at')->count();
         return $fileCount + $folderCount;
     }
 
@@ -216,34 +201,24 @@ class GalleryController extends Controller
      */
     protected function getBreadcrumbs($currentPath)
     {
-        $breadcrumbs = [[
-            'id' => null,
-            'name' => 'Root',
-            'path' => '',
-            'icon' => 'home'
-        ]];
-
+        $breadcrumbs = [['id' => null, 'name' => 'Root', 'path' => '', 'icon' => 'home']];
         if (empty($currentPath)) {
             return $breadcrumbs;
         }
 
-        // Normalize path (remove trailing slashes)
         $currentPath = rtrim($currentPath, '/');
-
         $parts = explode('/', $currentPath);
         $accumulatedPath = '';
 
         foreach ($parts as $part) {
             if (empty($part)) continue;
-
-            $accumulatedPath = $accumulatedPath === '' ? $part : "$accumulatedPath/$part";
+            $accumulatedPath = $accumulatedPath ? "$accumulatedPath/$part" : $part;
             $folder = MediaFolder::where('path', $accumulatedPath)->first();
-
             if ($folder) {
                 $breadcrumbs[] = [
                     'id' => $folder->id,
                     'name' => $folder->name,
-                    'path' => $accumulatedPath,
+                    'path' => $folder->path,
                     'icon' => 'folder'
                 ];
             }
@@ -258,44 +233,24 @@ class GalleryController extends Controller
     public function navigateUp(Request $request)
     {
         $currentPath = $request->input('path', '');
-
-        // Handle empty or root path
         if (empty($currentPath)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Already at root directory'
-            ]);
+            return response()->json(['success' => false, 'message' => 'Already at root directory']);
         }
 
-        // Normalize path (remove trailing slash)
         $currentPath = rtrim($currentPath, '/');
+        $parentPath = dirname($currentPath) === '.' ? '' : dirname($currentPath);
 
-        // Find the parent path
-        $parentPath = dirname($currentPath);
-
-        // Handle root case (dirname returns '.' for top-level folders)
-        if ($parentPath === '.') {
-            $parentPath = '';
+        if (!empty($parentPath) && !MediaFolder::where('path', $parentPath)->exists()) {
+            return response()->json(['success' => false, 'message' => 'Parent directory not found']);
         }
 
-        // Verify the parent folder exists
-        if (!empty($parentPath)) {
-            $parentFolder = MediaFolder::where('path', $parentPath)->exists();
-            if (!$parentFolder) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Parent directory not found'
-                ]);
-            }
-        }
-
-        // Get contents of parent directory
         $contents = $this->getFolderContents($parentPath);
 
         return response()->json([
             'success' => true,
             'currentPath' => $parentPath,
-            'contents' => $contents,
+            'contents' => $contents['contents'],
+            'pagination' => $contents['pagination'],
             'breadcrumbs' => $this->getBreadcrumbs($parentPath),
             'message' => 'Navigated to parent directory'
         ]);
@@ -306,76 +261,7 @@ class GalleryController extends Controller
      */
     protected function getContextMenuOptions($currentPath = '', $selectedItems = [])
     {
-        $hasSelection = !empty($selectedItems);
-        $isRoot = empty($currentPath);
-
-
-        // Calculate if we can go up
-        $canGoUp = false;
-        if (!$isRoot) {
-            $parentPath = dirname(rtrim($currentPath, '/'));
-            $canGoUp = empty($parentPath) || $parentPath !== '.';
-        }
-
-        return [
-            'newFolder' => [
-                'label' => 'New Folder',
-                'icon' => 'folder-plus',
-                'action' => 'createFolder',
-                'available' => true
-            ],
-            'upload' => [
-                'label' => 'Upload Files',
-                'icon' => 'upload',
-                'action' => 'uploadFiles',
-                'available' => true
-            ],
-            'goUp' => [
-                'label' => 'Go Up',
-                'icon' => 'level-up-alt',
-                'action' => 'navigateUp',
-                'available' => $canGoUp,
-                'disabled' => !$canGoUp
-            ],
-            'refresh' => [
-                'label' => 'Refresh',
-                'icon' => 'sync',
-                'action' => 'refresh',
-                'available' => true
-            ],
-            'separator1' => ['type' => 'separator'],
-            'cut' => [
-                'label' => 'Cut',
-                'icon' => 'cut',
-                'action' => 'cutItems',
-                'available' => $hasSelection
-            ],
-            'copy' => [
-                'label' => 'Copy',
-                'icon' => 'copy',
-                'action' => 'copyItems',
-                'available' => $hasSelection
-            ],
-            'paste' => [
-                'label' => 'Paste',
-                'icon' => 'paste',
-                'action' => 'pasteItems',
-                'available' => session()->has('clipboard')
-            ],
-            'separator2' => ['type' => 'separator'],
-            'rename' => [
-                'label' => 'Rename',
-                'icon' => 'i-cursor',
-                'action' => 'renameItem',
-                'available' => $hasSelection && count($selectedItems) === 1
-            ],
-            'delete' => [
-                'label' => 'Delete',
-                'icon' => 'trash',
-                'action' => 'deleteItems',
-                'available' => $hasSelection
-            ]
-        ];
+        return $this->buildContextMenuOptions($currentPath, $selectedItems, false);
     }
 
     /**
@@ -385,22 +271,25 @@ class GalleryController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\-_ ]+$/',
-            'current_path' => 'nullable|string' // Add current path parameter
+            'current_path' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         try {
-            // Get parent folder based on current path
             $parentId = null;
-            if (!empty($request->current_path)) {
+            if ($request->current_path) {
                 $parentFolder = MediaFolder::where('path', $request->current_path)->first();
                 $parentId = $parentFolder ? $parentFolder->id : null;
             }
 
-            $folder = MediaFolder::createWithPath($request->name, $parentId);
+            $folder = MediaFolder::create([
+                'name' => $request->name,
+                'path' => $parentId ? ($parentFolder->path . '/' . Str::slug($request->name)) : Str::slug($request->name),
+                'parent_id' => $parentId
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -409,29 +298,21 @@ class GalleryController extends Controller
                     'name' => $folder->name,
                     'path' => $folder->path,
                     'parent_id' => $folder->parent_id,
-                    'depth' => $folder->depth
+                    'depth' => $folder->depth ?? 0
                 ],
                 'message' => 'Folder created successfully'
             ]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Folder creation failed: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Folder creation failed: ' . $e->getMessage()], 500);
         }
     }
 
+    /**
+     * Get folder info
+     */
     public function getFolderInfo($id)
     {
-        $folder = MediaFolder::withTrashed()->find($id);
-
-        if (!$folder) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Folder not found'
-            ], 404);
-        }
-
+        $folder = MediaFolder::withTrashed()->findOrFail($id);
         return response()->json([
             'success' => true,
             'folder' => [
@@ -445,24 +326,21 @@ class GalleryController extends Controller
     }
 
     /**
-     * Upload files with all fields populated
+     * Upload files
      */
     public function upload(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'files.*' => 'required|file|max:'.(1024 * 20), // 20MB max
+            'files.*' => 'required|file|max:' . (1024 * 20), // 20MB max
             'path' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $path = $request->input('path', '');
         $uploadedFiles = [];
-
-        // Remove DB transaction temporarily for debugging
-        // DB::beginTransaction();
 
         try {
             foreach ($request->file('files') as $file) {
@@ -474,14 +352,8 @@ class GalleryController extends Controller
                 $mimeType = $file->getMimeType();
                 $size = $file->getSize();
 
-                // Store file
-                $storedPath = $file->storeAs(
-                    $path,
-                    $fileName,
-                    $this->disk
-                );
+                $storedPath = $file->storeAs($path, $fileName, $this->disk);
 
-                // Create media record
                 $media = Media::create([
                     'model_type' => null,
                     'model_id' => null,
@@ -505,36 +377,33 @@ class GalleryController extends Controller
                     ]
                 ]);
 
-                \Log::info("Media record created", ['id' => $media->id]);
-
-                // Dispatch job based on file type
                 if (Str::startsWith($mimeType, 'image/')) {
-                    ProcessImageConversions::dispatch($media, $this->conversions)
-                        ->onQueue('media');
+                    ProcessImageConversions::dispatch($media, $this->conversions)->onQueue('media');
                 } elseif (Str::startsWith($mimeType, 'video/')) {
-                    ProcessVideoThumbnail::dispatch($media)
-                        ->onQueue('media');
+                    ProcessVideoThumbnail::dispatch($media)->onQueue('media');
                 }
 
-                $uploadedFiles[] = $media;
+                $uploadedFiles[] = [
+                    'id' => $media->id,
+                    'name' => $media->name,
+                    'file_name' => $media->file_name,
+                    'path' => $storedPath,
+                    'url' => Storage::disk($this->disk)->url($storedPath),
+                    'thumb_url' => $this->getThumbUrl($media),
+                    'mime_type' => $media->mime_type,
+                    'size' => $this->formatFileSize($media->size),
+                    'created_at' => $media->created_at->format('d-m-Y')
+                ];
             }
-
-            // DB::commit(); // Temporarily disabled
 
             return response()->json([
                 'success' => true,
                 'files' => $uploadedFiles,
                 'message' => 'Files uploaded successfully'
             ]);
-
         } catch (\Exception $e) {
-            // DB::rollBack(); // Temporarily disabled
-            \Log::error('Upload failed: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'File upload failed: '.$e->getMessage()
-            ], 500);
+            \Log::error('Upload failed: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'File upload failed: ' . $e->getMessage()], 500);
         }
     }
 
@@ -543,16 +412,14 @@ class GalleryController extends Controller
      */
     protected function generateUniqueFilename($path, $baseName, $extension)
     {
+        $fileName = $extension ? "$baseName.$extension" : $baseName;
         $counter = 1;
-        $fileName = "{$baseName}.{$extension}";
 
         while (
-            Media::where('file_name', $fileName)
-                ->where('directory', $path)
-                ->exists() ||
-            Storage::disk($this->disk)->exists($path.'/'.$fileName)
+            Media::where('file_name', $fileName)->where('directory', $path)->exists() ||
+            Storage::disk($this->disk)->exists($path ? "$path/$fileName" : $fileName)
         ) {
-            $fileName = "{$baseName}-{$counter}.{$extension}";
+            $fileName = $extension ? "$baseName-$counter.$extension" : "$baseName-$counter";
             $counter++;
         }
 
@@ -572,33 +439,24 @@ class GalleryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        DB::beginTransaction();
-
         try {
-            foreach ($request->input('items') as $item) {
+            DB::beginTransaction();
+            foreach ($request->items as $item) {
                 if ($item['type'] === 'file') {
-                    $this->moveFile($item['id'], $request->input('target_path'));
+                    $this->moveFile($item['id'], $request->target_path);
                 } else {
-                    $this->moveFolder($item['id'], $request->input('target_path'));
+                    $this->moveFolder($item['id'], $request->target_path);
                 }
             }
-
             DB::commit();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Items moved successfully'
-            ]);
-
+            return response()->json(['success' => true, 'message' => 'Items moved successfully']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to move items: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to move items: ' . $e->getMessage()], 500);
         }
     }
 
@@ -608,32 +466,26 @@ class GalleryController extends Controller
     protected function moveFile($fileId, $targetPath)
     {
         $media = Media::findOrFail($fileId);
-
         if ($media->directory === $targetPath) {
             return;
         }
 
-        $oldPath = $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name;
-        $newPath = $targetPath ? $targetPath.'/'.$media->file_name : $media->file_name;
+        $oldPath = $media->directory ? $media->directory . '/' . $media->file_name : $media->file_name;
+        $newPath = $targetPath ? $targetPath . '/' . $media->file_name : $media->file_name;
 
         if (Storage::disk($this->disk)->exists($newPath)) {
             throw new \Exception("A file with this name already exists in the target folder");
         }
 
-        // Move original file
         Storage::disk($this->disk)->move($oldPath, $newPath);
-
-        // Move conversions
         foreach ($this->conversions as $conversion => $settings) {
-            $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
-            $newConversionPath = ($targetPath ? $targetPath.'/'.$conversion : $conversion).'/'.$media->file_name;
-
+            $oldConversionPath = ($media->directory ? $media->directory . '/' . $conversion : $conversion) . '/' . $media->file_name;
+            $newConversionPath = ($targetPath ? $targetPath . '/' . $conversion : $conversion) . '/' . $media->file_name;
             if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                 Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
             }
         }
 
-        // Update record
         $media->directory = $targetPath;
         $media->save();
     }
@@ -645,7 +497,7 @@ class GalleryController extends Controller
     {
         $folder = MediaFolder::findOrFail($folderId);
         $oldPath = $folder->path;
-        $newPath = $targetPath ? $targetPath.'/'.basename($oldPath) : basename($oldPath);
+        $newPath = $targetPath ? $targetPath . '/' . basename($oldPath) : basename($oldPath);
 
         if ($oldPath === $newPath) {
             return;
@@ -655,33 +507,23 @@ class GalleryController extends Controller
             throw new \Exception("A folder with this name already exists in the target location");
         }
 
-        // Update folder path in database
         $folder->path = $newPath;
         $folder->parent_id = $this->getParentIdFromPath($targetPath);
         $folder->save();
 
-        // Update all files in this folder
-        Media::where('directory', $oldPath)
-            ->update(['directory' => $newPath]);
-
-        // Update all subfolders
-        MediaFolder::where('path', 'like', $oldPath.'/%')
+        Media::where('directory', $oldPath)->update(['directory' => $newPath]);
+        MediaFolder::where('path', 'like', $oldPath . '/%')
             ->update(['path' => DB::raw("REPLACE(path, '$oldPath', '$newPath')")]);
 
-        // Move physical folder
         Storage::disk($this->disk)->move($oldPath, $newPath);
-
-        // Move conversions
         foreach ($this->conversions as $conversion => $settings) {
-            $oldConversionPath = $oldPath.'/'.$conversion;
-            $newConversionPath = $newPath.'/'.$conversion;
-
+            $oldConversionPath = $oldPath . '/' . $conversion;
+            $newConversionPath = $newPath . '/' . $conversion;
             if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                 Storage::disk($this->disk)->move($oldConversionPath, $newConversionPath);
             }
         }
 
-        // Fix tree structure
         MediaFolder::fixTree();
     }
 
@@ -694,100 +536,80 @@ class GalleryController extends Controller
             return null;
         }
 
-        $parts = explode('/', $path);
-        if (count($parts) === 1) {
-            return null;
-        }
-
-        $parentPath = implode('/', array_slice($parts, 0, -1));
-        $folder = MediaFolder::where('path', $parentPath)->first();
-        return $folder ? $folder->id : null;
+        $parentFolder = MediaFolder::where('path', $path)->first();
+        return $parentFolder ? $parentFolder->id : null;
     }
 
     /**
-     * Rename an item
+     * Rename an item (unified endpoint)
      */
-    public function renameItem(Request $request)
+    public function rename(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'type' => 'required|in:file,folder',
             'id' => 'required',
-            'new_name' => 'required|string|max:255'
+            'type' => 'required|in:file,folder',
+            'name' => 'required|string|max:255|regex:/^[a-zA-Z0-9\-_ .]+$/',
+            'current_path' => 'nullable|string'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         try {
-            if ($request->input('type') === 'file') {
-                return $this->renameFile($request->input('id'), $request->input('new_name'));
-            } else {
-                return $this->renameFolder($request->input('id'), $request->input('new_name'));
+            if ($request->type === 'file') {
+                return $this->renameFile($request->id, $request->name);
             }
+            return $this->renameFolder($request->id, $request->name);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to rename item: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to rename item: ' . $e->getMessage()], 500);
         }
     }
 
     /**
      * Rename a file
      */
-    public function renameFile($fileId, $newName)
+    protected function renameFile($fileId, $newName)
     {
         $media = Media::findOrFail($fileId);
-        // Keep original input for display name
-        $displayName = $newName;
+        if ($media->trashed()) {
+            return response()->json(['success' => false, 'message' => 'Cannot rename trashed file'], 403);
+        }
 
+        $displayName = $newName;
         $newBaseName = Str::slug(pathinfo($newName, PATHINFO_FILENAME));
         $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
-        $newFileName = $newBaseName.'.'.$extension;
+        $newFileName = $extension ? "$newBaseName.$extension" : $newBaseName;
 
         if ($media->file_name === $newFileName && $media->name === $displayName) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
         }
 
-        DB::beginTransaction();
-
         try {
-            // Store old filename for job
+            DB::beginTransaction();
             $oldFileName = $media->file_name;
-
-            // Update database record first
             $media->file_name = $newFileName;
             $media->name = $displayName;
             $media->save();
 
-            // Dispatch rename job with all necessary data
-            RenameFileJob::dispatch(
-                $media->fresh(), // Fresh instance to avoid serialization issues
-                $oldFileName,
-                $newFileName,
-                $this->conversions
-            )->onQueue('media');
-
+            RenameFileJob::dispatch($media->fresh(), $oldFileName, $newFileName, $this->conversions)->onQueue('media');
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'File rename has been queued',
-                'media' => $media
+                'media' => [
+                    'id' => $media->id,
+                    'name' => $media->name,
+                    'file_name' => $media->file_name,
+                    'path' => $media->directory ? $media->directory . '/' . $media->file_name : $media->file_name,
+                    'url' => Storage::disk($this->disk)->url($media->directory ? $media->directory . '/' . $media->file_name : $media->file_name)
+                ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("File rename failed", [
-                'media_id' => $fileId,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Rename failed: '.$e->getMessage()
-            ], 500);
+            \Log::error("File rename failed", ['media_id' => $fileId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Rename failed: ' . $e->getMessage()], 500);
         }
     }
 
@@ -797,83 +619,58 @@ class GalleryController extends Controller
     protected function renameFolder($folderId, $newName)
     {
         $folder = MediaFolder::findOrFail($folderId);
+        if ($folder->trashed()) {
+            return response()->json(['success' => false, 'message' => 'Cannot rename trashed folder'], 403);
+        }
 
-        // Keep original input for display name
         $displayName = $newName;
-
-        // Create slugged version for physical path
         $newFolderName = Str::slug($newName);
-
         $oldPath = $folder->path;
         $parentPath = dirname($oldPath);
-        $newPath = ($parentPath !== '.' ? $parentPath.'/' : '').$newFolderName;
+        $newPath = $parentPath !== '.' ? "$parentPath/$newFolderName" : $newFolderName;
 
         if ($folder->path === $newPath && $folder->name === $displayName) {
             return response()->json(['success' => true, 'message' => 'No changes made']);
         }
 
-        // Check for existing folder
         if (MediaFolder::where('path', $newPath)->where('id', '!=', $folder->id)->exists()) {
-            throw new \Exception("A folder with this name already exists in the parent directory");
+            return response()->json(['success' => false, 'message' => 'A folder with this name already exists'], 422);
         }
 
-        DB::beginTransaction();
-
         try {
-            // 1. First update the database records
+            DB::beginTransaction();
             $folder->name = $displayName;
             $folder->path = $newPath;
             $folder->save();
 
-            // Update all child paths in database
-            $this->updateFolderPaths($oldPath, $newPath);
+            Media::where('directory', $oldPath)->update(['directory' => $newPath]);
+            MediaFolder::where('path', 'like', $oldPath . '/%')
+                ->update(['path' => DB::raw("REPLACE(path, '$oldPath', '$newPath')")]);
 
-            // Update media records
-            Media::where('directory', 'like', $oldPath.'%')
-                ->update(['directory' => DB::raw("REPLACE(directory, '$oldPath', '$newPath')")]);
-
-            // Fix tree structure
             MediaFolder::fixTree();
-
-            // 2. Dispatch job to rename physical folder
-            RenameFolderJob::dispatch($oldPath, $newPath)
-                ->onQueue('media');
-
+            RenameFolderJob::dispatch($oldPath, $newPath)->onQueue('media');
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'folder' => $folder,
-                'message' => 'Folder rename has been queued'
+                'message' => 'Folder rename has been queued',
+                'folder' => [
+                    'id' => $folder->id,
+                    'name' => $folder->name,
+                    'path' => $folder->path,
+                    'parent_id' => $folder->parent_id
+                ]
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Folder rename failed", [
-                'folder_id' => $folderId,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Folder rename failed: '.$e->getMessage()
-            ], 500);
+            \Log::error("Folder rename failed", ['folder_id' => $folderId, 'error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Folder rename failed: ' . $e->getMessage()], 500);
         }
     }
 
     /**
-     * Update folder paths after rename/move
+     * Delete items
      */
-    protected function updateFolderPaths($oldPath, $newPath)
-    {
-        $folders = MediaFolder::where('path', 'like', $oldPath.'%')->get();
-
-        foreach ($folders as $folder) {
-            $folder->path = str_replace($oldPath, $newPath, $folder->path);
-            $folder->save();
-        }
-    }
-
     public function deleteItems(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -884,28 +681,23 @@ class GalleryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $permanent = $request->input('permanent', false);
         $deletedItems = [];
 
-        DB::beginTransaction();
-
         try {
-            foreach ($request->input('items') as $item) {
-                if ($item['type'] === 'file') {
-                    $deletedItems[] = $this->deleteFile($item['id'], $permanent);
-                } else {
-                    $deletedItems[] = $this->deleteFolder($item['id'], $permanent);
-                }
+            DB::beginTransaction();
+            foreach ($request->items as $item) {
+                $deletedItems[] = $item['type'] === 'file'
+                    ? $this->deleteFile($item['id'], $permanent)
+                    : $this->deleteFolder($item['id'], $permanent);
             }
-
             DB::commit();
 
-            // Dispatch background job for permanent deletion
             if ($permanent) {
-                DeleteMediaFiles::dispatch($deletedItems, $this->conversions);
+                DeleteMediaFiles::dispatch($deletedItems, $this->conversions)->onQueue('media');
             }
 
             return response()->json([
@@ -913,93 +705,46 @@ class GalleryController extends Controller
                 'items' => $deletedItems,
                 'message' => $permanent ? 'Items permanently deleted' : 'Items moved to trash'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to delete items: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to delete items: ' . $e->getMessage()], 500);
         }
     }
 
     /**
-     * Delete a file (soft delete)
+     * Delete a file
      */
     protected function deleteFile($fileId, $permanent = false)
     {
         $media = Media::withTrashed()->findOrFail($fileId);
-
         if ($permanent) {
-            // Just mark for deletion - actual file deletion will happen in the job
             $media->forceDelete();
-            return $media;
+        } elseif (!$media->trashed()) {
+            $media->delete();
         } else {
-            if ($media->trashed()) {
-                throw new \Exception('File is already in trash');
-            }
-
-            // Soft delete by setting deleted_at timestamp
-            $media->deleted_at = now();
-            $media->save();
-            return $media;
+            throw new \Exception('File is already in trash');
         }
+        return $media;
     }
 
     /**
-     * Delete a folder (soft delete)
+     * Delete a folder
      */
     protected function deleteFolder($folderId, $permanent = false)
     {
         $folder = MediaFolder::withTrashed()->findOrFail($folderId);
-
         if ($permanent) {
-            // Get all files in this folder and subfolders first
-            $files = Media::withTrashed()
-                ->where('directory', 'like', $folder->path.'%')
-                ->get();
-
-            // Get all subfolders
-            $subfolders = MediaFolder::withTrashed()
-                ->where('path', 'like', $folder->path.'%')
-                ->get();
-
-            DB::beginTransaction();
-            try {
-                // Permanently delete all files in this folder and subfolders from database
-                Media::where('directory', 'like', $folder->path.'%')
-                    ->forceDelete();
-
-                // Delete the folder and all subfolders from database
-                MediaFolder::where('path', 'like', $folder->path.'%')
-                    ->forceDelete();
-
-                DB::commit();
-
-                // Dispatch job to delete physical files and folders
-                DeleteFolderContents::dispatch(
-                    $folder->path,
-                    $files,
-                    $this->conversions
-                )->onQueue('media');
-
-                return $folder;
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw new \Exception("Failed to delete folder: ".$e->getMessage());
-            }
+            $files = Media::withTrashed()->where('directory', 'like', $folder->path . '%')->get();
+            Media::where('directory', 'like', $folder->path . '%')->forceDelete();
+            MediaFolder::where('path', 'like', $folder->path . '%')->forceDelete();
+            DeleteFolderContents::dispatch($folder->path, $files, $this->conversions)->onQueue('media');
+        } elseif (!$folder->trashed()) {
+            MediaFolder::where('path', 'like', $folder->path . '%')->update(['deleted_at' => now()]);
+            Media::where('directory', 'like', $folder->path . '%')->update(['deleted_at' => now()]);
         } else {
-            if ($folder->trashed()) {
-                throw new \Exception('Folder is already in trash');
-            }
-
-            // Soft delete the folder and all subfolders
-            MediaFolder::where('path', 'like', $folder->path.'%')
-                ->update(['deleted_at' => now()]);
-
-            return $folder;
+            throw new \Exception('Folder is already in trash');
         }
+        return $folder;
     }
 
     /**
@@ -1008,42 +753,25 @@ class GalleryController extends Controller
     public function getTrashedItems(Request $request)
     {
         $parentId = $request->input('parent_id', null);
-        $page = $request->input('page', 1);
-        $perPage = $request->input('per_page', 10);
+        $page = (int) $request->input('page', 1);
+        $perPage = (int) $request->input('per_page', 10);
 
         try {
-            // Get all trashed folder paths to properly filter files
-            $trashedFolderPaths = MediaFolder::onlyTrashed()
-                ->pluck('path', 'id')
-                ->toArray();
-
-            // Get trashed files with pagination
+            $trashedFolderPaths = MediaFolder::onlyTrashed()->pluck('path', 'id')->toArray();
             $trashedFilesQuery = Media::onlyTrashed()
-                ->when($parentId, function($query) use ($parentId, $trashedFolderPaths) {
-                    // For specific folder, show files that:
-                    // 1. Are directly in this folder OR
-                    // 2. Are in any of its descendant folders
+                ->when($parentId, function ($query) use ($parentId, $trashedFolderPaths) {
                     $folder = MediaFolder::onlyTrashed()->find($parentId);
                     if (!$folder) {
                         return $query->whereRaw('1=0');
                     }
-
-                    // Get all descendant folder paths
                     $descendantPaths = MediaFolder::onlyTrashed()
                         ->where('path', 'like', $folder->path . '/%')
                         ->pluck('path')
                         ->toArray();
-
-                    $allPaths = array_merge([$folder->path], $descendantPaths);
-
-                    return $query->whereIn('directory', $allPaths);
-                }, function($query) use ($trashedFolderPaths) {
-                    // For root trash, only show files that:
-                    // 1. Have no directory (root files) OR
-                    // 2. Their directory doesn't exist in trashed folders (individual deletions)
-                    return $query->where(function($q) use ($trashedFolderPaths) {
-                        $q->whereNull('directory')
-                            ->orWhereNotIn('directory', $trashedFolderPaths);
+                    return $query->whereIn('directory', array_merge([$folder->path], $descendantPaths));
+                }, function ($query) use ($trashedFolderPaths) {
+                    return $query->where(function ($q) use ($trashedFolderPaths) {
+                        $q->whereNull('directory')->orWhereNotIn('directory', $trashedFolderPaths);
                     });
                 });
 
@@ -1052,44 +780,30 @@ class GalleryController extends Controller
                 ->skip(($page - 1) * $perPage)
                 ->take($perPage)
                 ->get()
-                ->map(function($file) {
+                ->map(function ($file) {
                     return [
                         'id' => $file->id,
                         'name' => $file->name,
                         'type' => 'file',
-                        'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
+                        'path' => $file->directory ? $file->directory . '/' . $file->file_name : $file->file_name,
                         'mime_type' => $file->mime_type,
                         'size' => $this->formatFileSize($file->size),
                         'size_bytes' => $file->size,
-                        'deleted_at' => $file->deleted_at->format('d-m-Y H:i:s'),
-                        'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                        'deleted_at' => $file->deleted_at ? $file->deleted_at->format('d-m-y H:i:s') : null,
+                        'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name),
                         'thumb_url' => $this->getThumbUrl($file),
-                        'created_at' => $file->created_at->format('d-m-Y')
+                        'created_at' => $file->created_at ? $file->created_at->format('d-m-y') : null
                     ];
                 });
 
-            // Get trashed folders with pagination
             $trashedFoldersQuery = MediaFolder::onlyTrashed()
                 ->withCount([
-                    'children as trashed_children_count' => function($query) {
-                        $query->onlyTrashed();
-                    },
-                    'media as trashed_media_count' => function($query) {
-                        $query->onlyTrashed();
-                    }
+                    'children as trashed_children_count' => fn($q) => $q->onlyTrashed(),
+                    'media as trashed_media_count' => fn($q) => $q->onlyTrashed()
                 ])
-                ->when($parentId, function($query) use ($parentId) {
-                    // For specific folder, get direct children
-                    return $query->where('parent_id', $parentId);
-                }, function($query) {
-                    // For root trash, only show folders that:
-                    // 1. Have no parent (root folders) OR
-                    // 2. Their parent isn't trashed (individual folder deletions)
-                    return $query->where(function($q) {
-                        $trashedParentIds = MediaFolder::onlyTrashed()->pluck('id');
-                        $q->whereNull('parent_id')
-                            ->orWhereNotIn('parent_id', $trashedParentIds);
-                    });
+                ->when($parentId, fn($q) => $q->where('parent_id', $parentId), function ($q) {
+                    $trashedParentIds = MediaFolder::onlyTrashed()->pluck('id');
+                    return $q->whereNull('parent_id')->orWhereNotIn('parent_id', $trashedParentIds);
                 });
 
             $totalFolders = $trashedFoldersQuery->count();
@@ -1097,56 +811,46 @@ class GalleryController extends Controller
                 ->skip(($page - 1) * $perPage)
                 ->take($perPage)
                 ->get()
-                ->map(function($folder) {
+                ->map(function ($folder) {
                     return [
                         'id' => $folder->id,
                         'name' => $folder->name,
                         'type' => 'folder',
                         'path' => $folder->path,
                         'parent_id' => $folder->parent_id,
-                        'deleted_at' => $folder->deleted_at->format('d-m-Y H:i:s'),
+                        'deleted_at' => $folder->deleted_at ? $folder->deleted_at->format('d-m-y H:i:s') : null,
                         'folder_count' => $folder->trashed_children_count,
                         'file_count' => $folder->trashed_media_count,
                         'item_count' => $folder->trashed_children_count + $folder->trashed_media_count,
-                        'created_at' => $folder->created_at->format('d-m-Y')
+                        'created_at' => $folder->created_at ? $folder->created_at->format('d-m-y') : null
                     ];
                 });
 
-            // Add "Go Up" folder if we're in a subfolder
             $goUpFolder = null;
             if ($parentId) {
                 $currentFolder = MediaFolder::onlyTrashed()->find($parentId);
-
                 if ($currentFolder && $currentFolder->parent_id) {
                     $parentFolder = MediaFolder::onlyTrashed()->find($currentFolder->parent_id);
-
                     if ($parentFolder) {
-                        $trashedChildrenCount = MediaFolder::onlyTrashed()
-                            ->where('parent_id', $parentFolder->id)
-                            ->count();
-
-                        $trashedMediaCount = Media::onlyTrashed()
-                            ->where('directory', $parentFolder->path)
-                            ->count();
-
+                        $trashedChildrenCount = MediaFolder::onlyTrashed()->where('parent_id', $parentFolder->id)->count();
+                        $trashedMediaCount = Media::onlyTrashed()->where('directory', $parentFolder->path)->count();
                         $goUpFolder = [
                             'id' => $parentFolder->id,
                             'name' => 'Go Up',
                             'type' => 'folder',
                             'path' => $parentFolder->path,
                             'parent_id' => $parentFolder->parent_id,
-                            'deleted_at' => null,
+                            'deleted_at' => $parentFolder->deleted_at ? $parentFolder->deleted_at->format('d-m-y H:i:s') : null,
                             'is_go_up' => true,
                             'folder_count' => $trashedChildrenCount,
                             'file_count' => $trashedMediaCount,
                             'item_count' => $trashedChildrenCount + $trashedMediaCount,
-                            'created_at' => $parentFolder->created_at->format('d-m-Y')
+                            'created_at' => $parentFolder->created_at ? $parentFolder->created_at->format('d-m-y') : null
                         ];
                     }
                 }
             }
 
-            // Calculate pagination info
             $totalItems = $totalFiles + $totalFolders;
             $totalPages = ceil($totalItems / $perPage);
 
@@ -1165,27 +869,11 @@ class GalleryController extends Controller
                     'has_next' => $page < $totalPages
                 ],
                 'parent_id' => $parentId,
-                'contextMenu' => $this->getTrashContextMenuOptions(),
-                '_debug' => [
-                    'trashed_files_count' => count($trashedFiles),
-                    'trashed_folders_count' => count($trashedFolders),
-                    'file_ids' => collect($trashedFiles)->pluck('id'),
-                    'folder_ids' => collect($trashedFolders)->pluck('id'),
-                    'trashed_folder_paths' => $trashedFolderPaths
-                ]
+                'contextMenu' => $this->getTrashContextMenuOptions()
             ]);
-
         } catch (\Exception $e) {
-            \Log::error('Error in getTrashedItems: '.$e->getMessage(), [
-                'exception' => $e,
-                'parent_id' => $parentId
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error loading trash contents',
-                'error' => $e->getMessage()
-            ], 500);
+            \Log::error('Error in getTrashedItems: ' . $e->getMessage(), ['exception' => $e, 'parent_id' => $parentId]);
+            return response()->json(['success' => false, 'message' => 'Error loading trash contents', 'error' => $e->getMessage()], 500);
         }
     }
 
@@ -1195,33 +883,12 @@ class GalleryController extends Controller
     protected function getTrashContextMenuOptions()
     {
         return [
-            'restore' => [
-                'label' => 'Restore',
-                'icon' => 'trash-restore',
-                'action' => 'restoreItems',
-                'available' => true
-            ],
-            'delete' => [
-                'label' => 'Delete Permanently',
-                'icon' => 'trash-alt',
-                'action' => 'deleteItems',
-                'available' => true,
-                'permanent' => true
-            ],
+            'restore' => ['label' => 'Restore', 'icon' => 'trash-restore', 'action' => 'restoreItems', 'available' => true],
+            'delete' => ['label' => 'Delete Permanently', 'icon' => 'trash-alt', 'action' => 'deleteItems', 'available' => true, 'permanent' => true],
             'separator1' => ['type' => 'separator'],
-            'emptyTrash' => [
-                'label' => 'Empty Trash',
-                'icon' => 'broom',
-                'action' => 'emptyTrash',
-                'available' => true
-            ],
+            'emptyTrash' => ['label' => 'Empty Trash', 'icon' => 'broom', 'action' => 'emptyTrash', 'available' => true],
             'separator2' => ['type' => 'separator'],
-            'refresh' => [
-                'label' => 'Refresh',
-                'icon' => 'sync',
-                'action' => 'refresh',
-                'available' => true
-            ]
+            'refresh' => ['label' => 'Refresh', 'icon' => 'sync', 'action' => 'refresh', 'available' => true]
         ];
     }
 
@@ -1237,39 +904,30 @@ class GalleryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         $restoredItems = [];
 
-        DB::beginTransaction();
-
         try {
-            foreach ($request->input('items') as $item) {
-                if ($item['type'] === 'file') {
-                    $restoredItems[] = $this->restoreFile($item['id']);
-                } else {
-                    $restoredItems[] = $this->restoreFolder($item['id']);
-                }
+            DB::beginTransaction();
+            foreach ($request->items as $item) {
+                $restoredItems[] = $item['type'] === 'file'
+                    ? $this->restoreFile($item['id'])
+                    : $this->restoreFolder($item['id']);
             }
-
             DB::commit();
 
-            // Dispatch background job to restore any missing conversions
-            RestoreMediaFiles::dispatch($restoredItems, $this->conversions);
+            RestoreMediaFiles::dispatch($restoredItems, $this->conversions)->onQueue('media');
 
             return response()->json([
                 'success' => true,
                 'items' => $restoredItems,
                 'message' => 'Items restored successfully'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to restore items: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to restore items: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1279,8 +937,7 @@ class GalleryController extends Controller
     protected function restoreFile($fileId)
     {
         $media = Media::onlyTrashed()->findOrFail($fileId);
-        $media->deleted_at = null;
-        $media->save();
+        $media->restore();
         return $media;
     }
 
@@ -1290,54 +947,34 @@ class GalleryController extends Controller
     protected function restoreFolder($folderId)
     {
         $folder = MediaFolder::onlyTrashed()->findOrFail($folderId);
-        $folder->deleted_at = null;
-        $folder->save();
-
-        // Restore all files in this folder
-        Media::onlyTrashed()
-            ->where('directory', $folder->path)
-            ->update(['deleted_at' => null]);
-
-        // Restore all subfolders
-        MediaFolder::onlyTrashed()
-            ->where('path', 'like', $folder->path.'/%')
-            ->update(['deleted_at' => null]);
-
+        $folder->restore();
+        Media::onlyTrashed()->where('directory', $folder->path)->restore();
+        MediaFolder::onlyTrashed()->where('path', 'like', $folder->path . '/%')->restore();
         return $folder;
     }
 
     /**
-     * Empty the trash (permanently delete all trashed items)
+     * Empty the trash
      */
     public function emptyTrash()
     {
-        DB::beginTransaction();
-
         try {
-            // Get all trashed items first
+            DB::beginTransaction();
             $files = Media::onlyTrashed()->get();
             $folders = MediaFolder::onlyTrashed()->get();
-
-            // Mark all items for deletion in database
             Media::onlyTrashed()->forceDelete();
             MediaFolder::onlyTrashed()->forceDelete();
-
             DB::commit();
 
-            // Dispatch background job to delete all files
-            DeleteMediaFiles::dispatch($files, $this->conversions);
+            DeleteMediaFiles::dispatch($files, $this->conversions)->onQueue('media');
+            foreach ($folders as $folder) {
+                DeleteFolderContents::dispatch($folder->path, [], $this->conversions)->onQueue('media');
+            }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Trash has been emptied'
-            ]);
-
+            return response()->json(['success' => true, 'message' => 'Trash has been emptied']);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to empty trash: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to empty trash: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1346,16 +983,11 @@ class GalleryController extends Controller
      */
     protected function searchItems($searchTerm, $currentPath = '', $page = 1, $perPage = 10)
     {
-        $results = [
-            'folders' => [],
-            'files' => []
-        ];
+        $results = ['folders' => [], 'files' => []];
 
-        // Search folders with pagination
         $foldersQuery = MediaFolder::where('name', 'like', "%$searchTerm%")
-            ->when($currentPath, function($query) use ($currentPath) {
-                return $query->where('path', 'like', "$currentPath%");
-            })
+            ->whereNull('deleted_at')
+            ->when($currentPath, fn($q) => $q->where('path', 'like', "$currentPath%"))
             ->orderBy('name');
 
         $totalFolders = $foldersQuery->count();
@@ -1369,16 +1001,14 @@ class GalleryController extends Controller
                 'name' => $folder->name,
                 'path' => $folder->path,
                 'type' => 'folder',
-                'created_at' => $folder->created_at,
-                'updated_at' => $folder->updated_at
+                'created_at' => $folder->created_at->format('d-m-Y'),
+                'updated_at' => $folder->updated_at->format('d-m-Y')
             ];
         }
 
-        // Search files with pagination
         $filesQuery = Media::where('name', 'like', "%$searchTerm%")
-            ->when($currentPath, function($query) use ($currentPath) {
-                return $query->where('directory', 'like', "$currentPath%");
-            })
+            ->whereNull('deleted_at')
+            ->when($currentPath, fn($q) => $q->where('directory', 'like', "$currentPath%"))
             ->orderBy('name');
 
         $totalFiles = $filesQuery->count();
@@ -1391,19 +1021,18 @@ class GalleryController extends Controller
                 'id' => $file->id,
                 'name' => $file->name,
                 'file_name' => $file->file_name,
-                'path' => $file->directory ? $file->directory.'/'.$file->file_name : $file->file_name,
-                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory.'/'.$file->file_name : $file->file_name),
+                'path' => $file->directory ? $file->directory . '/' . $file->file_name : $file->file_name,
+                'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name),
                 'thumb_url' => $this->getThumbUrl($file),
                 'type' => 'file',
                 'mime_type' => $file->mime_type,
-                'size' => $file->size,
-                'dimensions' => $file->dimensions,
-                'created_at' => $file->created_at,
-                'updated_at' => $file->updated_at
+                'size' => $this->formatFileSize($file->size),
+                'dimensions' => $file->dimensions ? $file->dimensions['width'] . 'x' . $file->dimensions['height'] : null,
+                'created_at' => $file->created_at->format('d-m-Y'),
+                'updated_at' => $file->updated_at->format('d-m-Y')
             ];
         }
 
-        // Calculate pagination info
         $totalItems = $totalFolders + $totalFiles;
         $totalPages = ceil($totalItems / $perPage);
 
@@ -1434,19 +1063,16 @@ class GalleryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         session(['clipboard' => [
             'action' => 'copy',
-            'items' => $request->input('items'),
+            'items' => $request->items,
             'timestamp' => now()
         ]]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Items copied to clipboard'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Items copied to clipboard']);
     }
 
     /**
@@ -1461,19 +1087,16 @@ class GalleryController extends Controller
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
         session(['clipboard' => [
             'action' => 'cut',
-            'items' => $request->input('items'),
+            'items' => $request->items,
             'timestamp' => now()
         ]]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Items cut to clipboard'
-        ]);
+        return response()->json(['success' => true, 'message' => 'Items cut to clipboard']);
     }
 
     /**
@@ -1481,58 +1104,64 @@ class GalleryController extends Controller
      */
     public function pasteItems(Request $request)
     {
+        return $this->batchPaste($request); // Delegate to batchPaste for consistency
+    }
+
+    /**
+     * Batch paste items (copy/cut)
+     */
+    public function batchPaste(Request $request)
+    {
         $validator = Validator::make($request->all(), [
             'target_path' => 'required|string',
+            'items' => 'sometimes|array',
+            'items.*.type' => 'sometimes|required|in:file,folder',
+            'items.*.id' => 'sometimes|required',
+            'action' => 'sometimes|in:copy,cut'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
         }
 
-        $clipboard = session('clipboard');
+        $clipboard = $request->items && $request->action ? [
+            'action' => $request->action,
+            'items' => $request->items
+        ] : session('clipboard');
+
         if (!$clipboard) {
-            return response()->json(['error' => 'Clipboard is empty'], 400);
+            return response()->json(['success' => false, 'message' => 'Clipboard is empty'], 400);
         }
 
-        $targetPath = $request->input('target_path');
-
-        DB::beginTransaction();
+        $targetPath = $request->target_path;
 
         try {
-            if ($clipboard['action'] === 'copy') {
-                foreach ($clipboard['items'] as $item) {
-                    if ($item['type'] === 'file') {
-                        $this->copyFile($item['id'], $targetPath);
-                    } else {
-                        $this->copyFolder($item['id'], $targetPath);
-                    }
+            DB::beginTransaction();
+            $newItems = [];
+            foreach ($clipboard['items'] as $item) {
+                if ($item['type'] === 'file') {
+                    $newItems[] = $clipboard['action'] === 'copy'
+                        ? $this->copyFile($item['id'], $targetPath)
+                        : $this->moveFile($item['id'], $targetPath);
+                } else {
+                    $newItems[] = $clipboard['action'] === 'copy'
+                        ? $this->copyFolder($item['id'], $targetPath)
+                        : $this->moveFolder($item['id'], $targetPath);
                 }
-                $message = 'Items copied successfully';
-            } else { // cut
-                foreach ($clipboard['items'] as $item) {
-                    if ($item['type'] === 'file') {
-                        $this->moveFile($item['id'], $targetPath);
-                    } else {
-                        $this->moveFolder($item['id'], $targetPath);
-                    }
-                }
-                session()->forget('clipboard');
-                $message = 'Items moved successfully';
             }
-
+            if ($clipboard['action'] === 'cut') {
+                session()->forget('clipboard');
+            }
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => $clipboard['action'] === 'copy' ? 'Items copied successfully' : 'Items moved successfully',
+                'items' => $newItems
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to paste items: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to paste items: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1542,33 +1171,40 @@ class GalleryController extends Controller
     protected function copyFile($fileId, $targetPath)
     {
         $media = Media::findOrFail($fileId);
+        if ($media->trashed()) {
+            return null;
+        }
+
         $newBaseName = pathinfo($media->file_name, PATHINFO_FILENAME);
         $extension = pathinfo($media->file_name, PATHINFO_EXTENSION);
         $newFileName = $this->generateUniqueFilename($targetPath, $newBaseName, $extension);
 
-        // Copy original file
-        Storage::disk($this->disk)->copy(
-            $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name,
-            $targetPath ? $targetPath.'/'.$newFileName : $newFileName
-        );
+        $oldPath = $media->directory ? $media->directory . '/' . $media->file_name : $media->file_name;
+        $newPath = $targetPath ? $targetPath . '/' . $newFileName : $newFileName;
 
-        // Copy conversions
+        Storage::disk($this->disk)->copy($oldPath, $newPath);
         foreach ($this->conversions as $conversion => $settings) {
-            $oldConversionPath = ($media->directory ? $media->directory.'/'.$conversion : $conversion).'/'.$media->file_name;
-            $newConversionPath = ($targetPath ? $targetPath.'/'.$conversion : $conversion).'/'.$newFileName;
-
+            $oldConversionPath = ($media->directory ? $media->directory . '/' . $conversion : $conversion) . '/' . $media->file_name;
+            $newConversionPath = ($targetPath ? $targetPath . '/' . $conversion : $conversion) . '/' . $newFileName;
             if (Storage::disk($this->disk)->exists($oldConversionPath)) {
                 Storage::disk($this->disk)->copy($oldConversionPath, $newConversionPath);
             }
         }
 
-        // Create new media record
         $newMedia = $media->replicate();
         $newMedia->file_name = $newFileName;
         $newMedia->directory = $targetPath;
+        $newMedia->uuid = Str::uuid();
         $newMedia->save();
 
-        return $newMedia;
+        return [
+            'id' => $newMedia->id,
+            'name' => $newMedia->name,
+            'file_name' => $newMedia->file_name,
+            'path' => $newPath,
+            'url' => Storage::disk($this->disk)->url($newPath),
+            'thumb_url' => $this->getThumbUrl($newMedia)
+        ];
     }
 
     /**
@@ -1577,42 +1213,41 @@ class GalleryController extends Controller
     protected function copyFolder($folderId, $targetPath)
     {
         $folder = MediaFolder::findOrFail($folderId);
+        if ($folder->trashed()) {
+            return null;
+        }
+
         $newFolderName = $folder->name;
         $newPath = $targetPath ? "$targetPath/$newFolderName" : $newFolderName;
 
         if (MediaFolder::where('path', $newPath)->exists()) {
-            throw new \Exception("A folder with this name already exists in the target location");
+            $newPath = $this->generateUniqueFolderPath($targetPath, $newFolderName);
+            $newFolderName = basename($newPath);
         }
 
-        // Create physical folder
-        Storage::disk($this->disk)->makeDirectory($newPath);
-
-        // Create folder record
-        $newFolder = new MediaFolder([
+        $newFolder = MediaFolder::create([
             'name' => $folder->name,
             'path' => $newPath,
             'parent_id' => $this->getParentIdFromPath($targetPath)
         ]);
 
-        if ($newFolder->parent_id) {
-            $newFolder->appendToNode(MediaFolder::find($newFolder->parent_id))->save();
-        } else {
-            $newFolder->saveAsRoot();
-        }
-
-        // Copy all files in the folder
-        $files = Media::where('directory', $folder->path)->get();
+        Storage::disk($this->disk)->makeDirectory($newPath);
+        $files = Media::where('directory', $folder->path)->whereNull('deleted_at')->get();
         foreach ($files as $file) {
             $this->copyFile($file->id, $newPath);
         }
 
-        // Copy all subfolders
-        $subfolders = MediaFolder::where('parent_id', $folder->id)->get();
+        $subfolders = MediaFolder::where('parent_id', $folder->id)->whereNull('deleted_at')->get();
         foreach ($subfolders as $subfolder) {
             $this->copyFolder($subfolder->id, $newPath);
         }
 
-        return $newFolder;
+        return [
+            'id' => $newFolder->id,
+            'name' => $newFolder->name,
+            'path' => $newFolder->path,
+            'parent_id' => $newFolder->parent_id
+        ];
     }
 
     /**
@@ -1623,25 +1258,23 @@ class GalleryController extends Controller
         try {
             if ($type === 'file') {
                 $item = Media::withTrashed()->findOrFail($id);
-
                 $properties = [
                     'name' => $item->name,
                     'type' => 'File',
-                    'size' => $this->formatBytes($item->size),
+                    'size' => $this->formatFileSize($item->size),
                     'location' => $item->directory ?: 'Root',
                     'created' => $item->created_at->format('M d, Y H:i'),
                     'modified' => $item->updated_at->format('M d, Y H:i'),
                     'mime_type' => $item->mime_type,
-                    'dimensions' => $item->dimensions ? $item->dimensions['width'].' × '.$item->dimensions['height'] : 'N/A',
+                    'dimensions' => $item->dimensions ? $item->dimensions['width'] . ' × ' . $item->dimensions['height'] : 'N/A',
                     'status' => $item->trashed() ? 'In Trash' : 'Active'
                 ];
             } else {
                 $item = MediaFolder::withTrashed()->findOrFail($id);
-
                 $properties = [
                     'name' => $item->name,
                     'type' => 'Folder',
-                    'size' => $this->formatBytes($this->getFolderSize($item->path)),
+                    'size' => $this->formatFileSize($this->getFolderSize($item->path)),
                     'location' => $item->parent ? $item->parent->path : 'Root',
                     'created' => $item->created_at->format('M d, Y H:i'),
                     'modified' => $item->updated_at->format('M d, Y H:i'),
@@ -1650,17 +1283,9 @@ class GalleryController extends Controller
                 ];
             }
 
-            return response()->json([
-                'success' => true,
-                'properties' => $properties,
-                'item' => $item
-            ]);
-
+            return response()->json(['success' => true, 'properties' => $properties, 'item' => $item]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Failed to get properties: '.$e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Failed to get properties: ' . $e->getMessage()], 500);
         }
     }
 
@@ -1669,30 +1294,23 @@ class GalleryController extends Controller
      */
     protected function getFolderSize($path)
     {
-        $files = Media::where('directory', 'like', $path.'%')->get();
-        return $files->sum('size');
+        return Media::where('directory', 'like', $path . '%')->sum('size');
     }
 
     /**
-     * Format bytes to human-readable format
+     * Show folder details
      */
-    private function formatBytes($bytes, $precision = 2)
-    {
-        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
-        $bytes = max($bytes, 0);
-        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
-        $pow = min($pow, count($units) - 1);
-        $bytes /= pow(1024, $pow);
-        return round($bytes, $precision).' '.$units[$pow];
-    }
-
     public function showFolder($id)
     {
-        $folder = MediaFolder::with(['parent', 'children', 'media'])->findOrFail($id);
-
+        $folder = MediaFolder::with(['parent'])->findOrFail($id);
         return response()->json([
             'success' => true,
-            'folder' => $folder,
+            'folder' => [
+                'id' => $folder->id,
+                'name' => $folder->name,
+                'path' => $folder->path,
+                'parent_id' => $folder->parent_id
+            ],
             'breadcrumbs' => $this->getBreadcrumbs($folder->path)
         ]);
     }
@@ -1706,25 +1324,45 @@ class GalleryController extends Controller
 
         return response()->json([
             'success' => true,
-            'file' => $file,
+            'file' => [
+                'id' => $file->id,
+                'name' => $file->name,
+                'file_name' => $file->file_name,
+                'path' => $file->directory ? $file->directory . '/' . $file->file_name : $file->file_name,
+                'url' => Storage::disk($this->disk)->url(
+                    $file->directory ? $file->directory . '/' . $file->file_name : $file->file_name
+                ),
+                'thumb_url' => $this->getThumbUrl($file),
+                'mime_type' => $file->mime_type,
+                'size' => $this->formatFileSize($file->size),
+
+                // ✅ Add these raw fields for JS compatibility:
+                'size_bytes' => $file->size,
+                'created_at' => $file->created_at->format('d-m-Y'),
+                'dimensions' => $file->dimensions ? [
+                    'width' => $file->dimensions['width'],
+                    'height' => $file->dimensions['height']
+                ] : null,
+            ],
             'properties' => $this->getFileProperties($file)
         ]);
     }
 
+
     /**
      * Get file properties
      */
-    private function getFileProperties(Media $file)
+    protected function getFileProperties(Media $file)
     {
         return [
             'name' => $file->name,
             'type' => 'File',
-            'size' => $this->formatBytes($file->size),
+            'size' => $this->formatFileSize($file->size),
             'location' => $file->directory ?: 'Root',
             'created' => $file->created_at->format('M d, Y H:i'),
             'modified' => $file->updated_at->format('M d, Y H:i'),
             'mime_type' => $file->mime_type,
-            'dimensions' => $file->dimensions ? $file->dimensions['width'].' × '.$file->dimensions['height'] : 'N/A'
+            'dimensions' => $file->dimensions ? $file->dimensions['width'] . 'x' . $file->dimensions['height'] : 'N/A'
         ];
     }
 
@@ -1733,52 +1371,104 @@ class GalleryController extends Controller
      */
     public function getFileForInsertion($id)
     {
-
         try {
-            $file = Media::findOrFail($id); // Adjust to your model
+            $file = Media::findOrFail($id);
             if ($file->trashed()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'File is in trash'
-                ], 404);
+                return response()->json(['success' => false, 'message' => 'File is in trash'], 404);
             }
 
             return response()->json([
-                    'success' => true,
-                    'file' => [
+                'success' => true,
+                'file' => [
+                    'id' => $file->id,
+                    'name' => $file->name,
+                    'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name),
+                    'thumb_url' => $this->getThumbUrl($file),
+                    'type' => 'file',
+                    'mime_type' => $file->mime_type,
+                    'size' => $this->formatFileSize($file->size),
+                    'dimensions' => $file->dimensions ? $file->dimensions['width'] . 'x' . $file->dimensions['height'] : null,
+                    'created_at' => $file->created_at->format('d-m-Y')
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'File not found or error occurred'], 404);
+        }
+    }
+
+    /**
+     * Fetch multiple files for insertion (batch endpoint)
+     */
+    public function getFilesForInsertion(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'file_ids' => 'required|array',
+            'file_ids.*' => 'exists:media,id'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        try {
+            $files = Media::whereIn('id', $request->file_ids)
+                ->whereNull('deleted_at')
+                ->get()
+                ->map(function ($file) {
+                    return [
                         'id' => $file->id,
                         'name' => $file->name,
-                        'url' => Storage::disk($this->disk)->url($file->path),
+                        'url' => Storage::disk($this->disk)->url($file->directory ? $file->directory . '/' . $file->file_name : $file->file_name),
                         'thumb_url' => $this->getThumbUrl($file),
                         'type' => 'file',
                         'mime_type' => $file->mime_type,
                         'size' => $this->formatFileSize($file->size),
-                        'dimensions' => $file->dimensions,
+                        'dimensions' => $file->dimensions ? $file->dimensions['width'] . 'x' . $file->dimensions['height'] : null,
                         'created_at' => $file->created_at->format('d-m-Y')
-                    ]
-            ]);
+                    ];
+                });
+
+            if ($files->isEmpty()) {
+                return response()->json(['success' => false, 'message' => 'No valid files found'], 404);
+            }
+
+            return response()->json(['success' => true, 'files' => $files]);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'File not found or error occurred'
-            ], 404);
+            return response()->json(['success' => false, 'message' => 'Error fetching files: ' . $e->getMessage()], 500);
         }
     }
 
+    /**
+     * Download a file
+     */
+    public function downloadFile($id)
+    {
+        try {
+            $media = Media::findOrFail($id);
+            if ($media->trashed()) {
+                return response()->json(['success' => false, 'message' => 'Cannot download trashed file'], 403);
+            }
+            $path = $media->directory ? $media->directory . '/' . $media->file_name : $media->file_name;
+            return Storage::disk($this->disk)->download($path, $media->name);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'File not found or error occurred'], 404);
+        }
+    }
 
     /**
      * Generate a public URL for a media item
      */
     public function generateUrl($id)
     {
-        $media = Media::findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'url' => Storage::disk($this->disk)->url(
-                $media->directory ? $media->directory.'/'.$media->file_name : $media->file_name
-            )
-        ]);
+        try {
+            $media = Media::findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'url' => Storage::disk($this->disk)->url($media->directory ? $media->directory . '/' . $media->file_name : $media->file_name)
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'File not found'], 404);
+        }
     }
 
     /**
@@ -1786,19 +1476,19 @@ class GalleryController extends Controller
      */
     public function setFeatured($id)
     {
-        // First remove featured status from any other items
-        Media::where('is_featured', true)->update(['is_featured' => false]);
+        try {
+            DB::beginTransaction();
+            Media::where('is_featured', true)->update(['is_featured' => false]);
+            $media = Media::findOrFail($id);
+            $media->is_featured = true;
+            $media->save();
+            DB::commit();
 
-        // Set the selected item as featured
-        $media = Media::findOrFail($id);
-        $media->is_featured = true;
-        $media->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Media set as featured',
-            'media' => $media
-        ]);
+            return response()->json(['success' => true, 'message' => 'Media set as featured', 'media' => $media]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to set featured: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
@@ -1806,19 +1496,33 @@ class GalleryController extends Controller
      */
     public function removeFeatured($id)
     {
-        $media = Media::findOrFail($id);
-        $media->is_featured = false;
-        $media->save();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Featured status removed',
-            'media' => $media
-        ]);
+        try {
+            $media = Media::findOrFail($id);
+            $media->is_featured = false;
+            $media->save();
+            return response()->json(['success' => true, 'message' => 'Featured status removed', 'media' => $media]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to remove featured status: ' . $e->getMessage()], 500);
+        }
     }
 
     /**
-     * Build context menu options based on current state
+     * Force delete an item
+     */
+    public function forceDelete($id)
+    {
+        try {
+            $item = Media::withTrashed()->findOrFail($id);
+            $item->forceDelete();
+            DeleteMediaFiles::dispatch([$item], $this->conversions)->onQueue('media');
+            return response()->json(['success' => true, 'message' => 'Item permanently deleted']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed to delete item: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Build context menu options
      */
     protected function buildContextMenuOptions($currentPath, $selectedItems, $isTrash)
     {
@@ -1904,53 +1608,22 @@ class GalleryController extends Controller
             ]
         ];
 
-        return array_filter($options, function($option) {
-            return !isset($option['available']) || $option['available'];
-        });
+        return array_filter($options, fn($option) => !isset($option['available']) || $option['available']);
     }
 
     /**
-     * Force delete an item (bypass soft delete)
+     * Generate unique folder path
      */
-    public function forceDelete($id)
+    protected function generateUniqueFolderPath($basePath, $folderName)
     {
-        $item = Media::withTrashed()->findOrFail($id);
+        $path = $basePath ? "$basePath/$folderName" : $folderName;
+        $counter = 1;
 
-        // Delete the record first
-        $item->forceDelete();
+        while (MediaFolder::where('path', $path)->exists()) {
+            $path = $basePath ? "$basePath/$folderName-$counter" : "$folderName-$counter";
+            $counter++;
+        }
 
-        // Dispatch job to delete physical files
-        DeleteMediaFiles::dispatch([$item], $this->conversions);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Item permanently deleted'
-        ]);
+        return $path;
     }
-
-    /**
-     * Dedicated method for folder rename
-     */
-    public function updateFolder(Request $request, $id)
-    {
-        return $this->renameItem(new Request([
-            'type' => 'folder',
-            'id' => $id,
-            'new_name' => $request->input('name')
-        ]));
-    }
-
-    /**
-     * Dedicated method for file rename
-     */
-    public function update(Request $request, $id)
-    {
-        return $this->renameItem(new Request([
-            'type' => 'file',
-            'id' => $id,
-            'new_name' => $request->input('name')
-        ]));
-    }
-
-
 }
