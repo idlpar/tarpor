@@ -2187,6 +2187,7 @@
             getContextMenuItems() {
                 const hasSelection = this.state.selectedItems.size > 0;
                 const singleSelection = this.state.selectedItems.size === 1;
+                const hasFileSelection = Array.from(this.state.selectedItems).some(key => key.startsWith('file:'));
 
                 return [
                     {
@@ -2207,6 +2208,13 @@
                         icon: 'upload',
                         action: 'uploadFiles',
                         available: !this.state.isTrashView
+                    },
+                    { type: 'separator' },
+                    {
+                        label: 'Insert',
+                        icon: 'check',
+                        action: 'insertItems',
+                        available: !this.state.isTrashView && hasSelection && hasFileSelection
                     },
                     { type: 'separator' },
                     {
@@ -2272,6 +2280,9 @@
                         break;
                     case 'uploadFiles':
                         this.showUploadDialog();
+                        break;
+                    case 'insertItems':
+                        this.insertSelectedForProduct();
                         break;
                     case 'cutItems':
                         this.cutItems();
