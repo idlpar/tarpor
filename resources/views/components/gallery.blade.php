@@ -2035,6 +2035,7 @@
                     this.state.productImages.push(file);
                     this.renderSelectedImagesPreview();
                     this.toggleImageActionButtons();
+                    this.toggleDefaultUploadContent();
                     this.updateProductImagesInput();
                 }
             },
@@ -2070,6 +2071,7 @@
                         this.state.productImages.splice(index, 1);
                         this.renderSelectedImagesPreview();
                         this.toggleImageActionButtons();
+                        this.toggleDefaultUploadContent();
                     });
                 });
 
@@ -2080,6 +2082,13 @@
                 const actionButtons = document.getElementById('imageActionButtons');
                 if (actionButtons) {
                     actionButtons.classList.toggle('hidden', this.state.productImages.length === 0);
+                }
+            },
+
+            toggleDefaultUploadContent() {
+                const defaultUploadContent = document.getElementById('defaultUploadContent');
+                if (defaultUploadContent) {
+                    defaultUploadContent.classList.toggle('hidden', this.state.productImages.length !== 0);
                 }
             },
 

@@ -509,6 +509,18 @@
     <!-- CKEditor Script -->
     <script src="{{ asset('ckeditor/ckeditor.js') }}" defer></script>
 
+    <!-- Utility Functions -->
+    <script>
+        // Reusable debounce function
+        function debounce(func, timeout = 300) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => func.apply(this, args), timeout);
+            };
+        }
+    </script>
+
     <!-- Image Handling -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -521,45 +533,23 @@
                 featuredImageThumbnail: document.getElementById('featuredImageThumbnail'),
                 featuredImagePreview: document.getElementById('featuredImagePreview'),
                 featuredImageContainer: document.getElementById('featuredImageContainer'),
+                productImages: [], // Local state for images
 
-                addProductImage(file) {
-                    if (!file?.id) {
-                        console.warn('Invalid file:', file);
-                        return;
-                    }
-                    const currentImages = JSON.parse(this.productImagesInput.value || '[]');
-                    if (currentImages.includes(file.id)) return;
+                addImage(file) {
+                    if (!file?.id || this.productImages.some(img => img.id === file.id)) return;
+                    this.productImages.push(file);
+                    this.renderImages();
+                    this.updateVisibility();
+                },
 
-                    currentImages.push(file.id);
-                    this.productImagesInput.value = JSON.stringify(currentImages);
-
-                    const imageWrapper = document.createElement('div');
-                    imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border-2 border-gray-300 hover:shadow-lg hover:scale-105 transition-all duration-200';
-                    imageWrapper.innerHTML = `
-                        <img src="${file.thumb_url || file.url}" alt="${file.name}" class="w-full h-full object-cover">
-                        <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
-                    `;
-                    this.selectedImagesPreview.appendChild(imageWrapper);
-                    this.updateProductImageVisibility(currentImages.length);
-
-                    imageWrapper.querySelector('.remove-image').addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        imageWrapper.remove();
-                        const updatedImages = currentImages.filter(id => id !== file.id);
-                        this.productImagesInput.value = JSON.stringify(updatedImages);
-                        this.updateProductImageVisibility(updatedImages.length);
-                    });
+                removeImage(id) {
+                    this.productImages = this.productImages.filter(img => img.id !== id);
+                    this.renderImages();
+                    this.updateVisibility();
                 },
 
                 setFeaturedImage(file) {
-                    if (!file?.id) {
-                        console.warn('Invalid file:', file);
-                        return;
-                    }
+                    if (!file?.id) return;
                     this.featuredImageThumbnail.src = file.thumb_url || file.url;
                     this.featuredImageThumbnail.alt = file.name;
                     this.featuredImagePreview.classList.remove('hidden');
@@ -567,32 +557,116 @@
                     this.featuredImageInput.value = file.id;
                 },
 
-                updateProductImageVisibility(imageCount) {
-                    this.selectedImagesPreview.classList.toggle('hidden', imageCount === 0);
-                    this.defaultUploadContent.classList.add('hidden', imageCount !== 0);
-                    this.imageActionButtons.classList.toggle('hidden', imageCount === 0);
+                renderImages() {
+                    this.selectedImagesPreview.innerHTML = '';
+                    if (this.productImages.length === 0) {
+                        this.selectedImagesPreview.classList.add('hidden');
+                        this.productImagesInput.value = '[]';
+                        this.updateVisibility();
+                        return;
+                    }
+
+                    this.productImages.forEach((image) => {
+                        const imageWrapper = document.createElement('div');
+                        imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 sortable-image';
+                        imageWrapper.innerHTML = `
+                    <img src="${image.thumb_url || image.url}" alt="${image.name}" class="w-full h-full object-cover">
+                    <button type="button" class="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center hover:bg-red-600 remove-image" data-id="${image.id}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                `;
+                        this.selectedImagesPreview.appendChild(imageWrapper);
+
+                        imageWrapper.querySelector('.remove-image').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            this.removeImage(image.id);
+                        });
+                    });
+
+                    this.selectedImagesPreview.classList.remove('hidden');
+                    this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id));
+                    this.updateVisibility();
                 },
 
-                resetProductImages() {
+                updateVisibility() {
+                    // console.log('Updating visibility with imageCount:', this.productImages.length);
+                    if (this.productImages.length > 0) {
+                        this.defaultUploadContent.classList.add('hidden');
+                        this.selectedImagesPreview.classList.remove('hidden');
+                        this.imageActionButtons.classList.remove('hidden');
+                    } else {
+                        this.defaultUploadContent.classList.remove('hidden');
+                        this.selectedImagesPreview.classList.add('hidden');
+                        this.imageActionButtons.classList.add('hidden');
+                    }
+                },
+
+                resetImages() {
+                    this.productImages = [];
                     this.selectedImagesPreview.innerHTML = '';
                     this.productImagesInput.value = '[]';
-                    this.updateProductImageVisibility(0);
+                    this.updateVisibility();
+                },
+
+                initPreloadedImages() {
+                    const currentImageIds = JSON.parse(this.productImagesInput.value || '[]');
+                    if (currentImageIds.length === 0) {
+                        this.updateVisibility();
+                        return;
+                    }
+
+                    // Clear server-rendered images to avoid duplicates
+                    this.selectedImagesPreview.innerHTML = '';
+                    this.productImages = [];
+
+                    // Fetch image details
+                    const fetchPromises = currentImageIds.map(id =>
+                        fetch(`{{ route("gallery.file.show", '') }}/${id}`, {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.file) {
+                                    return data.file;
+                                }
+                                throw new Error(`Failed to fetch image ID: ${id}`);
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                return null;
+                            })
+                    );
+
+                    Promise.all(fetchPromises).then(files => {
+                        files.forEach(file => {
+                            if (file) this.productImages.push(file);
+                        });
+                        this.renderImages();
+                        this.updateVisibility();
+                    });
                 },
 
                 init() {
+                    // Initialize preloaded images
+                    this.initPreloadedImages();
+
+                    // Event listeners
                     const uploadArea = document.querySelector('.clickable-upload-area');
-                    uploadArea?.removeEventListener('click', this.handleProductUpload);
                     uploadArea?.addEventListener('click', this.handleProductUpload.bind(this));
 
                     const addMoreImages = document.getElementById('addMoreImages');
-                    addMoreImages?.removeEventListener('click', this.handleProductUpload);
                     addMoreImages?.addEventListener('click', this.handleProductUpload.bind(this));
 
                     const resetImages = document.getElementById('resetImages');
-                    resetImages?.addEventListener('click', () => this.resetProductImages());
+                    resetImages?.addEventListener('click', () => this.resetImages());
 
                     const featuredContainer = document.getElementById('featuredImageContainer');
-                    featuredContainer?.removeEventListener('click', this.handleFeaturedUpload);
                     featuredContainer?.addEventListener('click', this.handleFeaturedUpload.bind(this));
 
                     const removeFeatured = document.getElementById('removeFeaturedImage');
@@ -601,13 +675,30 @@
                         this.featuredImagePreview.classList.add('hidden');
                         this.featuredImageContainer.classList.remove('hidden');
                     });
+
+                    // Initialize Sortable
+                    if (this.selectedImagesPreview) {
+                        new Sortable(this.selectedImagesPreview, {
+                            animation: 150,
+                            ghostClass: 'sortable-ghost',
+                            dragClass: 'sortable-image',
+                            onEnd: () => {
+                                const images = Array.from(this.selectedImagesPreview.children).map(wrapper => {
+                                    const id = parseInt(wrapper.querySelector('.remove-image').dataset.id);
+                                    return this.productImages.find(img => img.id === id);
+                                });
+                                this.productImages = images.filter(img => img);
+                                this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id));
+                            }
+                        });
+                    }
                 },
 
                 handleProductUpload() {
                     window.openGalleryModal('', (files) => {
                         if (!files) return;
                         const fileArray = Array.isArray(files) ? files : [files];
-                        fileArray.forEach(file => this.addProductImage(file));
+                        fileArray.forEach(file => this.addImage(file));
                     }, { mode: 'multiple', accept: 'image/*' });
                 },
 
@@ -707,21 +798,17 @@
             const slugInput = document.querySelector('input[name="slug"]');
             const permalinkPreview = document.getElementById('permalink-preview');
             const baseUrl = "{{ url('/product') }}/";
-            function debounce(func, timeout = 500) {
-                let timer;
-                return (...args) => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => func.apply(this, args), timeout);
-                };
-            }
+
             function createSlug(text) {
                 return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
             }
+
             function updatePreview(slug) {
                 slug = slug || 'your-slug';
                 permalinkPreview.textContent = baseUrl + slug;
                 permalinkPreview.href = baseUrl + slug;
             }
+
             const checkSlug = debounce(async (slug) => {
                 if (!slug || slug === 'your-slug') return;
                 try {
@@ -734,13 +821,15 @@
                 } catch (error) {
                     console.error('Error checking slug:', error);
                 }
-            });
+            }, 500);
+
             nameInput.addEventListener('input', () => {
                 const generatedSlug = createSlug(nameInput.value);
                 slugInput.value = generatedSlug;
                 updatePreview(generatedSlug);
                 checkSlug(generatedSlug);
             });
+
             slugInput.addEventListener('input', () => {
                 const manualSlug = slugInput.value.trim();
                 if (manualSlug) {
@@ -752,6 +841,7 @@
                     updatePreview(generatedSlug);
                 }
             });
+
             updatePreview(slugInput.value || 'your-slug');
         });
     </script>
@@ -760,6 +850,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const searchInput = document.querySelector('#category-search');
+
             function filterCategories() {
                 const searchTerm = searchInput.value.trim().toLowerCase();
                 const allLis = document.querySelectorAll('#category-tree li');
@@ -767,6 +858,7 @@
                     const label = li.querySelector('.category-label');
                     if (label) label.innerHTML = label.textContent;
                 });
+
                 function checkMatch(li) {
                     const label = li.querySelector('.category-label');
                     const children = li.querySelectorAll(':scope > ul > li');
@@ -786,15 +878,11 @@
                     li.style.display = (searchTerm === '' || isMatch || childHasMatch) ? 'block' : 'none';
                     return isMatch || childHasMatch;
                 }
+
                 document.querySelectorAll('#category-tree > li').forEach(topLi => checkMatch(topLi));
             }
-            const debouncedFilter = ((func, timeout = 300) => {
-                let timer;
-                return (...args) => {
-                    clearTimeout(timer);
-                    timer = setTimeout(() => func.apply(this, args), timeout);
-                };
-            })(filterCategories, 300);
+
+            const debouncedFilter = debounce(filterCategories, 300);
             searchInput.addEventListener('input', debouncedFilter);
         });
     </script>
@@ -807,10 +895,12 @@
             const brandDropdown = document.getElementById('brand-dropdown');
             const selectedBrandInput = document.getElementById('selected-brand-id');
             const allItems = Array.from(brandList.querySelectorAll('li'));
+
             brandSearch.addEventListener('focus', () => {
                 allItems.forEach(item => item.style.display = 'block');
                 brandDropdown.classList.remove('hidden');
             });
+
             brandSearch.addEventListener('input', () => {
                 const term = brandSearch.value.trim().toLowerCase();
                 let hasMatch = false;
@@ -821,6 +911,7 @@
                 });
                 brandDropdown.classList.toggle('hidden', !hasMatch && term === '');
             });
+
             brandList.addEventListener('click', (e) => {
                 const item = e.target.closest('li');
                 if (!item) return;
@@ -828,6 +919,7 @@
                 selectedBrandInput.value = item.dataset.value;
                 brandDropdown.classList.add('hidden');
             });
+
             document.addEventListener('click', (e) => {
                 if (!brandDropdown.contains(e.target) && !brandSearch.contains(e.target)) {
                     brandDropdown.classList.add('hidden');
@@ -841,6 +933,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const categoryCheckboxes = document.querySelectorAll('input[name="categories[]"]');
             const skuInput = document.querySelector('input[placeholder="SKU-CZA-PZ-997"]');
+
             async function fetchGeneratedSku() {
                 const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(checkbox => parseInt(checkbox.value));
                 if (!selectedCategories.length) {
@@ -869,9 +962,11 @@
                     }
                 }
             }
+
             categoryCheckboxes.forEach(checkbox => {
                 checkbox.addEventListener('change', fetchGeneratedSku);
             });
+
             if (document.querySelector('input[name="categories[]"]:checked')) {
                 fetchGeneratedSku();
             }
@@ -890,6 +985,7 @@
             const tagSelects = document.querySelectorAll('input[name="tags[]"]');
             let selectedProducts = JSON.parse(hiddenInput.value || '[]');
             let searchController = null;
+
             function updateSelectedProducts() {
                 hiddenInput.value = JSON.stringify(selectedProducts);
                 selectedContainer.innerHTML = '';
@@ -919,19 +1015,16 @@
                     });
                 }
             }
+
             updateSelectedProducts();
+
             searchInput.addEventListener('focus', () => {
                 searchInput.value = '';
                 loadSmartSuggestions();
                 resultsContainer.classList.remove('hidden');
             });
-            const searchProducts = ((func, wait) => {
-                let timeout;
-                return function(...args) {
-                    clearTimeout(timeout);
-                    timeout = setTimeout(() => func.apply(this, args), wait);
-                };
-            })(async (term) => {
+
+            const searchProducts = debounce(async (term) => {
                 if (searchController) searchController.abort();
                 searchController = new AbortController();
                 if (!term || term.length < 2) {
@@ -970,16 +1063,19 @@
                     searchController = null;
                 }
             }, 300);
+
             searchInput.addEventListener('input', () => {
                 const term = searchInput.value.trim();
                 if (term.length > 1) searchProducts(term);
                 else resultsContainer.classList.add('hidden');
             });
+
             document.addEventListener('click', (e) => {
                 if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
                     resultsContainer.classList.add('hidden');
                 }
             });
+
             async function loadSmartSuggestions() {
                 const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(el => el.value);
                 const selectedTags = Array.from(document.querySelectorAll('input[name="tags[]"]:checked')).map(el => el.value);
@@ -1018,16 +1114,19 @@
                     loadingIndicator.classList.add('hidden');
                 }
             }
+
             categorySelects.forEach(select => {
                 select.addEventListener('change', () => {
                     if (searchInput === document.activeElement) loadSmartSuggestions();
                 });
             });
+
             tagSelects.forEach(select => {
                 select.addEventListener('change', () => {
                     if (searchInput === document.activeElement) loadSmartSuggestions();
                 });
             });
+
             resultsContainer.addEventListener('click', (e) => {
                 const resultItem = e.target.closest('.product-result');
                 if (!resultItem) return;
@@ -1039,6 +1138,7 @@
                 searchInput.value = '';
                 resultsContainer.classList.add('hidden');
             });
+
             selectedContainer.addEventListener('click', (e) => {
                 if (e.target.closest('.remove-related-product')) {
                     const item = e.target.closest('[data-id]');
@@ -1062,6 +1162,7 @@
             let suggestions = [];
             let hoveredIndex = -1;
             let lastSearch = '';
+
             if (tagsHiddenInput.value) {
                 try {
                     tags = JSON.parse(tagsHiddenInput.value).map(tag => ({ name: tag }));
@@ -1070,9 +1171,11 @@
                     console.error('Error parsing tags:', e);
                 }
             }
+
             tagInput.addEventListener('input', handleInput);
             tagInput.addEventListener('keydown', handleKeyDown);
             tagInput.addEventListener('blur', handleBlur);
+
             function renderTags() {
                 const existingTags = tagsInputWrapper.querySelectorAll('.tag-pill');
                 existingTags.forEach(tag => tag.remove());
@@ -1089,6 +1192,7 @@
                     `;
                     tagsInputWrapper.insertBefore(tagElement, tagInput);
                 });
+
                 document.querySelectorAll('.remove-tag').forEach(button => {
                     button.addEventListener('click', () => {
                         const index = parseInt(button.getAttribute('data-index'));
@@ -1097,11 +1201,14 @@
                         updateHiddenInput();
                     });
                 });
+
                 updateHiddenInput();
             }
+
             function updateHiddenInput() {
                 tagsHiddenInput.value = JSON.stringify(tags.map(tag => tag.name));
             }
+
             async function handleInput() {
                 const query = tagInput.value.trim();
                 if (query === '' || query.length < 2 || query === lastSearch) {
@@ -1119,6 +1226,7 @@
                     hideSuggestions();
                 }
             }
+
             function handleKeyDown(e) {
                 switch (e.key) {
                     case ' ':
@@ -1159,11 +1267,13 @@
                         break;
                 }
             }
+
             function handleBlur() {
                 setTimeout(() => {
                     if (!tagsContainer.contains(document.activeElement)) hideSuggestions();
                 }, 200);
             }
+
             function addTag(tagName) {
                 if (tagName === '') return;
                 const capitalizedTagName = tagName.charAt(0).toUpperCase() + tagName.slice(1).toLowerCase();
@@ -1175,6 +1285,7 @@
                 tagInput.value = '';
                 hideSuggestions();
             }
+
             function showSuggestions() {
                 if (suggestions.length === 0) {
                     hideSuggestions();
@@ -1197,15 +1308,18 @@
                 hoveredIndex = 0;
                 highlightSuggestion();
             }
+
             function hideSuggestions() {
                 tagSuggestions.classList.add('hidden');
                 hoveredIndex = -1;
             }
+
             function highlightSuggestion() {
                 document.querySelectorAll('.suggestion-item').forEach((item, index) => {
                     item.classList.toggle('bg-blue-50', index === hoveredIndex);
                 });
             }
+
             function selectSuggestion(suggestion) {
                 if (!tags.some(tag => tag.name.toLowerCase() === suggestion.name.toLowerCase())) {
                     tags.push({ name: suggestion.name });
@@ -1215,6 +1329,7 @@
                 hideSuggestions();
                 tagInput.focus();
             }
+
             const form = tagsContainer.closest('form');
             if (form) {
                 form.addEventListener('submit', async () => {
