@@ -82,7 +82,7 @@
                     </span>
                     <!-- SVG Icon -->
                     <svg class="w-16 h-16 text-gray-700 mb-3 transition-all duration-300 ease-in-out hover:text-blue-500">
-                        <use xlink:href="#{{ $icon }}"></use>
+                        <use xlink:href="{{ asset('svg/sprite.svg') }}#{{ $icon }}"></use>
                     </svg>
 
                     <p class="text-sm mt-2 text-gray-600 font-medium">{{ $icon }}</p>

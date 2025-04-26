@@ -1,66 +1,44 @@
-<!doctype html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="en" dir="ltr" prefix="og: http://ogp.me/ns#">
 <head>
-    <!-- Meta Tags -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-
-    <!-- Title -->
-    <title>@yield('title', 'TARPOR | Online Shopping in BD | Shop Online, Save Time')</title>
-
-    <!-- Common Styles -->
-    @include('partials.meta')
-    @include('partials.styles')
-    @stack('styles')
-
-    <!-- Canonical URL -->
-    <link rel="canonical" href="@yield('canonical_url', url()->current())">
-
-    <!-- Favicon -->
-    <link rel="shortcut icon" href="{{ asset('/logos/favicon.ico') }}" type="image/png">
-
-    <!-- Structured Data -->
-    @stack('structured-data')
-
-    <!-- Google Tag Manager -->
-    <script>
-        (function(w, d, s, l, i) {
-            w[l] = w[l] || [];
-            w[l].push({
-                'gtm.start': new Date().getTime(),
-                event: 'gtm.js'
-            });
-            var f = d.getElementsByTagName(s)[0],
-                j = d.createElement(s),
-                dl = l != 'dataLayer' ? '&l=' + l : '';
-            j.async = true;
-            j.src = 'https://www.googletagmanager.com/gtm.js?id=GTM-XXXXXX' + dl;
-            f.parentNode.insertBefore(j, f);
-        })(window, document, 'script', 'dataLayer', 'GTM-XXXXXX');
-    </script>
-    <!-- End Google Tag Manager -->
-    @stack('head-scripts')
+    @include('components.app.meta')
 </head>
+<body class="font-['Urbanist'] bg-[var(--light)] text-gray-900">
+    <!-- Cookie Consent -->
+    <div id="cookie-consent" class="fixed bottom-4 right-4 bg-white p-6 rounded-lg shadow-lg max-w-sm z-50 hidden">
+        <p class="text-gray-700 mb-4">We use cookies to enhance your experience. By continuing, you agree to our <a href="#" class="text-[var(--primary)] underline">Privacy Policy</a>.</p>
+        <button id="accept-cookies" class="bg-[var(--primary)] text-white px-4 py-2 rounded-lg hover:bg-[var(--primary-dark)] transition">Accept</button>
+    </div>
 
-<body class="bg-gray-100 max-h-full overflow-x-hidden">
+    <!-- Skip Link -->
+    <a href="#main-content" class="sr-only focus:not-sr-only bg-[var(--primary)] text-white px-4 py-2 absolute top-0 left-0 z-50">Skip to main content</a>
 
-    @include('partials.scroll-to-top')
-    @include('partials.header')
+    <!-- Navigation -->
+    @include('components.app.nav')
+    @include('components.app.off-canvas-menu')
+    @include('components.app.search-modal')
+    @include('components.app.mobile-nav')
 
     <!-- Main Content -->
-{{--    <main class="min-h-screen">--}}
-{{--        @yield('content')--}}
-{{--    </main>--}}
-    @yield('content')
+    <main id="main-content">
+        @yield('content')
+    </main>
 
+    <!-- Footer -->
+    @include('partials.app.footer')
 
-    @include('partials.footer')
+    <!-- Back to Top -->
+    @include('components.app.back-to-top')
 
-    @include('partials.toast')
+    <!-- Quick View Modal -->
+    @include('components.app.quick-view-modal')
 
-    <!-- Scripts -->
-    @include('partials.scripts')
-    @stack('footer-scripts')
+    <!-- Sticky CTA -->
+    @include('components.app.sticky-cta')
+
+    <!-- Manual JavaScript -->
+    <script src="{{ asset('js/app.js') }}" defer></script>
+
+    @stack('scripts')
 </body>
 </html>

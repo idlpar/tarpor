@@ -1,0 +1,23 @@
+//{
+//    "name": "Tarpor",
+//    "short_name": "Tarpor",
+//    "description": "Premium fashion for kids and men in Bangladesh",
+//    "start_url": "/",
+//    "display": "standalone",
+//    "background_color": "#F1FAEE",
+//    "theme_color": "#E63946",
+//    "icons": [
+//        {
+//            "src": "/icon-192x192.png",
+//            "sizes": "192x192",
+//            "type": "image/png"
+//        },
+//        {
+//            "src": "/icon-512x512.png",
+//            "sizes": "512x512",
+//            "type": "image/png"
+//        }
+//    ],
+//    "orientation": "portrait",
+//    "scope": "/"
+//}
