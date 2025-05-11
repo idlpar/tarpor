@@ -5,67 +5,81 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+use Illuminate\Support\Facades\Hash;
+use App\Mail\SendOtp;
+use Illuminate\Support\Facades\Mail;
 
 class SocialLoginController extends Controller
 {
-    // Redirect to Google
     public function redirectToGoogle()
     {
         return Socialite::driver('google')->redirect();
     }
 
-    // Handle Google Callback
     public function handleGoogleCallback()
     {
-        $user = Socialite::driver('google')->user();
+        $googleUser = Socialite::driver('google')->user();
+        $user = User::where('provider', 'google')->where('provider_id', $googleUser->id)->first();
 
-        $this->registerOrLoginUser($user);
+        if (!$user) {
+            $otp_code = random_int(100000, 999999);
+            $user = User::create([
+                    'name' => $googleUser->name,
+                    'email' => $googleUser->email,
+                    'provider' => 'google',
+                    'provider_id' => $googleUser->id,
+                    'role' => 'user',
+                    'otp_code' => Hash::make($otp_code),
+                    'otp_expires_at' => now()->addMinutes(15),
+                    'last_otp_sent_at' => now(),
+                    'is_verified' => false,
+            ]);
+            Mail::to($user->email)->queue(new SendOtp($otp_code));
+            session()->put('otp_email', $user->email);
+        }
 
-        return redirect()->route('dashboard'); // Redirect to dashboard after login
+        Auth::login($user);
+
+        if (!$user->is_verified) {
+            return redirect()->route('verify.otp.form');
+        }
+
+        return redirect()->route('dashboard');
     }
 
-    // Redirect to Facebook
     public function redirectToFacebook()
     {
         return Socialite::driver('facebook')->redirect();
     }
 
-    // Handle Facebook Callback
     public function handleFacebookCallback()
     {
-        $user = Socialite::driver('facebook')->user();
-
-        $this->registerOrLoginUser($user);
-
-        return redirect()->route('dashboard'); // Redirect to dashboard after login
-    }
-
-    // Register or Login User
-    protected function registerOrLoginUser($socialUser)
-    {
-        $user = User::where('email', $socialUser->getEmail())->first();
+        $facebookUser = Socialite::driver('facebook')->user();
+        $user = User::where('provider', 'facebook')->where('provider_id', $facebookUser->id)->first();
 
         if (!$user) {
+            $otp_code = random_int(100000, 999999);
             $user = User::create([
-                'name' => $socialUser->getName() ?? $socialUser->getNickname(),
-                'email' => $socialUser->getEmail(),
-                'provider_id' => $socialUser->getId(),
-                'provider' => $socialUser->getProvider(),
-                'role' => 'user', // Default role for social media users
+                'name' => $facebookUser->name,
+                'email' => $facebookUser->email,
+                'provider' => 'facebook',
+                'provider_id' => $facebookUser->id,
+                'role' => 'user',
+                'otp_code' => Hash::make($otp_code),
+                'otp_expires_at' => now()->addMinutes(15),
+                'last_otp_sent_at' => now(),
+                'is_verified' => false,
             ]);
+            Mail::to($user->email)->queue(new SendOtp($otp_code));
+            session()->put('otp_email', $user->email);
         }
 
-        Auth::login($user, true); // Log in the user and remember them
+        Auth::login($user);
 
-        // Redirect based on user role
-        if ($user->role === 'super') {
-            return redirect()->intended(route('super.dashboard'));
-        } elseif ($user->role === 'admin') {
-            return redirect()->intended(route('admin.dashboard'));
-        } elseif ($user->role === 'user') {
-            return redirect()->intended(route('user.dashboard'));
-        } else {
-            return redirect()->intended(route('login'));
+        if (!$user->is_verified) {
+            return redirect()->route('verify.otp.form');
         }
+
+        return redirect()->route('dashboard');
     }
 }

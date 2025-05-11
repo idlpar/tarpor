@@ -9,18 +9,20 @@ use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
 {
-    /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     */
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
-//        if ($request->user()->role !== $role) {
-//            abort(403);
-//        }
-        if (Auth::user()->role !== $role) {
-            abort(403, 'Unauthorized');
+        if (!Auth::check()) {
+            return redirect()->route('login')->with('error', 'Please log in to access this page.');
+        }
+
+        $userRole = Auth::user()->role;
+
+        if (!in_array($userRole, $roles, true)) {
+            $errorMessage = 'You do not have permission to access this resource.';
+            if ($request->expectsJson()) {
+                return response()->json(['error' => $errorMessage], 403);
+            }
+            return redirect()->route('dashboard')->with('error', $errorMessage);
         }
 
         return $next($request);

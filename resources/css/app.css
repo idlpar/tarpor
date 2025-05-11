@@ -3,8 +3,3 @@
 @tailwind components;
 @tailwind utilities;
 
-
-:root {
-    --primary: #A68A64;
-    /* ... rest of public/css/app.css ... */
-}

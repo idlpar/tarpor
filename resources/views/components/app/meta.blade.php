@@ -76,5 +76,4 @@
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </noscript>
 
-<title>{{ $title ?? 'Tarpor - Premium Fashion for Kids & Men in Bangladesh' }}</title>
-@stack('head')
+@stack('styles')

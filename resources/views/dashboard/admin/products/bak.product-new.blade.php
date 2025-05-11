@@ -8,11 +8,11 @@
         <!-- Breadcrumbs -->
         @include('components.breadcrumbs', [
             'links' => [
-                'Dashboard' => route('admin.dashboard'),
-                'Products' => route('product.index'),
+                'Dashboard' => role_route('dashboard'),
+                'Products' => role_route('products.index'),
                 'Create Product' => null
             ],
-             'title' => "Create Product"
+            'title' => 'Create Product'
         ])
 
         <!-- Form Container -->

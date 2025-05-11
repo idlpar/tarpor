@@ -1,9 +1,9 @@
 <div id="off-canvas-menu" class="off-canvas-menu lg:hidden" aria-hidden="true">
     <div class="flex flex-col h-full">
-        <div class="flex justify-between items-center p-6 border-b border-gray-700">
+        <div class="flex justify-between items-center p-4 border-b border-gray-700">
             <a href="/" class="flex items-center" aria-label="Tarpor Home">
                 @if (file_exists(public_path('logos/logo.svg')))
-                    <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-10">
+                    <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-6">
                 @else
                     <span class="font-brand text-xl text-white ml-2">Tarpor</span>
                 @endif

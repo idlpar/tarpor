@@ -116,7 +116,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <script>
         // Professional geometric particle network for a unique and clean look
         (function () {

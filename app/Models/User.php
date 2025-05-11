@@ -13,13 +13,18 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'phone',
         'password',
-        'phone_number',
         'role',
+        'is_verified',
+        'email_verified_at',
+        'newsletter',
+        'provider',
+        'provider_id',
+        'profile_photo',
         'otp_code',
         'otp_expires_at',
         'last_otp_sent_at',
-        'is_verified',
         'password_reset_otp',
         'password_reset_otp_expires_at',
         'last_password_reset_otp_sent_at',
@@ -39,7 +44,25 @@ class User extends Authenticatable
             'last_password_reset_otp_sent_at' => 'datetime',
             'password' => 'hashed',
             'is_verified' => 'boolean',
+            'newsletter' => 'boolean',
         ];
+    }
+    public function getVerifiedAtAttribute(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
+    public function isAdmin()
+    {
+        return $this->role === 'admin';
+    }
+
+    public function isStaff()
+    {
+        return $this->role === 'staff';
+    }
+    public function addresses()
+    {
+        return $this->hasMany(Address::class);
     }
 
     public function registerMediaCollections(): void

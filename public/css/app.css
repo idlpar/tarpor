@@ -212,6 +212,11 @@
 
 /* Responsive Adjustments */
 @media (max-width: 768px) {
+    .off-canvas-menu {
+        width: 80%;
+        max-width: 500px;
+        height: calc(100vh - 48px);
+    }
 
     .hero-video {
         object-fit: cover;
@@ -257,6 +262,11 @@
 }
 
 @media (max-width: 640px) {
+    .off-canvas-menu {
+        width: 80%;
+        max-width: 300px;
+        height: calc(100vh - 48px);
+    }
     .product-card img {
         height: 10rem;
     }

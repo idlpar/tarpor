@@ -55,6 +55,31 @@
             50% { transform: translateY(-10px); }
         }
         .animate-float { animation: float 4s ease-in-out infinite; }
+
+        /* OTP Input Boxes */
+        .otp-input {
+            width: 3.5rem;
+            height: 4.5rem;
+            font-size: 2rem;
+            text-align: center;
+            border-radius: 0.75rem;
+            border: 2px solid #4B5563;
+            background-color: rgba(55, 65, 81, 0.5);
+            color: #F3F4F6;
+            transition: all 0.2s ease;
+        }
+
+        .otp-input:focus {
+            border-color: #8B5CF6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.3);
+            outline: none;
+            transform: translateY(-2px);
+        }
+
+        .otp-input.filled {
+            border-color: #8B5CF6;
+            background-color: rgba(139, 92, 246, 0.1);
+        }
     </style>
 @endpush
 
@@ -86,28 +111,30 @@
             </div>
 
             <!-- Verification Form -->
-            <form class="mt-8 space-y-6" method="POST" action="{{ route('verify.otp') }}">
+            <form class="mt-8 space-y-6" method="POST" action="{{ route('verify.otp') }}" id="otp-form">
                 @csrf
                 <input type="hidden" name="email" value="{{ session('email') }}">
+                <input type="hidden" id="otp_code" name="otp_code" value="">
 
                 <div class="space-y-4">
-                    <div>
-                        <label class="block text-md font-medium text-gray-300 mb-2">6-Digit OTP Code</label>
-                        <input
-                            id="otp_code"
-                            type="text"
-                            name="otp_code"
-                            required
-                            autofocus
-                            maxlength="6"
-                            class="w-full px-4 py-3 text-xl bg-gray-700/50 border border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 placeholder-gray-400 text-gray-100 transition-all duration-200 text-center tracking-[.5em] uppercase"
-                            placeholder="••••••"
-                            oninput="this.value = this.value.replace(/[^0-9]/g, '').slice(0,6)"
-                        >
-                        @error('otp_code')
-                        <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
-                        @enderror
+                    <label class="block text-md font-medium text-gray-300 mb-2">6-Digit OTP Code</label>
+                    <div class="flex justify-center space-x-3">
+                        @for($i = 0; $i < 6; $i++)
+                            <input
+                                type="text"
+                                id="otp-digit-{{ $i }}"
+                                maxlength="1"
+                                class="otp-input"
+                                oninput="handleOtpInput(this, {{ $i }})"
+                                onkeydown="handleOtpKeyDown(this, {{ $i }})"
+                                onpaste="handleOtpPaste(event)"
+                                data-index="{{ $i }}"
+                            >
+                        @endfor
                     </div>
+                    @error('otp_code')
+                    <p class="mt-2 text-sm text-red-400">{{ $message }}</p>
+                    @enderror
                 </div>
 
                 <button type="submit"
@@ -147,7 +174,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <!-- Raindrop Particle Script -->
     <script>
         (function () {
@@ -247,9 +274,13 @@
         })();
     </script>
 
-    <!-- Resend OTP Script -->
+    <!-- OTP Input Handling Script -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Auto-focus first OTP input on page load
+            document.getElementById('otp-digit-0').focus();
+
+            // Resend OTP button functionality
             const resendButton = document.getElementById('resend-button');
             let countdown = 60;
             let timer = null;
@@ -288,21 +319,68 @@
                 startCountdown();
                 document.getElementById('resend-otp-form').submit();
             });
-
-            // Function to clear error messages when the user starts typing
-            const clearErrorOnInput = (inputId, errorId) => {
-                const input = document.getElementById(inputId);
-                const error = document.getElementById(errorId);
-
-                if (input && error) {
-                    input.addEventListener('input', () => {
-                        error.classList.add('hidden'); // Hide the error message
-                    });
-                }
-            };
-
-            // Clear password error message
-            clearErrorOnInput('password', 'password-error');
         });
+
+        // Handle OTP input
+        function handleOtpInput(input, index) {
+            // Only allow numbers
+            input.value = input.value.replace(/[^0-9]/g, '');
+
+            // Update the input styling
+            if (input.value.length > 0) {
+                input.classList.add('filled');
+            } else {
+                input.classList.remove('filled');
+            }
+
+            // Update the combined OTP value
+            updateCombinedOtp();
+
+            // Auto-focus next input if current has value
+            if (input.value.length === 1 && index < 5) {
+                document.getElementById(`otp-digit-${index + 1}`).focus();
+            }
+        }
+
+        // Handle OTP keydown (for backspace)
+        function handleOtpKeyDown(input, index) {
+            if (event.key === 'Backspace' && input.value.length === 0 && index > 0) {
+                document.getElementById(`otp-digit-${index - 1}`).focus();
+            }
+        }
+
+        // Handle OTP paste
+        function handleOtpPaste(event) {
+            event.preventDefault();
+            const pasteData = event.clipboardData.getData('text/plain').replace(/[^0-9]/g, '');
+
+            // Fill the OTP boxes with pasted data
+            for (let i = 0; i < Math.min(pasteData.length, 6); i++) {
+                const input = document.getElementById(`otp-digit-${i}`);
+                input.value = pasteData[i];
+                input.classList.add('filled');
+            }
+
+            // Focus the last filled input
+            const lastIndex = Math.min(pasteData.length - 1, 5);
+            document.getElementById(`otp-digit-${lastIndex}`).focus();
+
+            updateCombinedOtp();
+        }
+
+        // Update the hidden OTP field with combined digits
+        function updateCombinedOtp() {
+            let otp = '';
+            for (let i = 0; i < 6; i++) {
+                const input = document.getElementById(`otp-digit-${i}`);
+                otp += input.value || '';
+            }
+            document.getElementById('otp_code').value = otp;
+
+            // Auto-submit if all digits are filled
+            if (otp.length === 6) {
+                document.getElementById('otp-form').submit();
+            }
+        }
     </script>
 @endpush

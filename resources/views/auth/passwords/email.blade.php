@@ -101,7 +101,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const canvas = document.getElementById('particle-canvas');

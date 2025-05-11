@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Media;
@@ -10,37 +11,46 @@ use App\Models\Tag;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-
 
 class ProductController extends Controller
 {
+    use AuthorizesRequests;
+
+    /**
+     * Display a listing of products (Admin/Staff).
+     */
     public function index()
     {
-        $products = Product::all();
+        $this->authorize('viewAny', Product::class);
+        $products = Product::with('categories', 'brand')->get(); // Eager-load relationships
         $brands = Brand::all();
         $categories = Category::all();
         return view('dashboard.admin.products.products', compact('products', 'brands', 'categories'));
-
     }
 
+    /**
+     * Show the form for creating a new product (Admin/Staff).
+     */
     public function create()
     {
+        $this->authorize('create', Product::class);
         $brands = Brand::all();
         $categories = Category::whereNull('parent_id')->with('children')->get();
-
         return view('dashboard.admin.products.product-new', compact('brands', 'categories'));
     }
 
+    /**
+     * Check if a slug is available (Admin/Staff).
+     */
     public function checkSlug(Request $request)
     {
+        $this->authorize('create', Product::class);
         if (!$request->has('slug')) {
             return response()->json(['error' => 'Slug parameter is missing'], 400);
         }
 
         $request->validate(['slug' => 'required|string']);
-
         $slug = $request->query('slug');
 
         if (empty($slug)) {
@@ -61,8 +71,12 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Generate a unique SKU based on category path (Admin/Staff).
+     */
     public function generateSku(Request $request)
     {
+        $this->authorize('create', Product::class);
         try {
             $request->validate([
                 'category_ids' => 'required|array',
@@ -73,9 +87,8 @@ class ProductController extends Controller
             $selectedCategories = Category::whereIn('id', $request->category_ids)->get();
 
             // Find leaf nodes (deepest selected categories)
-            $leafCategories = $selectedCategories->filter(function($category) use ($selectedCategories) {
-                // A category is a leaf if none of its children are selected
-                return !$selectedCategories->contains(function($cat) use ($category) {
+            $leafCategories = $selectedCategories->filter(function ($category) use ($selectedCategories) {
+                return !$selectedCategories->contains(function ($cat) use ($category) {
                     return $cat->parent_id == $category->id;
                 });
             });
@@ -112,7 +125,6 @@ class ProductController extends Controller
                 'sku' => $skuCandidates[0], // Return first SKU by default
                 'all_skus' => count($skuCandidates) > 1 ? $skuCandidates : null
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -123,14 +135,12 @@ class ProductController extends Controller
     }
 
     /**
-     * Store a newly created product in the database.
-     *
-     * @param Request $request
-     * @return RedirectResponse
+     * Store a newly created product in the database (Admin/Staff).
      */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        // Validate the request data for the product
+        $this->authorize('create', Product::class);
+        // Validate the request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug',
@@ -167,15 +177,11 @@ class ProductController extends Controller
         ]);
 
         // Generate slug if not provided
-        if (empty($validatedData['slug'])) {
-            $validatedData['slug'] = Str::slug($validatedData['name']);
-        }
+        $validatedData['slug'] = $validatedData['slug'] ?? Str::slug($validatedData['name']);
 
         // Process related products
         if ($request->filled('related_products')) {
             $relatedProducts = json_decode($request->input('related_products'), true);
-
-            // Validate related products exist
             $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
             $invalidProducts = array_diff($relatedProducts, $existingProducts);
 
@@ -185,7 +191,7 @@ class ProductController extends Controller
                 ])->withInput();
             }
 
-            $validatedData['related_products'] = $relatedProducts;
+            $validatedData['related_products'] = json_encode($relatedProducts);
         } else {
             $validatedData['related_products'] = null;
         }
@@ -193,7 +199,7 @@ class ProductController extends Controller
         // Create the product
         $product = Product::create($validatedData);
 
-        // Attach categories to the product
+        // Attach categories
         $product->categories()->attach($validatedData['category_ids']);
 
         // Process tags
@@ -205,7 +211,6 @@ class ProductController extends Controller
                 $tagName = trim($tagName);
                 if (!empty($tagName)) {
                     $normalizedTagName = Str::lower($tagName);
-
                     if (!in_array($normalizedTagName, $uniqueTags)) {
                         $tag = Tag::firstOrCreate(
                             ['name' => $normalizedTagName],
@@ -221,7 +226,7 @@ class ProductController extends Controller
         // Handle thumbnail upload
         if ($request->hasFile('thumbnail')) {
             $thumbnail = $request->file('thumbnail');
-            $thumbnailName = 'thumbnail_' . time() . '.' . $thumbnail->getClientOriginalExtension();
+            $thumbnailName = $this->generateUniqueFileName($thumbnail->getClientOriginalName(), 'uploads/products/thumbnails')['physical_name'];
             $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
             $product->thumbnail = 'uploads/products/thumbnails/' . $thumbnailName;
             $product->save();
@@ -231,133 +236,115 @@ class ProductController extends Controller
         if ($request->hasFile('images')) {
             $images = [];
             foreach ($request->file('images') as $image) {
-                $imageName = 'image_' . time() . '_' . rand(1, 1000) . '.' . $image->getClientOriginalExtension();
+                $imageName = $this->generateUniqueFileName($image->getClientOriginalName(), 'uploads/products/images')['physical_name'];
                 $image->move(public_path('uploads/products/images'), $imageName);
                 $images[] = 'uploads/products/images/' . $imageName;
             }
-
             $product->images = json_encode($images, JSON_UNESCAPED_SLASHES);
             $product->save();
         }
 
-        // Automatically populate SEO metadata if not provided
-        if (!$request->has('meta_title')) {
-            $seoData = [
-                'meta_title' => $product->name,
-                'meta_description' => $product->short_description,
-                'meta_keywords' => implode(', ', $product->tags->pluck('name')->toArray() ?? []),
-                'canonical_url' => url('/products/' . $product->slug),
-                'robots' => 'index, follow',
-            ];
-        } else {
-            $seoData = $request->validate([
-                'meta_title' => 'nullable|string|max:255',
-                'meta_description' => 'nullable|string',
-                'meta_keywords' => 'nullable|string',
-                'canonical_url' => 'nullable|url',
-                'og_title' => 'nullable|string|max:255',
-                'og_description' => 'nullable|string',
-                'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'twitter_title' => 'nullable|string|max:255',
-                'twitter_description' => 'nullable|string',
-                'twitter_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
-                'schema_markup' => 'nullable|json',
-                'robots' => 'nullable|string|max:255',
-            ]);
+        // Handle SEO metadata
+        $seoData = $request->validate([
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
+            'canonical_url' => 'nullable|url',
+            'og_title' => 'nullable|string|max:255',
+            'og_description' => 'nullable|string',
+            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'twitter_title' => 'nullable|string|max:255',
+            'twitter_description' => 'nullable|string',
+            'twitter_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'schema_markup' => 'nullable|json',
+            'robots' => 'nullable|string|max:255',
+        ]);
 
-            // Handle Open Graph image upload
-            if ($request->hasFile('og_image')) {
-                $ogImage = $request->file('og_image');
-                $ogImageName = 'og_image_' . time() . '.' . $ogImage->getClientOriginalExtension();
-                $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageName);
-                $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageName;
-            }
+        // Fallback to product data if SEO fields are empty
+        $seoData = array_merge([
+            'meta_title' => $product->name,
+            'meta_description' => $product->short_description ?? $product->description,
+            'meta_keywords' => implode(', ', $product->tags->pluck('name')->toArray() ?? []),
+            'canonical_url' => url('/products/' . $product->slug),
+            'og_title' => $product->name,
+            'og_description' => $product->short_description ?? $product->description,
+            'twitter_title' => $product->name,
+            'twitter_description' => $product->short_description ?? $product->description,
+            'schema_markup' => null,
+            'robots' => 'index, follow',
+        ], array_filter($seoData, fn($value) => !is_null($value)));
 
-            // Handle Twitter image upload
-            if ($request->hasFile('twitter_image')) {
-                $twitterImage = $request->file('twitter_image');
-                $twitterImageName = 'twitter_image_' . time() . '.' . $twitterImage->getClientOriginalExtension();
-                $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageName);
-                $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageName;
-            }
+        // Handle SEO image uploads
+        if ($request->hasFile('og_image')) {
+            $ogImage = $request->file('og_image');
+            $ogImageName = $this->generateUniqueFileName($ogImage->getClientOriginalName(), 'uploads/products/seo/og_images')['physical_name'];
+            $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageName);
+            $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageName;
+        }
+
+        if ($request->hasFile('twitter_image')) {
+            $twitterImage = $request->file('twitter_image');
+            $twitterImageName = $this->generateUniqueFileName($twitterImage->getClientOriginalName(), 'uploads/products/seo/twitter_images')['physical_name'];
+            $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageName);
+            $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageName;
         }
 
         // Store SEO metadata
         $product->seo()->create($seoData);
 
-        return redirect()->route('product.index')->with('success', 'Product created successfully!');
+        return redirect()->route('products.index')->with('success', 'Product created successfully!');
     }
-
 
     /**
      * Generate a unique file name to avoid conflicts.
-     *
-     * @param string $originalName
-     * @param string $directory
-     * @return array
      */
-    private function generateUniqueFileName($originalName, $directory)
+    private function generateUniqueFileName($originalName, $directory): array
     {
         $extension = pathinfo($originalName, PATHINFO_EXTENSION);
         $fileName = pathinfo($originalName, PATHINFO_FILENAME);
-
-        // Replace spaces with underscores for the database
         $fileNameForDb = str_replace(' ', '_', $fileName);
-
-        // Ensure consistent path separators
         $directory = str_replace('\\', '/', $directory);
 
-        // Generate a unique name for the physical file
         $uniqueName = $fileName . '.' . $extension;
         $counter = 1;
 
-        while (Storage::disk('public')->exists($directory . '/' . $uniqueName)) {
+        while (File::exists(public_path($directory . '/' . $uniqueName))) {
             $uniqueName = $fileName . '_' . $counter . '.' . $extension;
             $counter++;
         }
 
-        // Return both the physical file name and the database file name
         return [
             'physical_name' => $uniqueName,
             'db_name' => $fileNameForDb . '.' . $extension,
         ];
     }
 
+    /**
+     * Show the form for editing a product (Admin/Staff).
+     */
     public function edit(Product $product)
     {
-        // Decode the images field (assuming it's stored as a JSON array)
+        $this->authorize('update', $product);
+        // Decode images field
         $existingImages = json_decode($product->images, true, 512, JSON_THROW_ON_ERROR) ?? [];
-
-        // Convert image paths to full URLs (if stored as relative paths)
-        $existingImages = array_map(static function ($image) {
-            $normalizedImage = str_replace(' ', '-', $image);
-            return asset($normalizedImage);
-        }, $existingImages);
-
-        // Get the thumbnail URL (if it exists)
+        $existingImages = array_map(fn($image) => asset(str_replace(' ', '-', $image)), $existingImages);
         $thumbnail = $product->thumbnail ? asset($product->thumbnail) : null;
 
-        // Eager-load the categories relationship
-       $product->load('categories', 'seo');
-
-        // Fetch necessary data for the edit form (e.g., brands, categories)
+        // Eager-load relationships
+        $product->load('categories', 'seo', 'tags');
         $brands = Brand::all();
         $categories = Category::whereNull('parent_id')->with('children')->get();
 
         return view('dashboard.admin.products.edit', compact('product', 'brands', 'categories', 'existingImages', 'thumbnail'));
     }
 
-
     /**
-     * Update the specified product in storage.
-     *
-     * @param Request $request
-     * @param Product $product
-     * @return RedirectResponse
+     * Update the specified product in storage (Admin/Staff).
      */
-    public function update(Request $request, Product $product)
+    public function update(Request $request, Product $product): RedirectResponse
     {
-        // Validate the request data for the product
+        $this->authorize('update', $product);
+        // Validate the request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug,' . $product->id,
@@ -381,7 +368,7 @@ class ProductController extends Controller
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
-            'tags' => 'nullable|array',
+            'tags' => 'nullable|string',
             'product_collections' => ['nullable', 'array'],
             'product_collections.*' => ['in:new_arrival,best_sellers,special_offer'],
             'labels' => ['nullable', 'array'],
@@ -391,6 +378,60 @@ class ProductController extends Controller
             'barcode' => 'nullable|string|max:100|unique:products,barcode,' . $product->id,
             'discount' => 'nullable|numeric|min:0',
             'inventory_tracking' => 'nullable|boolean',
+        ]);
+
+        // Generate slug if not provided
+        $validatedData['slug'] = $validatedData['slug'] ?? Str::slug($validatedData['name']);
+
+        // Process related products
+        if ($request->filled('related_products')) {
+            $relatedProducts = json_decode($request->input('related_products'), true);
+            $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
+            $invalidProducts = array_diff($relatedProducts, $existingProducts);
+
+            if (!empty($invalidProducts)) {
+                return back()->withErrors([
+                    'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts)
+                ])->withInput();
+            }
+
+            $validatedData['related_products'] = json_encode($relatedProducts);
+        } else {
+            $validatedData['related_products'] = null;
+        }
+
+        // Handle thumbnail upload
+        if ($request->hasFile('thumbnail')) {
+            // Delete old thumbnail if exists
+            if ($product->thumbnail && File::exists(public_path($product->thumbnail))) {
+                File::delete(public_path($product->thumbnail));
+            }
+            $thumbnail = $request->file('thumbnail');
+            $thumbnailName = $this->generateUniqueFileName($thumbnail->getClientOriginalName(), 'uploads/products/thumbnails')['physical_name'];
+            $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
+            $validatedData['thumbnail'] = 'uploads/products/thumbnails/' . $thumbnailName;
+        }
+
+        // Handle product images upload
+        if ($request->hasFile('images')) {
+            // Delete old images if exists
+            $oldImages = json_decode($product->images, true) ?? [];
+            foreach ($oldImages as $oldImage) {
+                if (File::exists(public_path($oldImage))) {
+                    File::delete(public_path($oldImage));
+                }
+            }
+            $imagePaths = [];
+            foreach ($request->file('images') as $image) {
+                $imageName = $this->generateUniqueFileName($image->getClientOriginalName(), 'uploads/products/images')['physical_name'];
+                $image->move(public_path('uploads/products/images'), $imageName);
+                $imagePaths[] = 'uploads/products/images/' . $imageName;
+            }
+            $validatedData['images'] = json_encode($imagePaths, JSON_UNESCAPED_SLASHES);
+        }
+
+        // Handle SEO metadata
+        $seoData = $request->validate([
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string',
@@ -405,97 +446,42 @@ class ProductController extends Controller
             'robots' => 'nullable|string',
         ]);
 
-        // Generate slug if not provided
-        if (empty($validatedData['slug'])) {
-            $validatedData['slug'] = Str::slug($validatedData['name']);
-        }
-
-        // Process related products
-        if ($request->filled('related_products')) {
-            $relatedProducts = json_decode($request->input('related_products'), true);
-
-            // Validate related products exist
-            $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
-            $invalidProducts = array_diff($relatedProducts, $existingProducts);
-
-            if (!empty($invalidProducts)) {
-                return back()->withErrors([
-                    'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts)
-                ])->withInput();
-            }
-
-            $validatedData['related_products'] = $relatedProducts;
-        } else {
-            $validatedData['related_products'] = null;
-        }
-
-        // Function to generate a unique filename
-        function generateUniqueFilename($directory, $filename) {
-            $extension = pathinfo($filename, PATHINFO_EXTENSION);
-            $basename = Str::slug(pathinfo($filename, PATHINFO_FILENAME));
-            $originalName = $basename . '.' . $extension;
-            $counter = 1;
-
-            while (File::exists($directory . '/' . $originalName)) {
-                $originalName = $basename . '-' . $counter . '.' . $extension;
-                $counter++;
-            }
-
-            return $originalName;
-        }
-
-        // Handle thumbnail upload
-        if ($request->hasFile('thumbnail')) {
-            $thumbnail = $request->file('thumbnail');
-            $thumbnailName = generateUniqueFilename(public_path('uploads/products/thumbnails'), $thumbnail->getClientOriginalName());
-            $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
-            $validatedData['thumbnail'] = 'uploads/products/thumbnails/' . $thumbnailName;
-        }
-
-        // Handle product images upload
-        if ($request->hasFile('images')) {
-            $imagePaths = [];
-            foreach ($request->file('images') as $image) {
-                $imageName = generateUniqueFilename(public_path('uploads/products/images'), $image->getClientOriginalName());
-                $image->move(public_path('uploads/products/images'), $imageName);
-                $imagePaths[] = 'uploads/products/images/' . $imageName;
-            }
-            $validatedData['images'] = json_encode($imagePaths, JSON_UNESCAPED_SLASHES);
-        }
-
-        // Handle SEO metadata with fallback to product data
-        $seoData = [
-            'meta_title' => $validatedData['meta_title'] ?? $validatedData['name'],
-            'meta_description' => $validatedData['meta_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
-            'meta_keywords' => $validatedData['meta_keywords'] ?? null,
-            'canonical_url' => $validatedData['canonical_url'] ?? null,
-            'og_title' => $validatedData['og_title'] ?? $validatedData['name'],
-            'og_description' => $validatedData['og_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
-            'twitter_title' => $validatedData['twitter_title'] ?? $validatedData['name'],
-            'twitter_description' => $validatedData['twitter_description'] ?? $validatedData['short_description'] ?? $validatedData['description'],
-            'schema_markup' => $validatedData['schema_markup'] ?? null,
-            'robots' => $validatedData['robots'] ?? 'index, follow',
-        ];
+        $seoData = array_merge([
+            'meta_title' => $validatedData['name'],
+            'meta_description' => $validatedData['short_description'] ?? $validatedData['description'],
+            'meta_keywords' => null,
+            'canonical_url' => url('/products/' . $validatedData['slug']),
+            'og_title' => $validatedData['name'],
+            'og_description' => $validatedData['short_description'] ?? $validatedData['description'],
+            'twitter_title' => $validatedData['name'],
+            'twitter_description' => $validatedData['short_description'] ?? $validatedData['description'],
+            'schema_markup' => null,
+            'robots' => 'index, follow',
+        ], array_filter($seoData, fn($value) => !is_null($value)));
 
         // Handle SEO image uploads
         if ($request->hasFile('og_image')) {
+            if ($product->seo && $product->seo->og_image && File::exists(public_path($product->seo->og_image))) {
+                File::delete(public_path($product->seo->og_image));
+            }
             $ogImage = $request->file('og_image');
-            $ogImageName = generateUniqueFilename(public_path('uploads/seo/og_images'), $ogImage->getClientOriginalName());
+            $ogImageName = $this->generateUniqueFileName($ogImage->getClientOriginalName(), 'uploads/seo/og_images')['physical_name'];
             $ogImage->move(public_path('uploads/seo/og_images'), $ogImageName);
             $seoData['og_image'] = 'uploads/seo/og_images/' . $ogImageName;
         }
 
         if ($request->hasFile('twitter_image')) {
+            if ($product->seo && $product->seo->twitter_image && File::exists(public_path($product->seo->twitter_image))) {
+                File::delete(public_path($product->seo->twitter_image));
+            }
             $twitterImage = $request->file('twitter_image');
-            $twitterImageName = generateUniqueFilename(public_path('uploads/seo/twitter_images'), $twitterImage->getClientOriginalName());
+            $twitterImageName = $this->generateUniqueFileName($twitterImage->getClientOriginalName(), 'uploads/seo/twitter_images')['physical_name'];
             $twitterImage->move(public_path('uploads/seo/twitter_images'), $twitterImageName);
             $seoData['twitter_image'] = 'uploads/seo/twitter_images/' . $twitterImageName;
         }
 
-        // Update the product in the database
+        // Update the product
         $product->update($validatedData);
-
-        // Sync categories for the product
         $product->categories()->sync($validatedData['category_ids']);
 
         // Update or create SEO metadata
@@ -515,7 +501,6 @@ class ProductController extends Controller
                 $tagName = trim($tagName);
                 if (!empty($tagName)) {
                     $normalizedTagName = Str::lower($tagName);
-
                     if (!in_array($normalizedTagName, $uniqueTags)) {
                         $tag = Tag::firstOrCreate(
                             ['name' => $normalizedTagName],
@@ -526,37 +511,60 @@ class ProductController extends Controller
                     }
                 }
             }
-
             $product->tags()->sync($tagIds);
         } else {
             $product->tags()->detach();
         }
 
-        return redirect()->route('product.index')->with('success', 'Product updated successfully!');
-    }
-
-    public function restore($id)
-    {
-        $product = Product::withTrashed()->findOrFail($id);
-        $product->restore();
-
-        return redirect()->route('product.index')->with('success', 'Product restored successfully!');
+        return redirect()->route('products.index')->with('success', 'Product updated successfully!');
     }
 
     /**
-     * Search products for related products dropdown
+     * Display a specific product (Admin/Staff).
+     */
+    public function show(Product $product)
+    {
+        $this->authorize('view', $product);
+        $product->load('categories', 'brand', 'tags', 'seo');
+        return view('dashboard.admin.products.show', compact('product'));
+    }
+
+    /**
+     * Remove the specified product from storage (Admin/Staff).
+     */
+    public function destroy(Product $product): RedirectResponse
+    {
+        $this->authorize('delete', $product);
+        // Soft delete the product
+        $product->delete();
+        return redirect()->route('products.index')->with('success', 'Product deleted successfully!');
+    }
+
+    /**
+     * Restore a soft-deleted product (Admin/Staff).
+     */
+    public function restore($id): RedirectResponse
+    {
+        $this->authorize('delete', Product::class);
+        $product = Product::withTrashed()->findOrFail($id);
+        $product->restore();
+        return redirect()->route('products.index')->with('success', 'Product restored successfully!');
+    }
+
+    /**
+     * Search products for related products dropdown (Admin/Staff).
      */
     public function search(Request $request)
     {
+        $this->authorize('viewAny', Product::class);
         $search = $request->input('q');
-
         $products = Product::query()
-            ->when($search, function($query) use ($search) {
+            ->when($search, function ($query) use ($search) {
                 return $query->where('name', 'like', "%{$search}%")
                     ->orWhere('sku', 'like', "%{$search}%");
             })
             ->select('id', 'name', 'sku', 'price')
-            ->where('id', '!=', $request->input('exclude', 0)) // Exclude current product when editing
+            ->where('id', '!=', $request->input('exclude', 0))
             ->limit(10)
             ->get();
 
@@ -564,10 +572,11 @@ class ProductController extends Controller
     }
 
     /**
-     * Get brief product info for display
+     * Get brief product info for display (Admin/Staff).
      */
     public function getBrief(Product $product)
     {
+        $this->authorize('view', $product);
         return response()->json([
             'id' => $product->id,
             'name' => $product->name,
@@ -576,57 +585,53 @@ class ProductController extends Controller
         ]);
     }
 
+    /**
+     * Suggest related products based on category and tags (Admin/Staff).
+     */
     public function suggestions(Request $request)
     {
-        // For new products (no ID yet), use category/tags from request
+        $this->authorize('viewAny', Product::class);
         $categoryId = $request->input('category_id');
         $tagIds = $request->input('tag_ids', []);
-
         $suggestions = collect();
 
-        // 1. Products from same category (if selected)
+        // Products from same category
         if ($categoryId) {
-            $categoryProducts = Product::whereHas('categories', function($query) use ($categoryId) {
+            $categoryProducts = Product::whereHas('categories', function ($query) use ($categoryId) {
                 $query->where('categories.id', $categoryId);
             })
                 ->inRandomOrder()
                 ->take(5)
                 ->get()
-                ->each(function($p) {
+                ->each(function ($p) {
                     $p->reason = 'Same category';
-                    return $p;
                 });
-
             $suggestions = $suggestions->merge($categoryProducts);
         }
 
-        // 2. Products with matching tags (if any selected)
+        // Products with matching tags
         if (!empty($tagIds)) {
-            $tagProducts = Product::whereHas('tags', function($query) use ($tagIds) {
+            $tagProducts = Product::whereHas('tags', function ($query) use ($tagIds) {
                 $query->whereIn('tags.id', $tagIds);
             })
                 ->inRandomOrder()
                 ->take(5)
                 ->get()
-                ->each(function($p) {
+                ->each(function ($p) {
                     $p->reason = 'Same tags';
-                    return $p;
                 });
-
             $suggestions = $suggestions->merge($tagProducts);
         }
 
-        // 3. Fallback to popular products (best sellers, most viewed, etc.)
+        // Fallback to popular products
         if ($suggestions->isEmpty()) {
-            $popularProducts = Product::orderBy('views', 'DESC') // Or your popularity metric
-            ->inRandomOrder()
+            $popularProducts = Product::orderBy('views', 'desc')
+                ->inRandomOrder()
                 ->take(10)
                 ->get()
-                ->each(function($p) {
+                ->each(function ($p) {
                     $p->reason = 'Popular item';
-                    return $p;
                 });
-
             $suggestions = $popularProducts;
         }
 
@@ -635,60 +640,71 @@ class ProductController extends Controller
             ->shuffle()
             ->take(10)
             ->values()
-            ->map(function($product) {
+            ->map(function ($product) {
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
                     'sku' => $product->sku,
                     'price' => $product->price,
                     'reason' => $product->reason,
-                    'thumbnail' => $product->thumbnail
+                    'thumbnail' => $product->thumbnail ? asset($product->thumbnail) : null
                 ];
             });
     }
 
-
+    /**
+     * Upload gallery images (Admin/Staff).
+     */
     public function upload(Request $request, $productId)
     {
+        $this->authorize('update', Product::class);
         $request->validate([
             'gallery.*' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
+        $product = Product::findOrFail($productId);
         if ($request->hasFile('gallery')) {
             foreach ($request->file('gallery') as $file) {
-                $path = $file->store('public/gallery');
-                // Save the file path to the database or perform other actions
+                $product->addMedia($file)->toMediaCollection('gallery');
             }
         }
 
         return response()->json(['message' => 'Files uploaded successfully!']);
     }
+
+    /**
+     * Get gallery images for a product (Admin/Staff).
+     */
     public function getGalleryImages($productId)
     {
-        $product = Product::findOrFail($productId); // Ensure valid product
+        $this->authorize('view', Product::class);
+        $product = Product::findOrFail($productId);
         $images = $product->getMedia('gallery');
         $trashedImages = $product->media()->onlyTrashed()->where('collection_name', 'gallery')->get();
 
         return response()->json([
-            'images' => $images->map(fn ($image) => [
+            'images' => $images->map(fn($image) => [
                 'id' => $image->id,
                 'url' => $image->getUrl(),
             ]),
-            'trashedImages' => $trashedImages->map(fn ($image) => [
+            'trashedImages' => $trashedImages->map(fn($image) => [
                 'id' => $image->id,
                 'url' => $image->getUrl(),
             ]),
         ]);
     }
 
+    /**
+     * Upload gallery images (alternative method) (Admin/Staff).
+     */
     public function uploadGalleryImages(Request $request, $productId = 1)
     {
+        $this->authorize('update', Product::class);
         $request->validate([
-                'gallery.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048', // Validate each uploaded file
+            'gallery.*' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
         ]);
 
         $product = Product::findOrFail($productId);
-
         foreach ($request->file('gallery') as $file) {
             $product->addMedia($file)->toMediaCollection('gallery');
         }
@@ -696,17 +712,24 @@ class ProductController extends Controller
         return response()->json(['success' => 'Images uploaded successfully.']);
     }
 
+    /**
+     * Delete a gallery image (Admin/Staff).
+     */
     public function deleteGalleryImage(Media $media)
     {
+        $this->authorize('delete', Product::class);
         $media->delete();
         return response()->json(['success' => 'Image deleted successfully.']);
     }
 
+    /**
+     * Restore a deleted gallery image (Admin/Staff).
+     */
     public function restoreGalleryImage($mediaId)
     {
+        $this->authorize('delete', Product::class);
         $media = Media::withTrashed()->findOrFail($mediaId);
         $media->restore();
-
         return response()->json(['success' => 'Image restored successfully.']);
     }
 }

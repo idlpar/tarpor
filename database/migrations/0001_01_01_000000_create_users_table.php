@@ -17,8 +17,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('phone')->nullable()->unique();
             $table->string('password');
-            $table->string('role')->default('user');
-
+            $table->enum('role', ['admin', 'staff', 'user'])->default('user'); // Updated roles
             $table->timestamp('email_verified_at')->nullable();
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
@@ -26,11 +25,10 @@ return new class extends Migration
             $table->string('password_reset_otp')->nullable();
             $table->timestamp('password_reset_otp_expires_at')->nullable();
             $table->timestamp('last_password_reset_otp_sent_at')->nullable();
-
             $table->boolean('is_verified')->default(false);
-
+            $table->boolean('newsletter')->default(false);
             $table->string('provider')->nullable(); // e.g., 'google', 'facebook'
-            $table->string('provider_id')->nullable(); // Unique ID from the provider
+            $table->string('provider_id')->nullable(); // Unique ID from provider
             $table->rememberToken();
             $table->timestamps();
         });

@@ -129,7 +129,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <script>
         (function () {
             // Particle class

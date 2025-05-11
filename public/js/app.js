@@ -13,13 +13,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // Sticky CTA Banner
     const stickyCta = document.getElementById('sticky-cta');
     const closeCta = document.getElementById('close-cta');
-    if (!localStorage.getItem('ctaClosed')) {
-        stickyCta.classList.remove('hidden');
+    if (stickyCta && closeCta) {
+        if (!localStorage.getItem('ctaClosed')) {
+            stickyCta.classList.remove('hidden');
+        }
+        closeCta.addEventListener('click', () => {
+            stickyCta.classList.add('hidden');
+            localStorage.setItem('ctaClosed', 'true');
+        });
     }
-    closeCta.addEventListener('click', () => {
-        stickyCta.classList.add('hidden');
-        localStorage.setItem('ctaClosed', 'true');
-    });
 
     // Navigation Active State
     const navLinks = document.querySelectorAll('.nav-link');

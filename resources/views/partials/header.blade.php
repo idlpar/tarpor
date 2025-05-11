@@ -66,7 +66,7 @@
         <div class="container mx-auto px-6 py-8 h-full flex flex-col">
             <div class="flex justify-between items-center mb-8">
                 <a href="/" class="flex items-center" aria-label="Tarpor Home">
-                    <img src="{{ asset('images/logo.png') }}" alt="Tarpor Logo" class="h-10" width="40" height="40">
+                    <img src="{{ asset('images/logo.png') }}" alt="Tarpor Logo" class="h-6" width="40" height="40">
                     <span class="font-brand text-2xl text-[var(--dark)]">Tarpor</span>
                 </a>
                 <button id="mobile-menu-close" class="text-[var(--dark)] transition" aria-label="Close mobile menu">

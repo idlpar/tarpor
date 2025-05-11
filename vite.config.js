@@ -18,4 +18,16 @@ export default defineConfig({
             ],
         },
     },
+    build: {
+        cssCodeSplit: true, // Split CSS for faster loading of critical styles
+        minify: 'esbuild', // Minify CSS and JS for production
+        rollupOptions: {
+            output: {
+                manualChunks: {
+                    // Optional: Split vendor and app code for better caching
+                    vendor: ['tailwindcss'],
+                },
+            },
+        },
+    },
 });

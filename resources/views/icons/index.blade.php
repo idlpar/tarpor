@@ -98,7 +98,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <script>
 
         // Function to copy the icon ID to clipboard

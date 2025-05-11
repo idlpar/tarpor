@@ -2,6 +2,14 @@
 <html lang="en" dir="ltr" prefix="og: http://ogp.me/ns#">
 <head>
     @include('components.app.meta')
+    <title>
+        @if(request()->is('/'))
+            Tarpor - Premium Fashion for Kids & Men in Bangladesh
+        @else
+            {{ config('app.name') . ' - ' . (isset($title) ? $title : 'Dashboard') }}
+        @endif
+    </title>
+
 </head>
 <body class="font-['Urbanist'] bg-[var(--light)] text-gray-900">
     <!-- Cookie Consent -->
@@ -35,6 +43,9 @@
 
     <!-- Sticky CTA -->
     @include('components.app.sticky-cta')
+
+    <!-- Toast Notification  -->
+    @include('components.app.toast')
 
     <!-- Manual JavaScript -->
     <script src="{{ asset('js/app.js') }}" defer></script>

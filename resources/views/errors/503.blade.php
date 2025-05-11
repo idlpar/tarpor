@@ -66,7 +66,7 @@
     </div>
 @endsection
 
-@push('footer-scripts')
+@push('scripts')
     <script>
         (function () {
             // Particle class for a futuristic wave-like effect
