@@ -1,29 +1,69 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // Cookie Consent
+    // Enhanced Cookie Consent
     const cookieConsent = document.getElementById('cookie-consent');
     const acceptCookies = document.getElementById('accept-cookies');
-    if (!localStorage.getItem('cookiesAccepted')) {
-        cookieConsent.classList.remove('hidden');
-    }
-    acceptCookies.addEventListener('click', () => {
-        localStorage.setItem('cookiesAccepted', 'true');
-        cookieConsent.classList.add('hidden');
-    });
+    const rejectCookies = document.getElementById('reject-cookies');
 
-    // Sticky CTA Banner
+    const updateBodyMargin = (element) => {
+        // Set marginBottom to the height of the given element (cookie consent or sticky CTA)
+        document.body.style.marginBottom = `${element.offsetHeight}px`;
+    };
+
+    // Show cookie consent if it hasn't been accepted before
+    if (!localStorage.getItem('cookieConsent')) {
+        setTimeout(() => {
+            cookieConsent.classList.remove('translate-y-full');
+            cookieConsent.classList.add('translate-y-0');
+            // Set margin for cookie consent popup
+            updateBodyMargin(cookieConsent);
+            localStorage.setItem('cookieConsentShown', 'true');
+            localStorage.setItem('cookieConsentTimestamp', new Date().getTime());
+        }, 1000);
+    }
+
+    const handleCookieAcceptance = (acceptAll) => {
+        localStorage.setItem('cookieConsent', acceptAll ? 'all' : 'essential');
+        cookieConsent.classList.add('translate-y-full');
+        // Reset margin when cookie consent is dismissed
+        document.body.style.marginBottom = '0';
+
+        // Implement cookie logic
+        if (acceptAll) {
+            console.log('All cookies accepted');
+        } else {
+            console.log('Only essential cookies accepted');
+        }
+
+        // Now show the sticky CTA and set margin if not already closed
+        const stickyCta = document.getElementById('sticky-cta');
+        if (stickyCta && !localStorage.getItem('ctaClosed')) {
+            setTimeout(() => {
+                stickyCta.classList.remove('translate-y-full');
+                stickyCta.classList.add('translate-y-0');
+                // Set margin for sticky CTA popup
+                updateBodyMargin(stickyCta);
+            }, 1000); // Show after a slight delay
+        }
+    };
+
+    acceptCookies.addEventListener('click', () => handleCookieAcceptance(true));
+    rejectCookies.addEventListener('click', () => handleCookieAcceptance(false));
+
+    // Enhanced Sticky CTA
     const stickyCta = document.getElementById('sticky-cta');
     const closeCta = document.getElementById('close-cta');
-    if (stickyCta && closeCta) {
-        if (!localStorage.getItem('ctaClosed')) {
-            stickyCta.classList.remove('hidden');
-        }
-        closeCta.addEventListener('click', () => {
-            stickyCta.classList.add('hidden');
-            localStorage.setItem('ctaClosed', 'true');
-        });
-    }
 
-    // Navigation Active State
+    closeCta?.addEventListener('click', () => {
+        stickyCta.classList.add('translate-y-full');
+        localStorage.setItem('ctaClosed', 'true');
+
+        // Reset margin after CTA is dismissed
+        document.body.style.marginBottom = '0';
+    });
+
+
+
+// Navigation Active State
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
