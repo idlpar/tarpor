@@ -143,7 +143,7 @@
     right: 0;
     width: 80%;
     max-width: 400px;
-    height: calc(100vh - 60px);
+    height: var(--off-canvas-height, 100vh); /* Default to 100vh */
     background: linear-gradient(to bottom, var(--dark), #2B2D42);
     transform: translateX(100%);
     transition: transform 0.3s ease-in-out;
@@ -215,7 +215,7 @@
     .off-canvas-menu {
         width: 80%;
         max-width: 500px;
-        height: calc(100vh - 48px);
+        height: var(--off-canvas-height, calc(100vh - 48px)); /* Default to calc(100vh - 48px) */
     }
 
     .hero-video {
@@ -265,7 +265,7 @@
     .off-canvas-menu {
         width: 80%;
         max-width: 300px;
-        height: calc(100vh - 48px);
+        height: var(--off-canvas-height, calc(100vh - 48px)); /* Default to calc(100vh - 48px) */
     }
     .product-card img {
         height: 10rem;

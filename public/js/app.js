@@ -3,11 +3,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const cookieConsent = document.getElementById('cookie-consent');
     const acceptCookies = document.getElementById('accept-cookies');
     const rejectCookies = document.getElementById('reject-cookies');
+    const stickyCta = document.getElementById('sticky-cta'); // Moved up for use in updateOffCanvasHeight
+    const offCanvasMenu = document.getElementById('off-canvas-menu'); // Moved up for use in updateOffCanvasHeight
 
     const updateBodyMargin = (element) => {
         // Set marginBottom to the height of the given element (cookie consent or sticky CTA)
         document.body.style.marginBottom = `${element.offsetHeight}px`;
     };
+
+    // Function to update off-canvas menu height based on cookie consent or sticky CTA visibility
+    const updateOffCanvasHeight = () => {
+        if (window.innerWidth <= 768) {
+            const isCookieConsentVisible = cookieConsent && !cookieConsent.classList.contains('translate-y-full');
+            const isStickyCtaVisible = stickyCta && !stickyCta.classList.contains('translate-y-full');
+            offCanvasMenu.style.setProperty(
+                '--off-canvas-height',
+                isCookieConsentVisible || isStickyCtaVisible ? '100vh' : 'calc(100vh - 48px)'
+            );
+        } else {
+            offCanvasMenu.style.setProperty('--off-canvas-height', 'calc(100vh - 60px)');
+        }
+    };
+
+    // Initial height update
+    updateOffCanvasHeight();
+    window.addEventListener('resize', updateOffCanvasHeight);
 
     // Show cookie consent if it hasn't been accepted before
     if (!localStorage.getItem('cookieConsent')) {
@@ -18,6 +38,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateBodyMargin(cookieConsent);
             localStorage.setItem('cookieConsentShown', 'true');
             localStorage.setItem('cookieConsentTimestamp', new Date().getTime());
+            updateOffCanvasHeight(); // Update menu height when cookie consent is shown
         }, 1000);
     }
 
@@ -35,14 +56,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Now show the sticky CTA and set margin if not already closed
-        const stickyCta = document.getElementById('sticky-cta');
         if (stickyCta && !localStorage.getItem('ctaClosed')) {
             setTimeout(() => {
                 stickyCta.classList.remove('translate-y-full');
                 stickyCta.classList.add('translate-y-0');
                 // Set margin for sticky CTA popup
                 updateBodyMargin(stickyCta);
+                updateOffCanvasHeight(); // Update menu height when sticky CTA is shown
             }, 1000); // Show after a slight delay
+        } else {
+            updateOffCanvasHeight(); // Update menu height if no sticky CTA
         }
     };
 
@@ -50,20 +73,17 @@ document.addEventListener('DOMContentLoaded', () => {
     rejectCookies.addEventListener('click', () => handleCookieAcceptance(false));
 
     // Enhanced Sticky CTA
-    const stickyCta = document.getElementById('sticky-cta');
     const closeCta = document.getElementById('close-cta');
 
     closeCta?.addEventListener('click', () => {
         stickyCta.classList.add('translate-y-full');
         localStorage.setItem('ctaClosed', 'true');
-
         // Reset margin after CTA is dismissed
         document.body.style.marginBottom = '0';
+        updateOffCanvasHeight(); // Update menu height when sticky CTA is dismissed
     });
 
-
-
-// Navigation Active State
+    // Navigation Active State
     const navLinks = document.querySelectorAll('.nav-link');
     navLinks.forEach(link => {
         link.addEventListener('click', () => {
@@ -102,11 +122,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Off-Canvas Menu
     const mobileMenuBtn = document.getElementById('mobile-menu-btn');
-    const offCanvasMenu = document.getElementById('off-canvas-menu');
     const offCanvasClose = document.getElementById('off-canvas-close');
     mobileMenuBtn.addEventListener('click', () => {
         offCanvasMenu.classList.add('open');
         offCanvasMenu.setAttribute('aria-hidden', 'false');
+        updateOffCanvasHeight(); // Update height when menu is opened
     });
     offCanvasClose.addEventListener('click', () => {
         offCanvasMenu.classList.remove('open');
