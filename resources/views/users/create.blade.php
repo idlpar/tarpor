@@ -1,5 +1,23 @@
 @extends('layouts.app')
 
+@push('styles')
+    <style>
+        .swal2-container {
+            background-color: rgba(33, 37, 41, 0.75) !important;
+        }
+
+        .swal2-popup {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #212529;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+@endpush
+
+@section('title', 'Create User')
+
 @section('content')
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +37,7 @@
                     </div>
                 </div>
                 <div>
-                    <a href="{{ route('users.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    <a href="{{ route('users.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
                         View All Users
                     </a>
                 </div>
@@ -172,3 +190,66 @@
         </div>
     </section>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.querySelector('form[action="{{ route('users.store') }}"]');
+
+            form.addEventListener('submit', function(e) {
+                e.preventDefault(); // Stop normal submit
+
+                Swal.fire({
+                    title: 'Confirm User Creation',
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-4 text-gray-700">You are about to create a new user account with the following details:</p>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span id="swal-name" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span id="swal-email" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    <span id="swal-role" class="font-medium"></span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-500">Please verify all information before proceeding.</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Create User',
+                    cancelButtonText: 'Cancel',
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-xl border border-gray-200 shadow-xl',
+                        title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                        confirmButton: 'bg-[var(--primary)] hover:bg-[var(--primary-dark)] px-4 py-2 rounded-md font-medium shadow-sm',
+                        cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                    },
+                    didOpen: () => {
+                        document.getElementById('swal-name').textContent = document.getElementById('name').value || '(empty)';
+                        document.getElementById('swal-email').textContent = document.getElementById('email').value || '(empty)';
+                        const roleSelect = document.getElementById('role');
+                        document.getElementById('swal-role').textContent = roleSelect.options[roleSelect.selectedIndex]?.text || '(empty)';
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
+    </script>
+@endpush
+

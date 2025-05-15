@@ -75,5 +75,5 @@
 <noscript>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">
 </noscript>
-
+<meta name="csrf-token" content="{{ csrf_token() }}">
 @stack('styles')

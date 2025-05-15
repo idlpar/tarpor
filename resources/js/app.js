@@ -4,6 +4,7 @@ import Collapse from '@alpinejs/collapse';
 import '@fortawesome/fontawesome-free/js/all.js';
 import Splide from '@splidejs/splide';
 import LazyLoad from 'vanilla-lazyload'; // Import vanilla-lazyload
+import Swal from 'sweetalert2'; // Import SweetAlert2
 
 // Initialize Splide slider and LazyLoad
 document.addEventListener('DOMContentLoaded', () => {
@@ -32,5 +33,6 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 window.Alpine = Alpine;
+window.Swal = Swal;
 Alpine.plugin(Collapse);
 Alpine.start();

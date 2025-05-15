@@ -6,7 +6,7 @@
         @if(request()->is('/'))
             Tarpor - Premium Fashion for Kids & Men in Bangladesh
         @else
-            {{ config('app.name') . ' - ' . ($title ?? 'Dashboard') }}
+            {{ config('app.name') . ' - ' }}@yield('title', 'Dashboard')
         @endif
     </title>
 

@@ -1,5 +1,23 @@
 @extends('layouts.app')
 
+@push('styles')
+    <style>
+        .swal2-container {
+            background-color: rgba(33, 37, 41, 0.75) !important;
+        }
+
+        .swal2-popup {
+            background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+            color: #212529;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+            border-radius: 12px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+    </style>
+@endpush
+
+@section('title', 'My Profile')
+
 @section('content')
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -41,7 +59,7 @@
                                 <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/default-avatar.png') }}"
                                      alt="User Avatar" class="w-24 h-24 rounded-full border-4 border-white shadow-md">
                                 @if($user->profile_photo)
-                                    <form action="{{ route('profile.avatar.destroy', $user) }}" method="POST" class="absolute -bottom-2 -right-2">
+                                    <form action="{{ route('profile.avatar.destroy', $user) }}" method="POST" class="absolute -bottom-2 -right-2 delete-avatar-form">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="p-1 bg-red-500 rounded-full text-white hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
@@ -75,11 +93,11 @@
                                         <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
                                     </svg>
                                     <span class="ml-3 text-sm text-gray-700">
-                                    {{ $user->street_address ?? '' }}<br>
-                                    {{ $user->union ? $user->union . ', ' : '' }}
+                                        {{ $user->street_address ?? '' }}<br>
+                                        {{ $user->union ? $user->union . ', ' : '' }}
                                         {{ $user->upazila }}, {{ $user->district }}<br>
-                                    {{ $user->division }}, {{ $user->postal_code }}
-                                </span>
+                                        {{ $user->division }}, {{ $user->postal_code }}
+                                    </span>
                                 </div>
                             @endif
                         </div>
@@ -94,7 +112,7 @@
                             <h2 class="text-xl font-semibold text-white">Update Profile</h2>
                         </div>
                         <div class="p-6 bg-gradient-to-r from-blue-200 via-blue-100 to-blue-100">
-                            <form action="{{ route('profile.update') }}" method="POST">
+                            <form action="{{ route('profile.update') }}" method="POST" class="update-profile-form">
                                 @csrf
                                 @method('PUT')
 
@@ -171,7 +189,7 @@
                             <h2 class="text-xl font-semibold text-white">Update Avatar</h2>
                         </div>
                         <div class="p-6 bg-gradient-to-r from-amber-50 via-amber-100 to-amber-200">
-                            <form action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data">
+                            <form action="{{ route('profile.avatar.update') }}" method="POST" enctype="multipart/form-data" class="update-avatar-form">
                                 @csrf
                                 @method('PUT')
 
@@ -209,7 +227,7 @@
                             <h2 class="text-xl font-semibold text-white">Update Address</h2>
                         </div>
                         <div class="p-6 bg-gradient-to-r from-green-50 via-green-100 to-green-200">
-                            <form action="{{ route('profile.address.update') }}" method="POST">
+                            <form action="{{ route('profile.address.update') }}" method="POST" class="update-address-form">
                                 @csrf
                                 @method('PUT')
 
@@ -289,3 +307,213 @@
         </div>
     </section>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update Profile Form
+            const profileForm = document.querySelector('.update-profile-form');
+            profileForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Confirm Profile Update',
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-4 text-gray-700">You are about to update your profile with the following details:</p>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    <span id="swal-name" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span id="swal-email" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                                    </svg>
+                                    <span id="swal-phone" class="font-medium"></span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-500">Please verify all information before proceeding.</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Update Profile',
+                    cancelButtonText: 'Cancel',
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-xl border border-gray-200 shadow-xl',
+                        title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                        confirmButton: 'bg-[var(--primary)] hover:bg-[var(--primary-dark)] px-4 py-2 rounded-md font-medium shadow-sm',
+                        cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                    },
+                    didOpen: () => {
+                        document.getElementById('swal-name').textContent = document.getElementById('name').value || '(empty)';
+                        document.getElementById('swal-email').textContent = document.getElementById('email').value || '(empty)';
+                        document.getElementById('swal-phone').textContent = document.getElementById('phone').value || '(empty)';
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        profileForm.submit();
+                    }
+                });
+            });
+
+            // Update Avatar Form
+            const avatarForm = document.querySelector('.update-avatar-form');
+            avatarForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const fileInput = document.getElementById('avatar');
+                const fileName = fileInput.files.length > 0 ? fileInput.files[0].name : '(no file selected)';
+                Swal.fire({
+                    title: 'Confirm Avatar Update',
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-4 text-gray-700">You are about to update your avatar with the following file:</p>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    <span id="swal-avatar" class="font-medium">${fileName}</span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-500">Please verify the file before proceeding.</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Update Avatar',
+                    cancelButtonText: 'Cancel',
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-xl border border-gray-200 shadow-xl',
+                        title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                        confirmButton: 'bg-[var(--primary)] hover:bg-[var(--primary-dark)] px-4 py-2 rounded-md font-medium shadow-sm',
+                        cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        avatarForm.submit();
+                    }
+                });
+            });
+
+            // Update Address Form
+            const addressForm = document.querySelector('.update-address-form');
+            addressForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Confirm Address Update',
+                    html: `
+                        <div class="text-left">
+                            <p class="mb-4 text-gray-700">You are about to update your address with the following details:</p>
+                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span id="swal-division" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span id="swal-district" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span id="swal-upazila" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    </svg>
+                                    <span id="swal-union" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                    </svg>
+                                    <span id="swal-street_address" class="font-medium"></span>
+                                </div>
+                                <div class="flex items-center">
+                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                    </svg>
+                                    <span id="swal-postal_code" class="font-medium"></span>
+                                </div>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-500">Please verify all information before proceeding.</p>
+                        </div>
+                    `,
+                    showCancelButton: true,
+                    confirmButtonText: 'Update Address',
+                    cancelButtonText: 'Cancel',
+                    focusCancel: true,
+                    customClass: {
+                        popup: 'rounded-xl border border-gray-200 shadow-xl',
+                        title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                        confirmButton: 'bg-[var(--primary)] hover:bg-[var(--primary-dark)] px-4 py-2 rounded-md font-medium shadow-sm',
+                        cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                    },
+                    didOpen: () => {
+                        document.getElementById('swal-division').textContent = document.getElementById('division').value || '(empty)';
+                        document.getElementById('swal-district').textContent = document.getElementById('district').value || '(empty)';
+                        document.getElementById('swal-upazila').textContent = document.getElementById('upazila').value || '(empty)';
+                        document.getElementById('swal-union').textContent = document.getElementById('union').value || '(empty)';
+                        document.getElementById('swal-street_address').textContent = document.getElementById('street_address').value || '(empty)';
+                        document.getElementById('swal-postal_code').textContent = document.getElementById('postal_code').value || '(empty)';
+                    }
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        addressForm.submit();
+                    }
+                });
+            });
+
+            // Delete Avatar Form
+            const deleteAvatarForms = document.querySelectorAll('.delete-avatar-form');
+            deleteAvatarForms.forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    Swal.fire({
+                        title: 'Are you sure?',
+                        html: `
+                            <div class="text-left">
+                                <p class="mb-4 text-gray-700">You are about to delete your profile avatar. This action cannot be undone.</p>
+                                <p class="mt-4 text-sm text-red-500">Please confirm to proceed with deletion.</p>
+                            </div>
+                        `,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonText: 'Delete Avatar',
+                        cancelButtonText: 'Cancel',
+                        focusCancel: true,
+                        customClass: {
+                            popup: 'rounded-xl border border-gray-200 shadow-xl',
+                            title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                            confirmButton: 'bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-medium shadow-sm',
+                            cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                        }
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                });
+            });
+        });
+    </script>
+@endpush
