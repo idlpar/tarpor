@@ -16,6 +16,10 @@ class Brand extends Model
         'name', 'slug', 'logo', 'description', 'status'
     ];
 
+    protected $casts = [
+        'status' => 'string',
+    ];
+
     /**
      * Get the products for this brand.
      */

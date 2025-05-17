@@ -31,95 +31,164 @@ class OrderController extends Controller
         }
 
         $this->authorize('viewAny', Order::class);
-        $orders = Order::with('user', 'product')->paginate(10); // All orders
+        $orders = Order::with('user', 'products')
+            ->where('user_id', $user->id)
+            ->paginate(10); // Only user's orders
         return view('orders.index', compact('orders'));
     }
 
     public function store(Request $request)
     {
         $this->authorize('create', Order::class);
+
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'user_id' => 'required|exists:users,id',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
             'address' => 'required|string|max:255',
+            'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
-        if ($product->stock_quantity < $validated['quantity']) {
-            return back()->withErrors(['quantity' => 'Insufficient stock'])->withInput();
+        Log::info('Admin Order Store Input', $request->all());
+
+        $productIds = array_column($validated['products'], 'product_id');
+        if (count($productIds) !== count(array_unique($productIds))) {
+            return back()->withErrors(['products' => 'Each product can only be selected once.'])->withInput();
         }
 
-        $order = Order::create([
-            'user_id' => auth()->id(),
-            'product_id' => $product->id,
-            'quantity' => $validated['quantity'],
-            'total_price' => $product->price * $validated['quantity'],
-            'address' => $validated['address'],
-            'status' => 'pending',
-        ]);
+        $products = Product::whereIn('id', $productIds)->get();
+        foreach ($validated['products'] as $index => $item) {
+            $product = $products->firstWhere('id', $item['product_id']);
+            if (!$product) {
+                return back()->withErrors(['products.' . $index . '.product_id' => "Product ID {$item['product_id']} does not exist."])->withInput();
+            }
+            if ($product->stock_quantity < $item['quantity']) {
+                return back()->withErrors(['products.' . $index . '.quantity' => "Insufficient stock for {$product->name}. Available: {$product->stock_quantity}."])->withInput();
+            }
+        }
 
-        $product->decrement('stock_quantity', $validated['quantity']);
-        return redirect()->route('orders.index')->with('success', 'Order placed successfully.');
+        DB::beginTransaction();
+        try {
+            $order = Order::create([
+                'user_id' => $validated['user_id'],
+                'address' => $validated['address'],
+                'status' => $validated['status'],
+                'total_price' => 0,
+                'product_id' => $validated['products'][0]['product_id'], // Legacy
+                'quantity' => array_sum(array_column($validated['products'], 'quantity')), // Legacy
+            ]);
+
+            $totalPrice = 0;
+            foreach ($validated['products'] as $item) {
+                $product = $products->firstWhere('id', $item['product_id']);
+                $price = $product->price;
+                $quantity = $item['quantity'];
+
+                $order->products()->attach($product->id, [
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $totalPrice += $price * $quantity;
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            $order->update(['total_price' => $totalPrice]);
+
+            DB::commit();
+            return redirect()->route('admin.orders.index')->with('success', 'Order created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Admin Order Store Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->all()
+            ]);
+            return back()->withErrors(['products' => 'Failed to create order: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function userEdit(Order $order)
     {
         $this->authorize('update', $order);
-        $product = $order->product;
         $products = Product::where('status', 'published')->get();
-        return view('orders.edit', compact('order', 'product', 'products'));
+        $orderProducts = $order->products->map(function ($product) {
+            return [
+                'product_id' => $product->id,
+                'quantity' => $product->pivot->quantity,
+                'price' => $product->pivot->price,
+            ];
+        })->toArray();
+        return view('orders.edit', compact('order', 'products', 'orderProducts'));
     }
 
     public function userUpdate(Request $request, Order $order)
     {
         $this->authorize('update', $order);
+
         $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
             'address' => 'required|string|max:255',
         ]);
 
-        $newProduct = Product::findOrFail($validated['product_id']);
-        $oldQuantity = $order->quantity;
-        $newQuantity = $validated['quantity'];
+        $productIds = array_column($validated['products'], 'product_id');
+        $products = Product::whereIn('id', $productIds)->get();
 
-        // Check stock for new product and quantity
-        if ($newProduct->id !== $order->product_id) {
-            // Changing product: check new product's stock
-            if ($newProduct->stock_quantity < $newQuantity) {
-                return back()->withErrors(['quantity' => 'Insufficient stock for new product'])->withInput();
-            }
-        } else {
-            // Same product: check stock for quantity difference
-            $quantityDifference = $newQuantity - $oldQuantity;
-            if ($quantityDifference > 0 && $newProduct->stock_quantity < $quantityDifference) {
-                return back()->withErrors(['quantity' => 'Insufficient stock'])->withInput();
+        foreach ($validated['products'] as $index => $item) {
+            $product = $products->firstWhere('id', $item['product_id']);
+            if ($product->stock_quantity < $item['quantity']) {
+                return back()->withErrors(['products.' . $index . '.quantity' => "Insufficient stock for {$product->name}."])->withInput();
             }
         }
 
-        // Update order
-        $order->update([
-            'product_id' => $newProduct->id,
-            'quantity' => $newQuantity,
-            'total_price' => $newProduct->price * $newQuantity,
-            'address' => $validated['address'],
-        ]);
-
-        // Adjust stock
-        if ($newProduct->id !== $order->product_id) {
-            // Restore stock for old product
-            $order->product->increment('stock_quantity', $oldQuantity);
-            // Deduct stock for new product
-            $newProduct->decrement('stock_quantity', $newQuantity);
-        } else {
-            // Adjust stock for quantity change
-            $quantityDifference = $newQuantity - $oldQuantity;
-            if ($quantityDifference != 0) {
-                $newProduct->increment('stock_quantity', -$quantityDifference);
+        DB::beginTransaction();
+        try {
+            foreach ($order->products as $existingProduct) {
+                $existingProduct->increment('stock_quantity', $existingProduct->pivot->quantity);
             }
-        }
 
-        return redirect()->route('orders.index')->with('success', 'Order updated successfully.');
+            $order->products()->detach();
+
+            $totalPrice = 0;
+            foreach ($validated['products'] as $item) {
+                $product = $products->firstWhere('id', $item['product_id']);
+                $price = $product->price;
+                $quantity = $item['quantity'];
+
+                $order->products()->attach($product->id, [
+                    'quantity' => $quantity,
+                    'price' => $price,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $totalPrice += $price * $quantity;
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            $order->update([
+                'product_id' => $validated['products'][0]['product_id'], // Legacy
+                'quantity' => array_sum(array_column($validated['products'], 'quantity')), // Legacy
+                'total_price' => $totalPrice,
+                'address' => $validated['address'],
+            ]);
+
+            DB::commit();
+            return redirect()->route('orders.index')->with('success', 'Order updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('User Order Update Error', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['products' => 'Failed to update order: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function index()
@@ -133,7 +202,6 @@ class OrderController extends Controller
 
         $this->authorize('viewAny', Order::class);
 
-        // Get all request parameters at once
         $filters = [
             'time_frame' => request('time_frame', 'all'),
             'start_date' => request('start_date'),
@@ -141,28 +209,23 @@ class OrderController extends Controller
             'status' => request('status')
         ];
 
-        // Base query for orders list
-        $ordersQuery = Order::with('user', 'product')
+        $ordersQuery = Order::with(['user', 'products'])
             ->when($filters['status'], function ($query, $status) {
                 return $query->where('status', $status);
             })
-            ->when($filters['time_frame'] !== 'all' || $filters['start_date'] || $filters['end_date'],
-                function ($query) use ($filters) {
-                    return $this->applyTimeFrameFilters($query, $filters);
-                });
+            ->when($filters['time_frame'] !== 'all' || $filters['start_date'] || $filters['end_date'], function ($query) use ($filters) {
+                return $this->applyTimeFrameFilters($query, $filters);
+            });
 
-        // Get paginated orders
         $orders = $ordersQuery->latest()->paginate(10);
 
-        // Get stats using a separate query without pagination/ordering
-        $statsQuery = Order::query()
+        $statsQuery = Order::with('products')
             ->when($filters['status'], function ($query, $status) {
                 return $query->where('status', $status);
             })
-            ->when($filters['time_frame'] !== 'all' || $filters['start_date'] || $filters['end_date'],
-                function ($query) use ($filters) {
-                    return $this->applyTimeFrameFilters($query, $filters);
-                });
+            ->when($filters['time_frame'] !== 'all' || $filters['start_date'] || $filters['end_date'], function ($query) use ($filters) {
+                return $this->applyTimeFrameFilters($query, $filters);
+            });
 
         $stats = $this->getOrderStats($statsQuery);
 
@@ -170,6 +233,26 @@ class OrderController extends Controller
             compact('orders', 'filters'),
             ['stats' => $stats]
         ));
+    }
+
+    protected function getOrderStats($query)
+    {
+        $orders = $query->get();
+
+        $stats = [
+            'totalOrders' => $orders->count(),
+            'totalAmount' => $orders->sum('total_price'),
+            'pendingOrders' => $orders->where('status', 'pending')->count(),
+            'pendingAmount' => $orders->where('status', 'pending')->sum('total_price'),
+            'processingOrders' => $orders->where('status', 'processing')->count(),
+            'processingAmount' => $orders->where('status', 'processing')->sum('total_price'),
+            'shippedOrders' => $orders->where('status', 'shipped')->count(),
+            'shippedAmount' => $orders->where('status', 'shipped')->sum('total_price'),
+            'deliveredOrders' => $orders->where('status', 'delivered')->count(),
+            'deliveredAmount' => $orders->where('status', 'delivered')->sum('total_price'),
+        ];
+
+        return $stats;
     }
 
     protected function applyTimeFrameFilters($query, $filters)
@@ -203,40 +286,10 @@ class OrderController extends Controller
         }
     }
 
-    protected function getOrderStats($query)
-    {
-        $stats = $query->selectRaw('
-        COUNT(*) as total_orders,
-        SUM(total_price) as total_amount,
-        SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending_orders,
-        SUM(CASE WHEN status = "pending" THEN total_price ELSE 0 END) as pending_amount,
-        SUM(CASE WHEN status = "processing" THEN 1 ELSE 0 END) as processing_orders,
-        SUM(CASE WHEN status = "processing" THEN total_price ELSE 0 END) as processing_amount,
-        SUM(CASE WHEN status = "shipped" THEN 1 ELSE 0 END) as shipped_orders,
-        SUM(CASE WHEN status = "shipped" THEN total_price ELSE 0 END) as shipped_amount,
-        SUM(CASE WHEN status = "delivered" THEN 1 ELSE 0 END) as delivered_orders,
-        SUM(CASE WHEN status = "delivered" THEN total_price ELSE 0 END) as delivered_amount
-    ')->first();
-
-        return [
-            'totalOrders' => $stats->total_orders ?? 0,
-            'totalAmount' => $stats->total_amount ?? 0,
-            'pendingOrders' => $stats->pending_orders ?? 0,
-            'pendingAmount' => $stats->pending_amount ?? 0,
-            'processingOrders' => $stats->processing_orders ?? 0,
-            'processingAmount' => $stats->processing_amount ?? 0,
-            'shippedOrders' => $stats->shipped_orders ?? 0,
-            'shippedAmount' => $stats->shipped_amount ?? 0,
-            'deliveredOrders' => $stats->delivered_orders ?? 0,
-            'deliveredAmount' => $stats->delivered_amount ?? 0,
-        ];
-    }
-
     public function show(Order $order)
     {
         $this->authorize('view', $order);
 
-        // Calculate next status for the status progression button
         $nextStatus = match($order->status) {
             'pending' => 'processing',
             'processing' => 'shipped',
@@ -246,41 +299,75 @@ class OrderController extends Controller
 
         return view('dashboard.admin.orders.show', compact('order', 'nextStatus'));
     }
+
     public function create()
     {
         $this->authorize('create', Order::class);
-        $products = Product::where('status', 'published')->get();
-        $users = User::all();
+        $products = Product::where('status', 'published')
+            ->where('stock_quantity', '>', 0)
+            ->get(['id', 'name', 'price', 'stock_quantity']);
+        $users = User::select('id', 'name', 'email')->get();
         return view('dashboard.admin.orders.create', compact('products', 'users'));
     }
 
     public function storeAdmin(Request $request)
     {
         $this->authorize('create', Order::class);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
             'address' => 'required|string|max:255',
             'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
-        if ($product->stock_quantity < $validated['quantity']) {
-            return back()->withErrors(['quantity' => 'Insufficient stock'])->withInput();
+        foreach ($validated['products'] as $item) {
+            $product = Product::find($item['product_id']);
+            if ($product->stock_quantity < $item['quantity']) {
+                return back()->withErrors(['products' => "Insufficient stock for {$product->name}"])->withInput();
+            }
         }
 
-        $order = Order::create([
-            'user_id' => $validated['user_id'],
-            'product_id' => $product->id,
-            'quantity' => $validated['quantity'],
-            'total_price' => $product->price * $validated['quantity'],
-            'address' => $validated['address'],
-            'status' => $validated['status'],
-        ]);
+        DB::beginTransaction();
+        try {
+            $order = Order::create([
+                'user_id' => $validated['user_id'],
+                'address' => $validated['address'],
+                'status' => $validated['status'],
+                'total_price' => 0,
+                'product_id' => $validated['products'][0]['product_id'], // Legacy
+                'quantity' => array_sum(array_column($validated['products'], 'quantity')), // Legacy
+            ]);
 
-        $product->decrement('stock_quantity', $validated['quantity']);
-        return redirect()->route('admin.orders.index')->with('success', 'Order created successfully.');
+            $totalPrice = 0;
+            foreach ($validated['products'] as $item) {
+                $product = Product::find($item['product_id']);
+                $price = $product->price;
+                $quantity = $item['quantity'];
+
+                $order->products()->attach($product->id, [
+                    'quantity' => $quantity,
+                    'price' => $price
+                ]);
+
+                $totalPrice += $price * $quantity;
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            $order->update(['total_price' => $totalPrice]);
+
+            DB::commit();
+            return redirect()->route('admin.orders.index')->with('success', 'Order created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Admin Order Store Error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['products' => 'Failed to create order: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function edit(Order $order)
@@ -289,14 +376,13 @@ class OrderController extends Controller
         $products = Product::where('status', 'published')->get();
         $users = User::all();
 
-        // Prepare products data for the view
-        $orderProducts = [
-            [
-                'product_id' => $order->product_id,
-                'quantity' => $order->quantity,
-                'price' => $order->product->price
-            ]
-        ];
+        $orderProducts = $order->products->map(function ($product) {
+            return [
+                'product_id' => $product->id,
+                'quantity' => $product->pivot->quantity,
+                'price' => $product->pivot->price,
+            ];
+        })->toArray();
 
         return view('dashboard.admin.orders.edit', compact('order', 'products', 'users', 'orderProducts'));
     }
@@ -304,55 +390,127 @@ class OrderController extends Controller
     public function update(Request $request, Order $order)
     {
         $this->authorize('update', $order);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'required|integer|min:1',
+            'products' => 'required|array|min:1',
+            'products.*.product_id' => 'required|exists:products,id',
+            'products.*.quantity' => 'required|integer|min:1',
             'address' => 'required|string|max:255',
             'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        $product = Product::findOrFail($validated['product_id']);
-        $quantityDifference = $validated['quantity'] - $order->quantity;
-        if ($quantityDifference > 0 && $product->stock_quantity < $quantityDifference) {
-            return back()->withErrors(['quantity' => 'Insufficient stock'])->withInput();
+        foreach ($validated['products'] as $item) {
+            $product = Product::findOrFail($item['product_id']);
+            $existingQuantity = $order->products()->where('product_id', $item['product_id'])->first()
+                ? $order->products()->where('product_id', $item['product_id'])->first()->pivot->quantity
+                : 0;
+            $quantityDifference = $item['quantity'] - $existingQuantity;
+
+            if ($quantityDifference > 0 && $product->stock_quantity < $quantityDifference) {
+                return back()->withErrors(['products' => "Insufficient stock for {$product->name}"])->withInput();
+            }
         }
 
-        $order->update([
-            'user_id' => $validated['user_id'],
-            'product_id' => $validated['product_id'],
-            'quantity' => $validated['quantity'],
-            'total_price' => $product->price * $validated['quantity'],
-            'address' => $validated['address'],
-            'status' => $validated['status'],
-        ]);
+        DB::beginTransaction();
+        try {
+            $order->update([
+                'user_id' => $validated['user_id'],
+                'address' => $validated['address'],
+                'status' => $validated['status'],
+            ]);
 
-        if ($quantityDifference != 0) {
-            $product->increment('stock_quantity', -$quantityDifference);
+            foreach ($order->products as $existingProduct) {
+                $existingProduct->increment('stock_quantity', $existingProduct->pivot->quantity);
+            }
+
+            $order->products()->detach();
+
+            $totalPrice = 0;
+            foreach ($validated['products'] as $item) {
+                $product = Product::findOrFail($item['product_id']);
+                $price = $product->price;
+                $quantity = $item['quantity'];
+
+                $order->products()->attach($product->id, [
+                    'quantity' => $quantity,
+                    'price' => $price,
+                ]);
+
+                $totalPrice += $price * $quantity;
+                $product->decrement('stock_quantity', $quantity);
+            }
+
+            $order->update([
+                'product_id' => $validated['products'][0]['product_id'], // Legacy
+                'quantity' => array_sum(array_column($validated['products'], 'quantity')), // Legacy
+                'total_price' => $totalPrice,
+            ]);
+
+            DB::commit();
+            return redirect()->route('admin.orders.index')->with('success', 'Order updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Admin Order Update Error', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['products' => 'Failed to update order: ' . $e->getMessage()])->withInput();
         }
-
-        return redirect()->route('admin.orders.index')->with('success', 'Order updated successfully.');
     }
 
     public function destroy(Order $order)
     {
         $this->authorize('delete', $order);
-        $order->product->increment('stock_quantity', $order->quantity);
-        $order->delete();
-        return redirect()->route('admin.orders.index')->with('success', 'Order deleted successfully.');
-    }
 
+        Log::info('Admin Order Delete Attempt', ['order_id' => $order->id, 'user_id' => auth()->id()]);
+
+        DB::beginTransaction();
+        try {
+            if (!in_array($order->status, ['delivered', 'cancelled'])) {
+                foreach ($order->products as $product) {
+                    $quantity = $product->pivot->quantity;
+                    $product->increment('stock_quantity', $quantity);
+                }
+            }
+
+            $order->products()->detach();
+            $order->delete();
+
+            DB::commit();
+            return redirect()->route('orders.index')->with('success', 'Order deleted successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Admin Order Delete Error', [
+                'order_id' => $order->id,
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->with('error', 'Failed to delete order: ' . $e->getMessage());
+        }
+    }
 
     public function updateStatus(Request $request, Order $order)
     {
         $this->authorize('changeStatus', $order);
 
-        $request->validate([
+        $validated = $request->validate([
             'status' => 'required|in:pending,processing,shipped,delivered,cancelled',
         ]);
 
-        $order->update(['status' => $request->status]);
+        $allowedTransitions = [
+            'pending' => ['processing', 'cancelled'],
+            'processing' => ['shipped', 'cancelled'],
+            'shipped' => ['delivered'],
+        ];
 
-        return back()->with('success', 'Order status updated!');
+        if (!in_array($validated['status'], $allowedTransitions[$order->status] ?? [], true)) {
+            return back()->withErrors(['status' => 'Invalid status transition']);
+        }
+
+        $order->update(['status' => $validated['status']]);
+
+        return back()->with('success', 'Order status updated successfully!');
     }
 }

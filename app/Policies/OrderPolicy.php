@@ -15,7 +15,6 @@ class OrderPolicy
             'verified_at' => $user->verified_at,
             'role' => $user->role,
         ]);
-        // Admins, staff, and verified users can view orders
         if (in_array($user->role, ['admin', 'staff'])) {
             return true;
         }
@@ -24,17 +23,14 @@ class OrderPolicy
 
     public function view(User $user, Order $order): bool
     {
-        // Admins and staff can view any order
         if (in_array($user->role, ['admin', 'staff'])) {
             return true;
         }
-        // Normal users can view their own orders if verified
         return $user->verified_at !== null && $order->user_id === $user->id;
     }
 
     public function create(User $user): bool
     {
-        // Admins, staff, and verified users can create orders
         if (in_array($user->role, ['admin', 'staff'])) {
             return true;
         }
@@ -43,22 +39,24 @@ class OrderPolicy
 
     public function update(User $user, Order $order): bool
     {
-        // Admins and staff can update any order
         if (in_array($user->role, ['admin', 'staff'])) {
             return true;
         }
-        // Normal users can update their own orders if status is pending and they are verified
         return $user->verified_at !== null && $order->user_id === $user->id && $order->status === 'pending';
     }
 
+    // Updated delete method with more granular logic
     public function delete(User $user, Order $order): bool
     {
-        // Only admins and staff can delete orders
-        return in_array($user->role, ['admin', 'staff']);
+        // Allow admins to delete any order
+        // Staff can delete only pending or processing orders
+        return $user->role === 'admin' ||
+            ($user->role === 'staff' && in_array($order->status, ['pending', 'processing']));
     }
 
     public function changeStatus(User $user, Order $order)
     {
-        return in_array($user->role, ['admin', 'staff']);
+        // Only admin/staff can change status
+        return $user->role === 'admin' || $user->role === 'staff';
     }
 }

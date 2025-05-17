@@ -48,6 +48,13 @@ class Product extends Model
     {
         return $this->morphOne(Seo::class, 'seoable');
     }
+
+    public function orders()
+    {
+        return $this->belongsToMany(Order::class)
+            ->withPivot('quantity', 'price')
+            ->withTimestamps();
+    }
 }
 //    public function registerMediaCollections(): void
 //    {

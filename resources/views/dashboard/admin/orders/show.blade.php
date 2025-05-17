@@ -59,7 +59,6 @@
             border: 1px solid rgba(200, 210, 220, 0.4);
         }
 
-
         .action-btn {
             transition: all 0.2s ease;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -83,6 +82,13 @@
             border-radius: 12px;
             margin-bottom: 2rem;
         }
+
+        .back-btn {
+            position: absolute;
+            top: 1.5rem;
+            left: 1.5rem;
+            z-index: 10;
+        }
     </style>
 @endpush
 
@@ -90,20 +96,34 @@
 
 @section('content')
     <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-gradient-to-r from-purple-800 to-indigo-700">
-            <!-- Header Section with Gradient Background -->
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
+            @php
+                $user = auth()->user();
+                $routeName = in_array($user->role, ['admin', 'staff']) ? 'admin.orders.index' : 'orders.index';
+            @endphp
+
+                <!-- Back Button -->
+            <a href="{{ route($routeName) }}" class="back-btn action-btn inline-flex items-center px-4 py-2 bg-green-300 border border-gray-200 text-gray-700 font-medium rounded-lg hover:bg-green-500">
+                <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                </svg>
+                Back
+            </a>
+
+
+            <!-- Header Section -->
             <div class="page-header">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                    <div>
+                    <div class="text-center md:text-left">
                         <h1 class="text-3xl font-bold text-gray-900 tracking-tight bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] bg-clip-text text-transparent">
                             Order #{{ $order->id }}
                         </h1>
                         <p class="mt-2 text-gray-600">Order details and management</p>
                     </div>
                     <div class="mt-4 md:mt-0">
-                    <span class="status-badge badge-{{ $order->status }}">
-                        {{ ucfirst($order->status) }}
-                    </span>
+                        <span class="status-badge badge-{{ $order->status }}">
+                            {{ ucfirst($order->status) }}
+                        </span>
                     </div>
                 </div>
             </div>
@@ -119,7 +139,7 @@
                                 <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                 </svg>
-                                Customer & Product
+                                Customer & Products
                             </h2>
 
                             <div class="space-y-4">
@@ -132,12 +152,23 @@
                                 </div>
 
                                 <div>
-                                    <dt class="text-sm font-medium text-gray-500">Product</dt>
+                                    <dt class="text-sm font-medium text-gray-500">Products</dt>
                                     <dd class="mt-1 text-base font-medium text-gray-900">
-                                        {{ $order->product->name }}
-                                        <span class="block text-sm font-normal text-gray-500 mt-1">
-                                        Quantity: {{ $order->quantity }} × {{ format_taka($order->product->price) }}
-                                    </span>
+                                        @if($order->products->isNotEmpty())
+                                            <ul class="space-y-2">
+                                                @foreach($order->products as $product)
+                                                    <li>
+                                                        {{ $product->name }}
+                                                        <span class="block text-sm font-normal text-gray-500 mt-1">
+                                                            Quantity: {{ $product->pivot->quantity }} × {{ format_taka($product->pivot->price) }}
+                                                            ({{ format_taka($product->pivot->price * $product->pivot->quantity) }})
+                                                        </span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <span class="text-sm text-gray-500">No products</span>
+                                        @endif
                                     </dd>
                                 </div>
                             </div>
@@ -162,6 +193,11 @@
                                     <dt class="text-sm font-medium text-gray-500">Order Date</dt>
                                     <dd class="mt-1 text-base text-gray-900">{{ $order->created_at->format('F j, Y \a\t g:i A') }}</dd>
                                 </div>
+
+                                <div>
+                                    <dt class="text-sm font-medium text-gray-500">Last Updated</dt>
+                                    <dd class="mt-1 text-base text-gray-900">{{ $order->updated_at->format('F j, Y \a\t g:i A') }}</dd>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -183,7 +219,7 @@
                     </div>
 
                     <!-- Action Buttons -->
-                    <div class="mt-8 flex flex-wrap gap-3">
+                    <div class="mt-8 flex flex-wrap gap-3 justify-end">
                         @if (auth()->user()->id === $order->user_id && $order->status === 'pending')
                             <a href="{{ route('orders.edit', $order) }}" class="action-btn inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-[var(--primary)] to-[var(--primary-light)] text-white font-medium rounded-lg hover:from-[var(--primary-dark)] hover:to-[var(--primary)]">
                                 <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -201,10 +237,10 @@
                                 Admin Edit
                             </a>
 
-                            <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline">
+                            <form id="deleteForm" action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="action-btn inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium rounded-lg hover:from-red-700 hover:to-rose-700">
+                                <button type="button" onclick="confirmDelete()" class="action-btn inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-red-600 to-rose-600 text-white font-medium rounded-lg hover:from-red-700 hover:to-rose-700">
                                     <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                                     </svg>
@@ -213,7 +249,7 @@
                             </form>
 
                                 @if($order->status !== 'delivered' && $order->status !== 'cancelled' && $nextStatus)
-                                    <form action="{{ route('admin.orders.update', $order) }}" method="POST" class="inline">
+                                    <form id="statusUpdateForm" action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline">
                                         @csrf
                                         @method('PATCH')
                                         <input type="hidden" name="status" value="{{ $nextStatus }}">
@@ -226,16 +262,37 @@
                                     </form>
                                 @endif
                         @endif
-
-                        <a href="{{ route('admin.orders.index') }}" class="action-btn inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-white to-gray-50 border border-gray-200 text-gray-700 font-medium rounded-lg hover:from-gray-50 hover:to-gray-100">
-                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                            </svg>
-                            Back to Orders
-                        </a>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const statusForm = document.getElementById('statusUpdateForm');
+            if (statusForm) {
+                statusForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
+                    Swal.fire({
+                        title: 'Update Status',
+                        text: `Are you sure you want to mark this order as ${this.querySelector('input[name="status"]').value}?`,
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonColor: '#10B981',
+                        cancelButtonColor: '#6B7280',
+                        confirmButtonText: 'Yes, update it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            // Submit the form after confirmation
+                            this.submit();
+                        }
+                    });
+                });
+            }
+        });
+    </script>
+@endpush

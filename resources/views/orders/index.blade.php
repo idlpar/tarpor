@@ -34,6 +34,15 @@
                 timerProgressBar: true
             });
             @endif
+            @if (session('error'))
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: '{{ session('error') }}',
+                background: 'linear-gradient(135deg, #f8f9fa, #e9ecef)',
+                confirmButtonColor: '#008080',
+            });
+            @endif
             document.querySelectorAll('.delete-btn').forEach(button => {
                 button.addEventListener('click', function (e) {
                     e.preventDefault();
@@ -79,10 +88,10 @@
                                 User
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                Product
+                                Products
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                Quantity
+                                Total Quantity
                             </th>
                             <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
                                 Total Price
@@ -106,18 +115,29 @@
                             <tr class="hover:bg-blue-50 transition duration-150">
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->id }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->user->name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $order->product->name }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $order->quantity }}</td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">${{ number_format($order->total_price, 2) }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">
+                                    @if($order->products->isNotEmpty())
+                                        <div>
+                                            {{ $order->products->first()->name }}
+                                            @if($order->products->count() > 1)
+                                                + {{ $order->products->count() - 1 }} more
+                                            @endif
+                                        </div>
+                                    @else
+                                        <div class="text-gray-500">No products</div>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $order->products->sum('pivot.quantity') }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ format_taka($order->total_price) }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                            {{ $order->status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                               ($order->status === 'processing' ? 'bg-blue-100 text-blue-800' :
-                                               ($order->status === 'shipped' ? 'bg-purple-100 text-purple-800' :
-                                               ($order->status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                               'bg-red-100 text-red-800'))) }}">
-                                            {{ ucfirst($order->status) }}
-                                        </span>
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        {{ $order->status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                           ($order->status === 'processing' ? 'bg-blue-100 text-blue-800' :
+                                           ($order->status === 'shipped' ? 'bg-purple-100 text-purple-800' :
+                                           ($order->status === 'delivered' ? 'bg-green-100 text-green-800' :
+                                           'bg-red-100 text-red-800'))) }}">
+                                        {{ ucfirst($order->status) }}
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $order->address }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">{{ $order->created_at->format('M d, Y') }}</td>
@@ -137,7 +157,7 @@
                                             </svg>
                                         </a>
                                     @endcan
-                                    @if (auth()->user()->role === 'admin' || auth()->user()->role === 'staff')
+                                    @can('delete', $order)
                                         <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline">
                                             @csrf
                                             @method('DELETE')
@@ -147,7 +167,7 @@
                                                 </svg>
                                             </button>
                                         </form>
-                                    @endif
+                                    @endcan
                                 </td>
                             </tr>
                         @empty

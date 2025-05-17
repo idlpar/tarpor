@@ -121,8 +121,8 @@
         }
 
         .new-order-btn {
-            height: 42px; /* Fixed height matching your input fields */
-            white-space: nowrap; /* Prevent text wrapping */
+            height: 42px;
+            white-space: nowrap;
         }
     </style>
 @endpush
@@ -299,7 +299,7 @@
                         <tr>
                             <th>Order #</th>
                             <th>Customer</th>
-                            <th>Product</th>
+                            <th>Products</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Date</th>
@@ -322,10 +322,21 @@
                                     </div>
                                 </td>
                                 <td>
-                                    <div class="text-gray-900">{{ $order->product->name }}</div>
-                                    <div class="text-sm text-gray-500">Qty: {{ $order->quantity }}</div>
+                                    @if($order->products->isNotEmpty())
+                                        <div class="text-gray-900">
+                                            {{ $order->products->first()->name }}
+                                            @if($order->products->count() > 1)
+                                                + {{ $order->products->count() - 1 }} more
+                                            @endif
+                                        </div>
+                                        <div class="text-sm text-gray-500">
+                                            Qty: {{ $order->products->sum('pivot.quantity') }}
+                                        </div>
+                                    @else
+                                        <div class="text-gray-500">No products</div>
+                                    @endif
                                 </td>
-                                <td class="font-medium">${{ number_format($order->total_price, 2) }}</td>
+                                <td class="font-medium">{{ format_taka($order->total_price) }}</td>
                                 <td>
                                     <span class="status-badge badge-{{ $order->status }}">
                                         {{ ucfirst($order->status) }}
@@ -449,23 +460,9 @@
                 });
             }
 
-            // Success notification
-            @if (session('success'))
-            Swal.fire({
-                icon: 'success',
-                title: '{{ session('success') }}',
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: 3000,
-                timerProgressBar: true,
-                background: 'white',
-                iconColor: '#10B981',
-            });
-            @endif
 
             // Delete confirmation
-            document.querySelectorAll('.delete-btn').forEach(button => {
+            document.querySelectorAll('form[action*="/admin/orders/"] button[type="submit"][title="Delete"]').forEach(button => {
                 button.addEventListener('click', function (e) {
                     e.preventDefault();
 

@@ -77,7 +77,9 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::resource('products', ProductController::class)->names('products');
         Route::resource('categories', CategoryController::class)->names('categories');
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
-        Route::put('admin/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.update-status');
+        Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
+            ->name('admin.orders.update-status')
+            ->middleware('can:changeStatus,order');
         Route::prefix('tags')->name('tag.')->group(function () {
             Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
             Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');
