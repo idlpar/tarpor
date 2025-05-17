@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
         $middleware->alias([
+            'install' => \App\Http\Middleware\EnsureNotInstalled::class,
             'role' => \App\Http\Middleware\CheckRole::class,
             'verified' => \App\Http\Middleware\IsVerified::class,
             'auto.logout' => \App\Http\Middleware\AutoLogout::class,

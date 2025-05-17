@@ -42,8 +42,8 @@
                         {{ ucfirst($user->role) }}
                     </span>
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
-                        {{ $user->email_verified_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                        {{ $user->email_verified_at ? 'Verified' : 'Unverified' }}
+                        {{ $user->verified_at ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
+                        {{ $user->verified_at ? 'Verified' : 'Unverified' }}
                     </span>
                 </div>
             </div>

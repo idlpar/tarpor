@@ -18,7 +18,7 @@ return new class extends Migration
             $table->string('phone')->nullable()->unique();
             $table->string('password');
             $table->enum('role', ['admin', 'staff', 'user'])->default('user'); // Updated roles
-            $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('verified_at')->nullable();
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
             $table->timestamp('last_otp_sent_at')->nullable();

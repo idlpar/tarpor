@@ -217,7 +217,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="text-sm text-gray-900">{{ $user->email }}</div>
                                     <div class="text-xs text-gray-500">
-                                        Verified {{ $user->email_verified_at?->diffForHumans() ?? 'Not verified' }}</div>
+                                        Verified {{ $user->verified_at?->diffForHumans() ?? 'Not verified' }}</div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                     {{ $user->created_at->format('M d, Y') }}

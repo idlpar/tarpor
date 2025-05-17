@@ -16,7 +16,7 @@ class UserSeeder extends Seeder
             'phone' => '01712345678',
             'password' => Hash::make('password'),
             'role' => 'admin',
-            'email_verified_at' => now(),
+            'verified_at' => now(),
             'is_verified' => true,
             'profile_photo' => 'avatars/admin.jpg',
         ]);
@@ -27,7 +27,7 @@ class UserSeeder extends Seeder
             'phone' => '01712345679',
             'password' => Hash::make('password'),
             'role' => 'staff',
-            'email_verified_at' => now(),
+            'verified_at' => now(),
             'is_verified' => true,
             'profile_photo' => 'avatars/staff.jpg',
         ]);

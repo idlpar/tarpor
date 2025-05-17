@@ -6,6 +6,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
+/**
+ * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property string $role
+ */
 class User extends Authenticatable
 {
     use HasFactory, Notifiable;
@@ -17,7 +21,7 @@ class User extends Authenticatable
         'password',
         'role',
         'is_verified',
-        'email_verified_at',
+        'verified_at',
         'newsletter',
         'provider',
         'provider_id',
@@ -38,7 +42,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
-            'email_verified_at' => 'datetime',
+            'verified_at' => 'datetime',
             'otp_expires_at' => 'datetime',
             'last_otp_sent_at' => 'datetime',
             'last_password_reset_otp_sent_at' => 'datetime',
@@ -47,9 +51,10 @@ class User extends Authenticatable
             'newsletter' => 'boolean',
         ];
     }
-    public function getVerifiedAtAttribute(): bool
+
+    public function orders()
     {
-        return $this->email_verified_at !== null;
+        return $this->hasMany(Order::class);
     }
     public function isAdmin()
     {

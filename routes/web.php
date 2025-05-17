@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\AuthController;
@@ -13,14 +14,20 @@ use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-// Public Routes (No Authentication)
+if (!Config::get('installer.installed')) {
+    Route::get('/', function () {
+        return redirect()->route('install.index');
+    });
+}
+
+// Public Routes
 Route::get('/', fn() => view('home'))->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('public.categories.show');
 
-// Authentication Routes (Guests Only)
+// Guest Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
@@ -37,23 +44,19 @@ Route::middleware('guest')->group(function () {
     Route::get('/login/facebook/callback', [SocialLoginController::class, 'handleFacebookCallback']);
 });
 
-// OTP Verification (Authenticated but Unverified)
+// OTP Verification
 Route::middleware('auth')->group(function () {
     Route::get('/verify-otp', [AuthController::class, 'showVerifyOtpForm'])->name('verify.otp.form');
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp');
     Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp');
 });
 
-// Protected Routes (Authenticated)
+// Protected Routes
 Route::middleware(['auth', 'auto.logout'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/change-password', [AuthController::class, 'showChangePasswordForm'])->name('password.change.form');
     Route::post('/change-password', [AuthController::class, 'changePassword'])->name('password.change');
-
-    // Dashboard (Role-Based)
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-
-    // Profile (All Roles)
     Route::get('/profile', [UserController::class, 'showProfile'])->name('profile.show');
     Route::put('/profile', [UserController::class, 'updateProfile'])->name('profile.update');
 
@@ -62,16 +65,19 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::get('/orders', [OrderController::class, 'userOrders'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+        Route::get('/orders/{order}/edit', [OrderController::class, 'userEdit'])->name('orders.edit');
+        Route::put('/orders/{order}', [OrderController::class, 'userUpdate'])->name('orders.update');
         Route::put('/profile/avatar', [UserController::class, 'updateAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/{user}/avatar', [UserController::class, 'deleteAvatar'])->name('profile.avatar.destroy');
         Route::put('/profile/address', [UserController::class, 'updateAddress'])->name('profile.address.update');
     });
 
-    // Admin and Staff Shared Routes (with Policies)
+    // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->names('products');
         Route::resource('categories', CategoryController::class)->names('categories');
-        Route::resource('orders', OrderController::class)->names('orders');
+        Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
+        Route::put('admin/orders/{order}/status', [OrderController::class, 'updateStatus'])->name('admin.orders.update-status');
         Route::prefix('tags')->name('tag.')->group(function () {
             Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
             Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');
@@ -129,7 +135,19 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     });
 });
 
-// Catch-All Route for 404
+Route::middleware('install')->group(function () {
+    Route::get('/install', [App\Http\Controllers\InstallerController::class, 'index'])->name('install.index');
+    Route::get('/install/environment', [App\Http\Controllers\InstallerController::class, 'showEnvironmentForm'])->name('install.environment.form');
+    Route::post('/install/environment', [App\Http\Controllers\InstallerController::class, 'saveEnvironment'])->name('install.environment');
+    Route::get('/install/database', [App\Http\Controllers\InstallerController::class, 'showDatabaseForm'])->name('install.database.form');
+    Route::post('/install/database', [App\Http\Controllers\InstallerController::class, 'runDatabase'])->name('install.database');
+    Route::post('/install/admin', [App\Http\Controllers\InstallerController::class, 'createAdmin'])->name('install.admin');
+});
+
+// Queue Processing Route
+Route::get('/queue/process', [App\Http\Controllers\QueueController::class, 'process'])->name('queue.process')->middleware('throttle:60,1');
+
+// Catch-All Route
 Route::any('/{any}', function ($any) {
     \Log::info('Empty request detected', ['path' => $any]);
     abort(404);
