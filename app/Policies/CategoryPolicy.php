@@ -10,14 +10,21 @@ class CategoryPolicy
 {
     use HandlesAuthorization;
 
-    public function viewAny(User $user): bool
+    public function viewAny(User $user = null): bool
     {
-        return true; // Public access
+        // Accessible to everyone (including guests)
+        return true;
     }
 
-    public function view(User $user, Category $category): bool
+    public function view(User $user = null, Category $category): bool
     {
-        return true; // Public access
+        // Public can view only active categories
+        if (!$user || !in_array($user->role, ['admin', 'staff'])) {
+            return $category->status === 'active';
+        }
+
+        // Staff and admin can view all categories
+        return true;
     }
 
     public function create(User $user): bool
@@ -32,6 +39,7 @@ class CategoryPolicy
 
     public function delete(User $user, Category $category): bool
     {
-        return in_array($user->role, ['admin', 'staff']);
+        // Only allow deletion if no children exist
+        return in_array($user->role, ['admin', 'staff']) && $category->children->isEmpty();
     }
 }

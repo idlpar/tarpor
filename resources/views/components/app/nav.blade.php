@@ -11,8 +11,8 @@
 
             <nav class="hidden lg:flex items-center space-x-6" aria-label="Main navigation">
                 <a href="{{ route('home') }}" class="nav-link active text-white text-lg hover:text-[var(--primary)] font-medium">Home</a>
-                <a href="{{ route('public.categories.show', 'kids') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Kids</a>
-                <a href="{{ route('public.categories.show', 'men') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Men</a>
+                <a href="{{ route('categories.show', 'kids') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Kids</a>
+                <a href="{{ route('categories.show', 'men') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Men</a>
                 <a href="{{ route('categories.index') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Collections</a>
                 <a href="{{ route('shop.index') }}" class="nav-link text-white text-lg hover:text-[var(--primary)] font-medium">Shop</a>
             </nav>

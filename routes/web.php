@@ -25,7 +25,7 @@ Route::get('/', fn() => view('home'))->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('public.categories.show');
+Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show');
 
 // Guest Routes
 Route::middleware('guest')->group(function () {
@@ -75,7 +75,14 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->names('products');
-        Route::resource('categories', CategoryController::class)->names('categories');
+
+        // Explicitly define categories routes (except index, show)
+        Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
+        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
+        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+        Route::match(['put', 'patch'], '/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
             ->name('admin.orders.update-status')

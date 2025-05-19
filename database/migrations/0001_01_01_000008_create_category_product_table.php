@@ -23,7 +23,12 @@ return new class extends Migration
 
             // Composite unique index to prevent duplicate entries
             $table->unique(['category_id', 'product_id']);
+
+            // Indexes for performance
+            $table->index('category_id');
+            $table->index('product_id');
         });
+
     }
 
     /**

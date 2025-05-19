@@ -10,8 +10,8 @@
     <div id="mobile-nav-menu" class="mobile-nav-menu absolute bottom-full left-0 right-0 bg-gray-900 p-4 hidden">
         <nav class="flex flex-col space-y-2" aria-label="Mobile navigation">
             <a href="{{ route('home') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Home</a>
-            <a href="{{ route('public.categories.show', 'kids') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Kids</a>
-            <a href="{{ route('public.categories.show', 'men') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Men</a>
+            <a href="{{ route('categories.show', 'kids') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Kids</a>
+            <a href="{{ route('categories.show', 'men') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Men</a>
             <a href="{{ route('categories.index') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Collections</a>
             <a href="{{ route('shop.index') }}" class="text-white text-lg hover:text-[var(--primary)] font-medium py-2">Shop</a>
         </nav>

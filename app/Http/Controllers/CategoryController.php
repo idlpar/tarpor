@@ -6,45 +6,118 @@ use App\Models\Category;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class CategoryController extends Controller
 {
     use AuthorizesRequests;
+
     /**
-     * Display a listing of categories (Public or Admin/Staff).
+     * Display a listing of categories.
      */
     public function index()
     {
-        // Public: Show active categories
-        if (!auth()->check() || !auth()->user()->hasAnyRole(['admin', 'staff'])) {
-            $categories = Category::where('status', 'active')->with('children')->get();
-            return view('categories.index', compact('categories'));
+        $this->authorize('viewAny', Category::class);
+
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+            $categories = Category::with(['children', 'parent'])->paginate(15);
+            $tree = $this->buildCategoryTree();
+
+            return view('dashboard.admin.categories.index', [
+                'categories' => $categories,
+                'tree' => $tree,
+                'totalCategories' => Category::count(),
+                'activeCategories' => Category::where('status', 'active')->count()
+            ]);
         }
 
-        // Admin/Staff: Show all categories with tree view
-        $this->authorize('viewAny', Category::class);
-        $categories = Category::with('children')->get();
-        $tree = $this->buildCategoryTree();
-        return view('dashboard.admin.categories.index', compact('categories', 'tree'));
+        $categories = Category::where('status', 'active')
+            ->with(['children' => function($query) {
+                $query->where('status', 'active');
+            }])
+            ->whereNull('parent_id')
+            ->get();
+
+        return view('categories.index', compact('categories'));
     }
 
     /**
-     * Show a specific category (Public or Admin/Staff).
+     * Show a specific category.
      */
     public function show($identifier)
     {
-        // Public: Use slug
-        if (!auth()->check() || !auth()->user()->hasAnyRole(['admin', 'staff'])) {
-            $category = Category::where('slug', $identifier)->where('status', 'active')->firstOrFail();
-            $products = $category->products()->where('status', 'published')->paginate(12);
-            return view('categories.show', compact('category', 'products'));
+        $category = auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])
+            ? Category::with(['parent', 'children'])->findOrFail($identifier)
+            : Category::where('slug', $identifier)
+                ->where('status', 'active')
+                ->with(['products' => function($query) {
+                    $query->where('status', 'published');
+                }])
+                ->firstOrFail();
+
+        $this->authorize('view', $category);
+
+        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+            return view('dashboard.admin.categories.show', [
+                'category' => $category,
+                'breadcrumbs' => $this->getBreadcrumbs($category)
+            ]);
         }
 
-        // Admin/Staff: Use ID
-        $category = Category::findOrFail($identifier);
-        $this->authorize('view', $category);
-        return view('dashboard.admin.categories.show', compact('category'));
+        // Handle product sorting
+        $sort = request()->query('sort', 'featured');
+        $products = $category->products()
+            ->where('status', 'published')
+            ->when($sort === 'featured', function($query) {
+                return $query->orderBy('is_featured', 'desc');
+            })
+            ->when($sort === 'price_asc', function($query) {
+                return $query->orderBy('price', 'asc');
+            })
+            ->when($sort === 'price_desc', function($query) {
+                return $query->orderBy('price', 'desc');
+            })
+            ->when($sort === 'newest', function($query) {
+                return $query->orderBy('created_at', 'desc');
+            })
+            ->when($sort === 'bestselling', function($query) {
+                return $query->orderBy('sold_count', 'desc');
+            })
+            ->with(['media'])
+            ->paginate(12);
+
+        return view('categories.show', [
+            'category' => $category,
+            'products' => $products,
+            'breadcrumbs' => $this->getBreadcrumbs($category),
+            'relatedCategories' => $category->siblings()->where('status', 'active')->withCount('products')->get()
+        ]);
     }
+
+    /**
+     * Build breadcrumbs for category navigation
+     */
+    private function getBreadcrumbs(Category $category)
+    {
+        $breadcrumbs = [];
+        $current = $category;
+
+        while ($current) {
+            $breadcrumbs[] = [
+                'name' => $current->name,
+                'url' => route('categories.show', $current->slug)
+            ];
+            $current = $current->parent;
+        }
+
+        $breadcrumbs[] = [
+            'name' => 'Categories',
+            'url' => route('categories.index')
+        ];
+
+        return array_reverse($breadcrumbs);
+    }
+
 
     /**
      * Build a category tree for admin/staff display.
@@ -52,16 +125,15 @@ class CategoryController extends Controller
     private function buildCategoryTree($parentId = null)
     {
         return Category::where('parent_id', $parentId)
-            ->with('children')
-            ->get()
-            ->map(function ($category) {
-                $category->children = $this->buildCategoryTree($category->id);
-                return $category;
-            });
+            ->with(['children' => function($query) {
+                $query->with('children')->withCount('products');
+            }])
+            ->withCount('products')
+            ->get();
     }
 
     /**
-     * Show the form for creating a new category (Admin/Staff).
+     * Show the form for creating a new category.
      */
     public function create()
     {
@@ -71,7 +143,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Store a newly created category (Admin/Staff).
+     * Store a newly created category.
      */
     public function store(Request $request)
     {
@@ -94,7 +166,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Show the form for editing a category (Admin/Staff).
+     * Show the form for editing a category.
      */
     public function edit(Category $category)
     {
@@ -104,7 +176,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Update a category (Admin/Staff).
+     * Update a category.
      */
     public function update(Request $request, Category $category)
     {
@@ -127,7 +199,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Delete a category (Admin/Staff).
+     * Delete a category.
      */
     public function destroy(Category $category)
     {
@@ -140,7 +212,7 @@ class CategoryController extends Controller
     }
 
     /**
-     * Check if a slug is available (Admin/Staff).
+     * Check if a slug is available.
      */
     public function checkSlug(Request $request)
     {
