@@ -20,13 +20,6 @@ if (!Config::get('installer.installed')) {
     });
 }
 
-// Public Routes
-Route::get('/', fn() => view('home'))->name('home');
-Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
-Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
-Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show');
-
 // Guest Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
@@ -155,6 +148,14 @@ Route::middleware('install')->group(function () {
 
 // Queue Processing Route
 Route::get('/queue/process', [App\Http\Controllers\QueueController::class, 'process'])->name('queue.process')->middleware('throttle:60,1');
+
+// Public Routes
+Route::get('/', fn() => view('home'))->name('home');
+Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
+Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
+Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show')
+    ->where('category_slug', '[a-z0-9-]+');
 
 // Catch-All Route
 Route::any('/{any}', function ($any) {

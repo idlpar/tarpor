@@ -138,10 +138,12 @@ class CategoryController extends Controller
     public function create()
     {
         $this->authorize('create', Category::class);
-        $parentCategories = Category::all();
-        return view('dashboard.admin.categories.create', compact('parentCategories'));
-    }
+        $categoriesTree = Category::whereNull('parent_id')
+            ->with('children')
+            ->get();
 
+        return view('dashboard.admin.categories.create', compact('categoriesTree'));
+    }
     /**
      * Store a newly created category.
      */
@@ -171,8 +173,17 @@ class CategoryController extends Controller
     public function edit(Category $category)
     {
         $this->authorize('update', $category);
-        $parentCategories = Category::whereNull('parent_id')->where('id', '!=', $category->id)->get();
-        return view('dashboard.admin.categories.edit', compact('category', 'parentCategories'));
+
+        // Get the hierarchical category tree
+        $categoriesTree = Category::whereNull('parent_id')
+            ->with('children')
+            ->where('id', '!=', $category->id) // Exclude current category from parent options
+            ->get();
+
+        return view('dashboard.admin.categories.edit', [
+            'category' => $category,
+            'categoriesTree' => $categoriesTree
+        ]);
     }
 
     /**

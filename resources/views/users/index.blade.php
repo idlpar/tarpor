@@ -215,10 +215,25 @@
                                     </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="text-sm text-gray-900">{{ $user->email }}</div>
-                                    <div class="text-xs text-gray-500">
-                                        Verified {{ $user->verified_at?->diffForHumans() ?? 'Not verified' }}</div>
+                                    <div class="flex flex-col space-y-1">
+                                        <span class="text-sm font-medium text-gray-900">{{ $user->email }}</span>
+                                        <span class="inline-flex items-center gap-1 text-xs font-semibold
+                                             {{ $user->verified_at ? 'text-green-600' : 'text-red-500' }}">
+                                                @if ($user->verified_at)
+                                                    <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Verified {{ $user->verified_at->diffForHumans() }}
+                                                @else
+                                                    <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-4h2v2h-2v-2zm0-8h2v6h-2V6z" clip-rule="evenodd"/>
+                                                    </svg>
+                                                    Not Verified
+                                                @endif
+                                        </span>
+                                    </div>
                                 </td>
+
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                     {{ $user->created_at->format('M d, Y') }}
                                 </td>

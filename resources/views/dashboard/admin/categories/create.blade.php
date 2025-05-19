@@ -1,66 +1,119 @@
 @extends('layouts.app')
 
 @section('content')
-    <div class="container mx-auto px-4 py-6">
-        <div class="max-w-3xl mx-auto">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold text-gray-800">Create New Category</h1>
-                <a href="{{ route('categories.index') }}" class="text-gray-600 hover:text-gray-900">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+    <div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-50">
+        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-indigo-800">Create New Category</h1>
+                    <p class="mt-2 text-sm text-indigo-600">Add a new product category to your store</p>
+                </div>
+                <a href="{{ route('categories.index') }}" class="inline-flex items-center px-4 py-2 border border-indigo-300 text-sm font-medium rounded-full shadow-sm text-white bg-red-500 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                    <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
+                    Cancel
                 </a>
             </div>
 
-            <div class="bg-white rounded-lg shadow overflow-hidden">
+            <div class="bg-white shadow-xl rounded-2xl overflow-hidden border border-indigo-100">
                 <form action="{{ route('categories.store') }}" method="POST">
                     @csrf
-                    <div class="p-6 space-y-6">
+                    <div class="p-8 space-y-8">
+                        <!-- Name Field -->
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
-                            <input type="text" name="name" id="name" value="{{ old('name') }}" required
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <label for="name" class="block text-sm font-medium text-indigo-700 mb-2">Category Name <span class="text-pink-500">*</span></label>
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <input type="text" name="name" id="name" value="{{ old('name') }}" required
+                                       class="block w-full px-4 py-3 border-2 border-indigo-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-indigo-300 transition-all duration-200"
+                                       placeholder="e.g. Electronics">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             @error('name')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-2 text-sm text-pink-600 font-medium">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        <!-- Slug Field -->
                         <div>
-                            <label for="slug" class="block text-sm font-medium text-gray-700 mb-1">Slug</label>
-                            <input type="text" name="slug" id="slug" value="{{ old('slug') }}"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <label for="slug" class="block text-sm font-medium text-indigo-700 mb-2">Slug <span class="text-pink-500">*</span></label>
+                            <div class="mt-1 relative rounded-lg shadow-sm">
+                                <input type="text" name="slug" id="slug" value="{{ old('slug') }}" required
+                                       class="block w-full px-4 py-3 border-2 border-indigo-100 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm placeholder-indigo-300 transition-all duration-200"
+                                       placeholder="e.g. electronics">
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                    <span id="slug-status" class="text-indigo-500 sm:text-sm">
+                                        <svg id="slug-loading" class="animate-spin h-5 w-5 text-indigo-500 hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                </div>
+                            </div>
+                            <p class="mt-2 text-sm font-medium" id="slug-help">
+                                <span class="text-indigo-500">The slug is auto-generated but can be customized</span>
+                            </p>
                             @error('slug')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-2 text-sm text-pink-600 font-medium">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        <!-- Parent Category Field -->
                         <div>
-                            <label for="parent_id" class="block text-sm font-medium text-gray-700 mb-1">Parent Category</label>
-                            <select name="parent_id" id="parent_id" class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <option value="">None</option>
-                                @foreach($parentCategories as $parent)
-                                    <option value="{{ $parent->id }}" {{ old('parent_id') == $parent->id ? 'selected' : '' }}>{{ $parent->name }}</option>
-                                @endforeach
-                            </select>
+                            <label for="parent_id" class="block text-sm font-medium text-indigo-700 mb-2">Parent Category</label>
+                            <div class="mt-1 relative">
+                                <select name="parent_id" id="parent_id"
+                                        class="block w-full pl-4 pr-10 py-3 text-base border-2 border-indigo-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white shadow-sm transition-all duration-200">
+                                    <option value="" class="text-indigo-400">-- No Parent --</option>
+                                    @foreach($categoriesTree as $category)
+                                        @include('dashboard.admin.categories.partials.category-option', [
+                                            'category' => $category,
+                                            'depth' => 0,
+                                            'oldValue' => old('parent_id')
+                                        ])
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             @error('parent_id')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-2 text-sm text-pink-600 font-medium">{{ $message }}</p>
                             @enderror
                         </div>
 
+                        <!-- Status Field -->
                         <div>
-                            <label for="status" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                            <select name="status" id="status" required class="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
-                                <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                            </select>
+                            <label for="status" class="block text-sm font-medium text-indigo-700 mb-2">Status <span class="text-pink-500">*</span></label>
+                            <div class="mt-1 relative">
+                                <select name="status" id="status" required
+                                        class="block w-full pl-4 pr-10 py-3 text-base border-2 border-indigo-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white shadow-sm transition-all duration-200">
+                                    <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }} class="text-green-600">Active</option>
+                                    <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }} class="text-amber-600">Inactive</option>
+                                </select>
+                                <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                    <svg class="h-5 w-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l4-4 4 4m0 6l-4 4-4-4"></path>
+                                    </svg>
+                                </div>
+                            </div>
                             @error('status')
-                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                            <p class="mt-2 text-sm text-pink-600 font-medium">{{ $message }}</p>
                             @enderror
                         </div>
                     </div>
 
-                    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-end">
-                        <button type="submit" class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                    <div class="px-8 py-6 bg-indigo-50 border-t border-indigo-100 flex justify-end">
+                        <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105">
+                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                            </svg>
                             Create Category
                         </button>
                     </div>
@@ -75,12 +128,21 @@
         document.addEventListener('DOMContentLoaded', function() {
             const nameInput = document.getElementById('name');
             const slugInput = document.getElementById('slug');
+            const slugHelp = document.getElementById('slug-help');
+            const slugLoading = document.getElementById('slug-loading');
+            let manualSlugChange = false;
 
+            // Auto-generate slug from name
             nameInput.addEventListener('input', function() {
-                if (!slugInput.value || slugInput.value === slugify(nameInput.value)) {
+                if (!manualSlugChange) {
                     slugInput.value = slugify(nameInput.value);
                     checkSlugAvailability(slugInput.value);
                 }
+            });
+
+            // Allow manual slug override
+            slugInput.addEventListener('change', function() {
+                manualSlugChange = true;
             });
 
             slugInput.addEventListener('input', function() {
@@ -98,14 +160,27 @@
             }
 
             function checkSlugAvailability(slug) {
-                if (!slug) return;
+                if (!slug) {
+                    slugHelp.innerHTML = '<span class="text-indigo-500">The slug is auto-generated but can be customized</span>';
+                    return;
+                }
+
+                slugLoading.classList.remove('hidden');
 
                 fetch(`{{ route('api.category.slug.check') }}?slug=${slug}`)
                     .then(response => response.json())
                     .then(data => {
                         if (data.exists) {
-                            slugInput.value = data.suggested;
+                            slugHelp.innerHTML = `<span class="text-amber-600 font-semibold">Slug exists!</span> <span class="text-indigo-600">Suggested: <span class="font-mono underline">${data.suggested}</span></span>`;
+                        } else {
+                            slugHelp.innerHTML = '<span class="text-green-600 font-semibold">✓ Slug available</span>';
                         }
+                    })
+                    .catch(error => {
+                        slugHelp.innerHTML = '<span class="text-pink-600 font-semibold">Error checking slug</span>';
+                    })
+                    .finally(() => {
+                        slugLoading.classList.add('hidden');
                     });
             }
         });
