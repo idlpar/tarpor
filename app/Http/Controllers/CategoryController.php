@@ -52,6 +52,8 @@ class CategoryController extends Controller
                 ->where('status', 'active')
                 ->with(['products' => function($query) {
                     $query->where('status', 'published');
+                }, 'children' => function($query) {
+                    $query->where('status', 'active')->withCount('products');
                 }])
                 ->firstOrFail();
 
@@ -65,7 +67,7 @@ class CategoryController extends Controller
         }
 
         // Handle product sorting
-        $sort = request()->query('sort', 'featured');
+        $sort = request()->query('sort', 'all');
         $products = $category->products()
             ->where('status', 'published')
             ->when($sort === 'featured', function($query) {
@@ -83,7 +85,9 @@ class CategoryController extends Controller
             ->when($sort === 'bestselling', function($query) {
                 return $query->orderBy('sold_count', 'desc');
             })
-            ->with(['media'])
+            ->when($sort === 'all', function($query) {
+                return $query; // No sorting
+            })
             ->paginate(12);
 
         return view('categories.show', [
@@ -102,6 +106,7 @@ class CategoryController extends Controller
         $breadcrumbs = [];
         $current = $category;
 
+        // Add current category and its ancestors
         while ($current) {
             $breadcrumbs[] = [
                 'name' => $current->name,
@@ -110,14 +115,20 @@ class CategoryController extends Controller
             $current = $current->parent;
         }
 
+        // Add Categories link
         $breadcrumbs[] = [
             'name' => 'Categories',
             'url' => route('categories.index')
         ];
 
+        // Add Home link
+        $breadcrumbs[] = [
+            'name' => 'Home',
+            'url' => route('home')
+        ];
+
         return array_reverse($breadcrumbs);
     }
-
 
     /**
      * Build a category tree for admin/staff display.

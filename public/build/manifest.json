@@ -1,0 +1,17 @@
+{
+  "_vendor-l0sNRNKZ.js": {
+    "file": "assets/vendor-l0sNRNKZ.js",
+    "name": "vendor"
+  },
+  "resources/css/app.css": {
+    "file": "assets/app-8BWcbuLL.css",
+    "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-BDcIoMud.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  }
+}

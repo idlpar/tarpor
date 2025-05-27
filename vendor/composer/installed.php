@@ -1,9 +1,9 @@
 <?php return array(
     'root' => array(
         'name' => 'laravel/laravel',
-        'pretty_version' => '1.0.0+no-version-set',
-        'version' => '1.0.0.0',
-        'reference' => null,
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'reference' => 'a594e9e5c63f7cba23fda84f7fff61c02893ca70',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -11,9 +11,9 @@
     ),
     'versions' => array(
         'barryvdh/laravel-debugbar' => array(
-            'pretty_version' => 'v3.15.2',
-            'version' => '3.15.2.0',
-            'reference' => '0bc1e1361e7fffc2be156f46ad1fba6927c01729',
+            'pretty_version' => 'v3.15.4',
+            'version' => '3.15.4.0',
+            'reference' => 'c0667ea91f7185f1e074402c5788195e96bf8106',
             'type' => 'library',
             'install_path' => __DIR__ . '/../barryvdh/laravel-debugbar',
             'aliases' => array(),
@@ -440,9 +440,9 @@
             'dev_requirement' => false,
         ),
         'laravel/laravel' => array(
-            'pretty_version' => '1.0.0+no-version-set',
-            'version' => '1.0.0.0',
-            'reference' => null,
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'reference' => 'a594e9e5c63f7cba23fda84f7fff61c02893ca70',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
