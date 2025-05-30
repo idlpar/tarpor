@@ -20,14 +20,55 @@ class ProductController extends Controller
     /**
      * Display a listing of products (Admin/Staff).
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Product::class);
-        $products = Product::with('categories', 'brand')->get(); // Eager-load relationships
+
+        $query = Product::with('categories', 'brand')->withTrashed();
+
+        if ($search = $request->query('search')) {
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('sku', 'like', "%{$search}%");
+            });
+        }
+
+        if ($status = $request->query('status')) {
+            if ($status === 'trashed') {
+                $query->onlyTrashed();
+            } elseif ($status) {
+                $query->where('status', $status);
+            }
+        }
+
+        if ($stockStatus = $request->query('stock_status')) {
+            if ($stockStatus) {
+                $query->where('stock_status', $stockStatus);
+            }
+        }
+
+        $sortColumn = $request->query('sort', 'name');
+        $sortDirection = $request->query('direction', 'asc');
+        if (in_array($sortColumn, ['name', 'sku', 'price', 'sale_price', 'stock_quantity', 'stock_status', 'status'])) {
+            $query->orderBy($sortColumn, $sortDirection);
+        } elseif ($sortColumn === 'category') {
+            $query->join('category_product', 'products.id', '=', 'category_product.product_id')
+                ->join('categories', 'category_product.category_id', '=', 'categories.id')
+                ->orderBy('categories.name', $sortDirection)
+                ->select('products.*');
+        } elseif ($sortColumn === 'brand') {
+            $query->leftJoin('brands', 'products.brand_id', '=', 'brands.id')
+                ->orderByRaw('COALESCE(brands.name, "N/A") ' . $sortDirection)
+                ->select('products.*');
+        }
+
+        $products = $query->get();
         $brands = Brand::all();
         $categories = Category::all();
-        return view('dashboard.admin.products.products', compact('products', 'brands', 'categories'));
+
+        return view('dashboard.admin.products.index', compact('products', 'brands', 'categories'));
     }
+
 
     /**
      * Show the form for creating a new product (Admin/Staff).
@@ -204,7 +245,7 @@ class ProductController extends Controller
 
         // Process tags
         if ($request->has('tags')) {
-            $tags = explode(',', $request->input('tags'));
+            $tags = json_decode($request->input('tags'), true) ?? [];
             $uniqueTags = [];
 
             foreach ($tags as $tagName) {

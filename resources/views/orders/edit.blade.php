@@ -473,7 +473,7 @@
                 total += price * quantity;
             });
 
-            document.getElementById('total-amount').textContent = `$${total.toFixed(2)}`;
+            document.getElementById('total-amount').textContent = `${total.toFixed(2)}`;
         }
 
         // Attach event listeners to product inputs

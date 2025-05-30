@@ -11,13 +11,23 @@ class TagController extends Controller
     public function suggest(Request $request)
     {
         $this->authorize('viewAny', Tag::class);
-        $query = strtolower($request->input('query', ''));
+        $query = trim($request->input('query', ''));
 
-        $tags = Tag::where('name', 'like', $query . '%')
-            ->orWhere('name', 'like', '% ' . $query . '%')
+        if (strlen($query) < 2) {
+            return response()->json([]);
+        }
+
+        $tags = Tag::whereRaw('LOWER(name) LIKE ?', [Str::lower($query) . '%'])
+            ->orWhereRaw('LOWER(name) LIKE ?', ['% ' . Str::lower($query) . '%'])
             ->distinct('name')
             ->limit(10)
-            ->get(['id', 'name']);
+            ->get(['id', 'name'])
+            ->map(function ($tag) {
+                return [
+                    'id' => $tag->id,
+                    'name' => ucfirst($tag->name), // Capitalize for display
+                ];
+            });
 
         return response()->json($tags);
     }
@@ -32,7 +42,7 @@ class TagController extends Controller
 
         $storedTags = [];
         foreach ($validated['tags'] as $tagName) {
-            $baseName = strtolower(trim($tagName));
+            $baseName = Str::lower(trim($tagName));
             if (empty($baseName)) continue;
 
             $existingTag = Tag::where('name', $baseName)->first();

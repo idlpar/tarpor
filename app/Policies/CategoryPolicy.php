@@ -10,13 +10,13 @@ class CategoryPolicy
 {
     use HandlesAuthorization;
 
-    public function viewAny(User $user = null): bool
+    public function viewAny(?User $user = null): bool
     {
         // Accessible to everyone (including guests)
         return true;
     }
 
-    public function view(User $user = null, Category $category): bool
+    public function view(Category $category, ?User $user = null): bool
     {
         // Public can view only active categories
         if (!$user || !in_array($user->role, ['admin', 'staff'])) {

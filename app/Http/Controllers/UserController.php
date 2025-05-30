@@ -174,11 +174,30 @@ class UserController extends Controller
         ]);
 
         $user = Auth::user();
+
+        // Delete existing avatar if present in database and file exists
+        if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
+            Storage::disk('public')->delete($user->profile_photo);
+        }
+
         if ($request->hasFile('avatar')) {
-            if ($user->profile_photo) {
-                Storage::disk('public')->delete($user->profile_photo);
+            // Get the original filename
+            $file = $request->file('avatar');
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $filenameWithoutExtension = pathinfo($originalName, PATHINFO_FILENAME);
+
+            $newFilename = $originalName;
+            $counter = 1;
+
+            // Check database for existing filenames
+            while (User::where('profile_photo', 'avatars/' . $newFilename)->exists()) {
+                $newFilename = $filenameWithoutExtension . '_' . $counter . '.' . $extension;
+                $counter++;
             }
-            $path = $request->file('avatar')->store('avatars', 'public');
+
+            // Store the file with the determined filename
+            $path = $file->storeAs('avatars', $newFilename, 'public');
             $user->update(['profile_photo' => $path]);
         }
 
@@ -193,12 +212,12 @@ class UserController extends Controller
         $this->authorize('deleteAvatar', Auth::user());
 
         $user = Auth::user();
-        // Delete avatar file from storage if it exists
+        // Check database for avatar path and delete file if it exists
         if ($user->profile_photo && Storage::disk('public')->exists($user->profile_photo)) {
             Storage::disk('public')->delete($user->profile_photo);
         }
 
-        // Update user to remove avatar
+        // Update user to remove avatar reference
         $user->update(['profile_photo' => null]);
         return redirect()->route('profile.show')->with('success', 'Avatar deleted successfully.');
     }

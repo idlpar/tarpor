@@ -68,6 +68,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->names('products');
+        Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
 
         // Explicitly define categories routes (except index, show)
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
@@ -80,7 +81,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
             ->name('admin.orders.update-status')
             ->middleware('can:changeStatus,order');
-        Route::prefix('tags')->name('tag.')->group(function () {
+        Route::prefix('tag')->name('tag.')->group(function () {
             Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
             Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');
         });

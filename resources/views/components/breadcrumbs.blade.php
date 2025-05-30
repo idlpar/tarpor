@@ -1,39 +1,44 @@
-@push('styles')
-    <style>
-        .breadcrumb {
-            display: flex;
-            align-items: center;
-            font-size: 14px;
-            color: #6b7280;
-        }
-        .breadcrumb a {
-            color: #3b82f6;
-            text-decoration: none;
-            transition: color 0.3s ease;
-        }
-        .breadcrumb a:hover {
-            color: #2563eb;
-        }
-        .breadcrumb .separator {
-            margin: 0 8px;
-            color: #9ca3af;
-        }
-    </style>
+@props([
+    'links' => [],
+    'title' => ''
+])
 
-@endpush
-@props(['links', 'title' => null])
+<nav aria-label="Breadcrumb" class="mb-6">
+    <ol class="flex items-center space-x-1 text-sm">
+        <!-- Home Icon -->
+        <li>
+            <a href="{{ route('dashboard') }}" class="flex items-center text-emerald-600 hover:text-emerald-700 transition">
+                <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
+                </svg>
+                Dashboard
+            </a>
+        </li>
 
-<div class="max-w-7xl mx-auto mb-6">
-    <div class="breadcrumb">
-        @foreach ($links as $name => $url)
-            @if ($url)
-                <a href="{{ $url }}" class="text-blue-500 hover:text-blue-700 transition-colors">
-                    {{ $name }}
-                </a>
-                <span class="separator">/</span>
-            @else
-                <span class="text-gray-700">{{ $name }}</span>
-            @endif
+        <!-- Breadcrumb Items -->
+        @foreach ($links as $label => $url)
+            <li class="flex items-center">
+                <!-- Chevron Separator -->
+                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+
+                @if ($loop->last)
+                    <span class="ml-2 font-medium text-gray-700" aria-current="page">{{ $label }}</span>
+                @else
+                    <a href="{{ $url }}" class="ml-2 text-emerald-600 hover:text-emerald-700 transition">{{ $label }}</a>
+                @endif
+            </li>
         @endforeach
-    </div>
-</div>
+
+        <!-- Current Page Title -->
+        @if($title)
+            <li class="flex items-center">
+                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"></path>
+                </svg>
+                <span class="ml-2 font-semibold text-emerald-700">{{ $title }}</span>
+            </li>
+        @endif
+    </ol>
+</nav>
