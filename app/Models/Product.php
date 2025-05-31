@@ -48,6 +48,29 @@ class Product extends Model
         return $this->morphOne(Seo::class, 'seoable');
     }
 
+    public function reviews()
+    {
+        return $this->hasMany(ProductReview::class);
+    }
+
+    public function getAverageRatingAttribute()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
+    }
+
+    public function getReviewsCountAttribute()
+    {
+        return $this->reviews()->count();
+    }
+
+    // Add this to your Product model to track views
+    public function incrementViews()
+    {
+        $this->timestamps = false; // Don't update the timestamps
+        $this->increment('views');
+        $this->timestamps = true;
+    }
+
     public function orders()
     {
         return $this->belongsToMany(Order::class)

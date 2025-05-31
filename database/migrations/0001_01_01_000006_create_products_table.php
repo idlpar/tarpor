@@ -40,6 +40,7 @@ return new class extends Migration
             $table->json('images')->nullable(); // Product images (JSON)
             $table->string('thumbnail')->nullable(); // Thumbnail image URL
             $table->enum('status', ['draft', 'published', 'archived'])->default('draft'); // Product status
+            $table->unsignedBigInteger('views')->default(0);
             $table->timestamps(); // created_at and updated_at
             $table->softDeletes(); // deleted_at for soft deletes
 

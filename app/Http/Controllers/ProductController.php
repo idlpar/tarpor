@@ -181,159 +181,188 @@ class ProductController extends Controller
     public function store(Request $request): RedirectResponse
     {
         $this->authorize('create', Product::class);
+
         // Validate the request data
         $validatedData = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'nullable|string|max:255|unique:products,slug',
+            'description' => 'required|string',
+            'short_description' => 'nullable|string',
             'price' => 'required|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
             'sku' => 'nullable|string|max:50|unique:products,sku',
-            'short_description' => 'nullable|string',
-            'description' => 'required|string',
             'stock_quantity' => 'required|integer|min:0',
             'stock_status' => 'required|in:in_stock,out_of_stock,backorder',
             'brand_id' => 'nullable|exists:brands,id',
-            'category_ids' => 'required|array',
+            'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
             'status' => 'required|in:draft,published,archived',
             'attributes' => 'nullable|array',
             'images' => 'nullable|array',
-            'images.*' => 'image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'images.*' => 'integer|exists:media,id',
+            'thumbnail' => 'nullable|sometimes|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+            'thumbnail_id' => 'nullable|integer|exists:media,id', // New field for media ID
             'weight' => 'nullable|string|max:255',
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
             'tags' => 'nullable|string',
-            'product_collections' => ['nullable', 'array'],
-            'product_collections.*' => ['in:new_arrival,best_sellers,special_offer'],
-            'labels' => ['nullable', 'array'],
-            'labels.*' => ['in:hot,new,sale'],
+            'product_collections' => 'nullable|array',
+            'product_collections.*' => 'in:new_arrival,best_sellers,special_offer',
+            'labels' => 'nullable|array',
+            'labels.*' => 'in:hot,new,sale',
             'related_products' => 'nullable|json',
             'is_featured' => 'nullable|boolean',
             'barcode' => 'nullable|string|max:100|unique:products,barcode',
             'discount' => 'nullable|numeric|min:0',
             'inventory_tracking' => 'nullable|boolean',
+            'min_order_quantity' => 'nullable|integer|min:0',
+            'max_order_quantity' => 'nullable|integer|min:0',
         ]);
 
-        // Generate slug if not provided
-        $validatedData['slug'] = $validatedData['slug'] ?? Str::slug($validatedData['name']);
+        try {
+            // Generate slug if not provided
+            $validatedData['slug'] = $validatedData['slug'] ?? Str::slug($validatedData['name']);
 
-        // Process related products
-        if ($request->filled('related_products')) {
-            $relatedProducts = json_decode($request->input('related_products'), true);
-            $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
-            $invalidProducts = array_diff($relatedProducts, $existingProducts);
+            // Process related products
+            if ($request->filled('related_products')) {
+                $relatedProducts = json_decode($request->input('related_products'), true);
+                $existingProducts = Product::whereIn('id', $relatedProducts)->pluck('id')->toArray();
+                $invalidProducts = array_diff($relatedProducts, $existingProducts);
 
-            if (!empty($invalidProducts)) {
-                return back()->withErrors([
-                    'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts)
-                ])->withInput();
+                if (!empty($invalidProducts)) {
+                    return back()->withErrors([
+                        'related_products' => 'Some selected related products do not exist: ' . implode(', ', $invalidProducts),
+                    ])->withInput()->with('error', 'Invalid related products selected.');
+                }
+
+                $validatedData['related_products'] = json_encode($relatedProducts);
+            } else {
+                $validatedData['related_products'] = null;
             }
 
-            $validatedData['related_products'] = json_encode($relatedProducts);
-        } else {
-            $validatedData['related_products'] = null;
-        }
+            // Handle thumbnail (file upload or media ID)
+            if ($request->hasFile('thumbnail')) {
+                $thumbnail = $request->file('thumbnail');
+                $thumbnailName = $this->generateUniqueFileName($thumbnail->getClientOriginalName(), 'uploads/products/thumbnails')['physical_name'];
+                $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
+                $validatedData['thumbnail'] = 'uploads/products/thumbnails/' . $thumbnailName;
+            } elseif ($request->filled('thumbnail_id')) {
+                $media = Media::find($request->input('thumbnail_id'));
+                if (!$media) {
+                    return back()->withErrors([
+                        'thumbnail_id' => 'Invalid thumbnail media ID.',
+                    ])->withInput()->with('error', 'Invalid thumbnail selected.');
+                }
+                $validatedData['thumbnail'] = $this->getMediaFilePath($media);
+            } else {
+                $validatedData['thumbnail'] = null;
+            }
 
-        // Create the product
-        $product = Product::create($validatedData);
+            // Handle product images (array of media IDs)
+            if ($request->filled('images')) {
+                $imageIds = $request->input('images');
+                $imagePaths = [];
+                foreach ($imageIds as $mediaId) {
+                    $media = Media::find($mediaId);
+                    if ($media) {
+                        $imagePaths[] = $this->getMediaFilePath($media);
+                    } else {
+                        return back()->withErrors([
+                            'images' => "Invalid media ID: {$mediaId}.",
+                        ])->withInput()->with('error', 'One or more invalid images selected.');
+                    }
+                }
+                $validatedData['images'] = json_encode($imagePaths, JSON_UNESCAPED_SLASHES);
+            } else {
+                $validatedData['images'] = null;
+            }
 
-        // Attach categories
-        $product->categories()->attach($validatedData['category_ids']);
+            // Create the product
+            $product = Product::create($validatedData);
 
-        // Process tags
-        if ($request->has('tags')) {
-            $tags = json_decode($request->input('tags'), true) ?? [];
-            $uniqueTags = [];
+            // Attach categories if provided
+            if (!empty($validatedData['category_ids'])) {
+                $product->categories()->attach($validatedData['category_ids']);
+            }
 
-            foreach ($tags as $tagName) {
-                $tagName = trim($tagName);
-                if (!empty($tagName)) {
-                    $normalizedTagName = Str::lower($tagName);
-                    if (!in_array($normalizedTagName, $uniqueTags)) {
-                        $tag = Tag::firstOrCreate(
-                            ['name' => $normalizedTagName],
-                            ['slug' => Str::slug($tagName)]
-                        );
-                        $product->tags()->attach($tag->id);
-                        $uniqueTags[] = $normalizedTagName;
+            // Process tags
+            if ($request->has('tags')) {
+                $tags = json_decode($request->input('tags'), true) ?? [];
+                $uniqueTags = [];
+
+                foreach ($tags as $tagName) {
+                    $tagName = trim($tagName);
+                    if (!empty($tagName)) {
+                        $normalizedTagName = Str::lower($tagName);
+                        if (!in_array($normalizedTagName, $uniqueTags)) {
+                            $tag = Tag::firstOrCreate(
+                                ['name' => $normalizedTagName],
+                                ['slug' => Str::slug($tagName)]
+                            );
+                            $product->tags()->attach($tag->id);
+                            $uniqueTags[] = $normalizedTagName;
+                        }
                     }
                 }
             }
-        }
 
-        // Handle thumbnail upload
-        if ($request->hasFile('thumbnail')) {
-            $thumbnail = $request->file('thumbnail');
-            $thumbnailName = $this->generateUniqueFileName($thumbnail->getClientOriginalName(), 'uploads/products/thumbnails')['physical_name'];
-            $thumbnail->move(public_path('uploads/products/thumbnails'), $thumbnailName);
-            $product->thumbnail = 'uploads/products/thumbnails/' . $thumbnailName;
-            $product->save();
-        }
+            // Handle SEO metadata
+            $seoData = $request->validate([
+                'meta_title' => 'nullable|string|max:255',
+                'meta_description' => 'nullable|string',
+                'meta_keywords' => 'nullable|string',
+                'canonical_url' => 'nullable|url',
+                'og_title' => 'nullable|string|max:255',
+                'og_description' => 'nullable|string',
+                'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+                'twitter_title' => 'nullable|string|max:255',
+                'twitter_description' => 'nullable|string',
+                'twitter_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
+                'schema_markup' => 'nullable|json',
+                'robots' => 'nullable|string|max:255',
+            ]);
 
-        // Handle product images upload
-        if ($request->hasFile('images')) {
-            $images = [];
-            foreach ($request->file('images') as $image) {
-                $imageName = $this->generateUniqueFileName($image->getClientOriginalName(), 'uploads/products/images')['physical_name'];
-                $image->move(public_path('uploads/products/images'), $imageName);
-                $images[] = 'uploads/products/images/' . $imageName;
+            // Fallback to product data if SEO fields are empty
+            $seoData = array_merge([
+                'meta_title' => $product->name,
+                'meta_description' => $product->short_description ?? $product->description,
+                'meta_keywords' => implode(', ', $product->tags->pluck('name')->toArray() ?? []),
+                'canonical_url' => url('/products/' . $product->slug),
+                'og_title' => $product->name,
+                'og_description' => $product->short_description ?? $product->description,
+                'twitter_title' => $product->name,
+                'twitter_description' => $product->short_description ?? $product->description,
+                'schema_markup' => null,
+                'robots' => 'index, follow',
+            ], array_filter($seoData, fn($value) => !is_null($value)));
+
+            // Handle SEO image uploads
+            if ($request->hasFile('og_image')) {
+                $ogImage = $request->file('og_image');
+                $ogImageName = $this->generateUniqueFileName($ogImage->getClientOriginalName(), 'uploads/products/seo/og_images')['physical_name'];
+                $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageName);
+                $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageName;
             }
-            $product->images = json_encode($images, JSON_UNESCAPED_SLASHES);
-            $product->save();
+
+            if ($request->hasFile('twitter_image')) {
+                $twitterImage = $request->file('twitter_image');
+                $twitterImageName = $this->generateUniqueFileName($twitterImage->getClientOriginalName(), 'uploads/products/seo/twitter_images')['physical_name'];
+                $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageName);
+                $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageName;
+            }
+
+            // Store SEO metadata
+            $product->seo()->create($seoData);
+
+            return redirect()->route('products.index')->with('success', 'Product created successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Product creation failed: ' . $e->getMessage());
+            return back()->withErrors([
+                'general' => 'An error occurred while creating the product.',
+            ])->withInput()->with('error', 'Failed to create product: ' . $e->getMessage());
         }
-
-        // Handle SEO metadata
-        $seoData = $request->validate([
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string',
-            'meta_keywords' => 'nullable|string',
-            'canonical_url' => 'nullable|url',
-            'og_title' => 'nullable|string|max:255',
-            'og_description' => 'nullable|string',
-            'og_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'twitter_title' => 'nullable|string|max:255',
-            'twitter_description' => 'nullable|string',
-            'twitter_image' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'schema_markup' => 'nullable|json',
-            'robots' => 'nullable|string|max:255',
-        ]);
-
-        // Fallback to product data if SEO fields are empty
-        $seoData = array_merge([
-            'meta_title' => $product->name,
-            'meta_description' => $product->short_description ?? $product->description,
-            'meta_keywords' => implode(', ', $product->tags->pluck('name')->toArray() ?? []),
-            'canonical_url' => url('/products/' . $product->slug),
-            'og_title' => $product->name,
-            'og_description' => $product->short_description ?? $product->description,
-            'twitter_title' => $product->name,
-            'twitter_description' => $product->short_description ?? $product->description,
-            'schema_markup' => null,
-            'robots' => 'index, follow',
-        ], array_filter($seoData, fn($value) => !is_null($value)));
-
-        // Handle SEO image uploads
-        if ($request->hasFile('og_image')) {
-            $ogImage = $request->file('og_image');
-            $ogImageName = $this->generateUniqueFileName($ogImage->getClientOriginalName(), 'uploads/products/seo/og_images')['physical_name'];
-            $ogImage->move(public_path('uploads/products/seo/og_images'), $ogImageName);
-            $seoData['og_image'] = 'uploads/products/seo/og_images/' . $ogImageName;
-        }
-
-        if ($request->hasFile('twitter_image')) {
-            $twitterImage = $request->file('twitter_image');
-            $twitterImageName = $this->generateUniqueFileName($twitterImage->getClientOriginalName(), 'uploads/products/seo/twitter_images')['physical_name'];
-            $twitterImage->move(public_path('uploads/products/seo/twitter_images'), $twitterImageName);
-            $seoData['twitter_image'] = 'uploads/products/seo/twitter_images/' . $twitterImageName;
-        }
-
-        // Store SEO metadata
-        $product->seo()->create($seoData);
-
-        return redirect()->route('products.index')->with('success', 'Product created successfully!');
     }
 
     /**
@@ -359,6 +388,25 @@ class ProductController extends Controller
             'db_name' => $fileNameForDb . '.' . $extension,
         ];
     }
+
+    /**
+     * Get the public file path for a media record.
+     */
+    private function getMediaFilePath(Media $media): string
+    {
+        $disk = $media->disk ?? 'public';
+        $directory = $media->directory ? trim($media->directory, '/') : '';
+        $fileName = $media->file_name;
+
+        if ($disk === 'public') {
+            $path = $directory ? "{$directory}/{$fileName}" : $fileName;
+            return $path;
+        }
+
+        // Fallback: Generate URL if not on public disk
+        return $media->getUrl();
+    }
+
 
     /**
      * Show the form for editing a product (Admin/Staff).

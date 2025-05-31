@@ -153,6 +153,8 @@ Route::get('/queue/process', [App\Http\Controllers\QueueController::class, 'proc
 // Public Routes
 Route::get('/', fn() => view('home'))->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
+Route::get('/search', [ShopController::class, 'search'])->name('shop.search');
+Route::post('/products/{product}/reviews', [ShopController::class, 'storeReview'])->name('products.reviews.store');
 Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show')
