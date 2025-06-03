@@ -22,7 +22,7 @@ class ProductPolicy
     /**
      * Determine whether the user can view the product.
      */
-    public function view(Product $product, ?User $user = null): bool
+    public function view(?User $user, Product $product): bool
     {
         // Allow everyone (including guests) to view a specific product
         return true;

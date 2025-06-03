@@ -681,7 +681,7 @@ trait NodeTrait
     }
 
     /**
-     * @param string $table
+     * @param string|null $table
      *
      * @return QueryBuilder
      */
@@ -692,7 +692,7 @@ trait NodeTrait
 
     /**
      * @param mixed $query
-     * @param string $table
+     * @param string|null $table
      *
      * @return mixed
      */
@@ -749,9 +749,9 @@ trait NodeTrait
      *
      * Use `children` key on `$attributes` to create child nodes.
      *
-     * @param self $parent
+     * @param self|null $parent
      */
-    public static function create(array $attributes = [], self $parent = null)
+    public static function create(array $attributes = [], ?self $parent = null)
     {
         $children = Arr::pull($attributes, 'children');
 
@@ -1225,7 +1225,7 @@ trait NodeTrait
      *
      * @return \Illuminate\Database\Eloquent\Model
      */
-    public function replicate(array $except = null)
+    public function replicate(?array $except = null)
     {
         $defaults = [
             $this->getParentIdName(),

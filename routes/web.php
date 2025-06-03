@@ -107,14 +107,14 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::get('/trash', [GalleryController::class, 'getTrashedItems'])->name('trash');
         Route::get('/search', [GalleryController::class, 'searchItems'])->name('search');
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::get('/folder/{id}', [GalleryController::class, 'showFolder'])->name('folder.show');
+        Route::get('/folder/{id?}', [GalleryController::class, 'showFolder'])->name('folder.show');
         Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
-        Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
+        Route::get('/file/{id?}', [GalleryController::class, 'showFile'])->name('file.show');
         Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
         Route::post('/files/for-insertion', [GalleryController::class, 'getFilesForInsertion'])->name('files.for-insertion');
         Route::put('/file/{id}/rename', [GalleryController::class, 'renameItem'])->name('file.rename');
         Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
-        Route::get('/file/{id}/download', [GalleryController::class, 'downloadFile'])->name('file.download');
+        Route::get('/file/{id?}/download', [GalleryController::class, 'downloadFile'])->name('file.download');
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
         Route::get('/folder-info/{id}', [GalleryController::class, 'getFolderInfo'])->name('folder.info');
         Route::put('/folder/{id}', [GalleryController::class, 'renameFolder'])->name('folder.rename');

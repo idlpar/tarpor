@@ -1,6 +1,6 @@
-<div id="search-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden z-50">
+<div id="search-modal" class="fixed inset-0 bg-black/70 flex items-center justify-center hidden z-30">
     <div class="search-modal bg-[var(--dark)]/95 rounded-xl max-w-3xl w-full mx-4 sm:mx-6 p-6 sm:p-8 transform scale-95 opacity-0">
-        <button id="close-search" class="absolute top-4 right-4 bg-[var(--red-close)] text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#B71C1C] transition">
+        <button id="close-search" class="absolute top-4 right-4 bg-[var(--red-close)] text-white rounded-full w-8 h-8 flex items-center justify-center hover:bg-[#B71C1C] transition z-30">
             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
             </svg>

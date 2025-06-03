@@ -16,7 +16,7 @@ class CategoryPolicy
         return true;
     }
 
-    public function view(Category $category, ?User $user = null): bool
+    public function view(?User $user, Category $category): bool
     {
         // Public can view only active categories
         if (!$user || !in_array($user->role, ['admin', 'staff'])) {

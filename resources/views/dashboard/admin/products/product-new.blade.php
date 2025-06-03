@@ -1569,6 +1569,20 @@
                     }
                 });
 
+                // Ensure JSON fields are properly formatted
+                const formData = new FormData(form);
+
+                // Convert JSON strings to proper format
+                const jsonFields = ['images', 'related_products', 'tags'];
+                jsonFields.forEach(field => {
+                    const value = formData.get(field);
+                    try {
+                        if (value) JSON.parse(value);
+                    } catch (e) {
+                        formData.set(field, JSON.stringify(value));
+                    }
+                });
+
                 saveButton.disabled = true;
                 saveExitButton.disabled = true;
                 spinner.style.display = 'block';

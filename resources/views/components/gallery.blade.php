@@ -1489,8 +1489,8 @@
                 this.showLoadingPreview();
 
                 const endpoint = type === 'folder' ?
-                    `{{ route("gallery.folder.show", '') }}/${id}` :
-                    `{{ route("gallery.file.show", '') }}/${id}`;
+                    `{{ route("gallery.folder.show", ":id") }}`.replace(':id', id) :
+                    `{{ route("gallery.file.show", ":id") }}`.replace(':id', id);
 
                 fetch(endpoint, {
                     headers: {

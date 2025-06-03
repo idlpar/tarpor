@@ -82,6 +82,7 @@ class ProductController extends Controller
     }
 
     /**
+     *
      * Check if a slug is available (Admin/Staff).
      */
     public function checkSlug(Request $request)
@@ -199,15 +200,14 @@ class ProductController extends Controller
             'category_ids.*' => 'exists:categories,id',
             'status' => 'required|in:draft,published,archived',
             'attributes' => 'nullable|array',
-            'images' => 'nullable|array',
-            'images.*' => 'integer|exists:media,id',
+            'images' => 'nullable|json', // Changed from array to json
             'thumbnail' => 'nullable|sometimes|image|mimes:jpeg,png,jpg,gif,svg,webp|max:2048',
-            'thumbnail_id' => 'nullable|integer|exists:media,id', // New field for media ID
+            'thumbnail_id' => 'nullable|integer|exists:media,id',
             'weight' => 'nullable|string|max:255',
             'length' => 'nullable|string|max:255',
             'width' => 'nullable|string|max:255',
             'height' => 'nullable|string|max:255',
-            'tags' => 'nullable|string',
+            'tags' => 'nullable|json',
             'product_collections' => 'nullable|array',
             'product_collections.*' => 'in:new_arrival,best_sellers,special_offer',
             'labels' => 'nullable|array',
@@ -260,9 +260,16 @@ class ProductController extends Controller
                 $validatedData['thumbnail'] = null;
             }
 
-            // Handle product images (array of media IDs)
+            // Handle product images (JSON string of media IDs)
             if ($request->filled('images')) {
-                $imageIds = $request->input('images');
+                $imageIds = json_decode($request->input('images'), true);
+
+                if (!is_array($imageIds)) {
+                    return back()->withErrors([
+                        'images' => 'Invalid images format.',
+                    ])->withInput()->with('error', 'Invalid images selected.');
+                }
+
                 $imagePaths = [];
                 foreach ($imageIds as $mediaId) {
                     $media = Media::find($mediaId);
