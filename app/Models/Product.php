@@ -45,7 +45,7 @@ class Product extends Model
 
     public function seo()
     {
-        return $this->morphOne(Seo::class, 'seoable');
+        return $this->morphOne(Seo::class, 'seoable', 'entity_type', 'entity_id');
     }
 
     public function reviews()

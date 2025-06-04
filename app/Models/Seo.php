@@ -9,6 +9,8 @@ class Seo extends Model
 {
     use HasFactory;
 
+    protected $table = 'seo_metas';
+
     protected $fillable = [
         'meta_title', 'meta_description', 'meta_keywords', 'canonical_url',
         'og_title', 'og_description', 'og_image', 'twitter_title', 'twitter_description',
@@ -17,6 +19,6 @@ class Seo extends Model
 
     public function seoable()
     {
-        return $this->morphTo();
+        return $this->morphTo('seoable', 'entity_type', 'entity_id');
     }
 }

@@ -620,9 +620,32 @@ class ProductController extends Controller
      */
     public function show(Product $product)
     {
+        // Authorize the view action
         $this->authorize('view', $product);
-        $product->load('categories', 'brand', 'tags', 'seo');
-        return view('dashboard.admin.products.show', compact('product'));
+
+        // Eager load relationships on the already-bound model
+        $product->load('categories', 'brand', 'tags', 'seo', 'reviews.user');
+
+        // Fetch related products (if any)
+        $relatedProducts = [];
+        if ($product->related_products) {
+            $relatedProductIds = json_decode($product->related_products, true) ?? [];
+            $relatedProducts = Product::whereIn('id', $relatedProductIds)
+                ->select('id', 'name', 'slug', 'thumbnail')
+                ->get();
+        }
+
+        // Generate breadcrumbs
+        $breadcrumbs = [
+            'Products' => route('products.index'),
+            'Product Details' => null, // or the current page
+        ];
+
+        // Optionally log breadcrumbs for debugging
+        \Log::info('Breadcrumbs:', $breadcrumbs);
+
+        // Return the view with all required data
+        return view('dashboard.admin.products.show', compact('product', 'relatedProducts', 'breadcrumbs'));
     }
 
     /**
