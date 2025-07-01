@@ -72,6 +72,7 @@
 
 <!-- Manual CSS (loads last to override other styles) -->
 <link rel="stylesheet" href="{{ asset('css/app.css') }}">
+
 {{--<link rel="preload" href="{{ asset('css/app.css') }}" as="style" onload="this.rel='stylesheet'">--}}
 <noscript>
     <link rel="stylesheet" href="{{ asset('css/app.css') }}">

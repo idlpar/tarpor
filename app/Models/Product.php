@@ -6,36 +6,38 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-
 class Product extends Model
 {
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'price', 'sale_price', 'cost_price', 'sku', 'short_description',
-        'description', 'stock_quantity', 'stock_status', 'brand_id', 'status',
-        'attributes', 'images', 'thumbnail', 'weight', 'length', 'width', 'height',
-        'product_collections', 'labels', 'related_products', 'is_featured', 'barcode',
-        'discount', 'inventory_tracking', 'views',
+        'name', 'slug', 'description', 'short_description', 'type',
+        'price', 'sale_price', 'cost_price', 'sku', 'barcode',
+        'stock_quantity', 'stock_status', 'inventory_tracking', 'low_stock_threshold',
+        'weight', 'length', 'width', 'height', 'brand_id', 'thumbnail',
+        'views', 'status', 'is_featured'
     ];
 
     protected $casts = [
-        'attributes' => 'array',
-        'images' => 'array',
-        'product_collections' => 'array',
-        'labels' => 'array',
-        'related_products' => 'array',
-        'is_featured' => 'boolean',
+        'price' => 'decimal:2',
+        'sale_price' => 'decimal:2',
+        'cost_price' => 'decimal:2',
+        'weight' => 'decimal:2',
+        'length' => 'decimal:2',
+        'width' => 'decimal:2',
+        'height' => 'decimal:2',
         'inventory_tracking' => 'boolean',
+        'is_featured' => 'boolean',
     ];
 
-    public function categories()
-    {
-        return $this->belongsToMany(Category::class, 'category_product', 'product_id', 'category_id');
-    }
     public function brand()
     {
         return $this->belongsTo(Brand::class);
+    }
+
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class);
     }
 
     public function tags()
@@ -43,63 +45,99 @@ class Product extends Model
         return $this->belongsToMany(Tag::class);
     }
 
-    public function seo()
+    public function media()
     {
-        return $this->morphOne(Seo::class, 'seoable', 'entity_type', 'entity_id');
+        return $this->morphMany(Media::class, 'model');
     }
 
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class);
+    }
+
+    public function defaultVariant()
+    {
+        return $this->hasOne(ProductVariant::class)->where('is_default', true);
+    }
+
+    public function inventoryItems()
+    {
+        return $this->hasMany(InventoryItem::class);
+    }
+
+    public function pricingTiers()
+    {
+        return $this->hasMany(ProductPricingTier::class);
+    }
+
+    public function specialOffers()
+    {
+        return $this->hasMany(ProductSpecialOffer::class);
+    }
+
+    public function relatedProducts()
+    {
+        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+            ->withPivot('relation_type', 'position')
+            ->withTimestamps();
+    }
+
+    public function getFinalPriceAttribute()
+    {
+        if ($this->sale_price && $this->sale_price > 0) {
+            return $this->sale_price;
+        }
+        return $this->price;
+    }
+
+    public function getStockStatusLabelAttribute()
+    {
+        return [
+            'in_stock' => 'In Stock',
+            'out_of_stock' => 'Out of Stock',
+            'backorder' => 'Backorder',
+        ][$this->stock_status] ?? $this->stock_status;
+    }
+
+    public function getStatusLabelAttribute()
+    {
+        return [
+            'draft' => 'Draft',
+            'published' => 'Published',
+            'archived' => 'Archived',
+        ][$this->status] ?? $this->status;
+    }
+
+    /**
+     * Get the reviews for the product.
+     */
     public function reviews()
     {
         return $this->hasMany(ProductReview::class);
     }
 
-    public function getAverageRatingAttribute()
+    public function scopeFilter($query, $filters)
     {
-        return $this->reviews()->avg('rating') ?? 0;
-    }
+        if (!is_array($filters)) return $query;
 
-    public function getReviewsCountAttribute()
-    {
-        return $this->reviews()->count();
-    }
+        if (!empty($filters['search'])) {
+            $query->where('name', 'like', '%' . $filters['search'] . '%');
+        }
 
-    // Add this to your Product model to track views
-    public function incrementViews()
-    {
-        $this->timestamps = false; // Don't update the timestamps
-        $this->increment('views');
-        $this->timestamps = true;
-    }
+        if (!empty($filters['brand_id'])) {
+            $query->where('brand_id', $filters['brand_id']);
+        }
 
-    public function orders()
-    {
-        return $this->belongsToMany(Order::class)
-            ->withPivot('quantity', 'price')
-            ->withTimestamps();
+        if (!empty($filters['category_id'])) {
+            $query->whereHas('categories', function ($q) use ($filters) {
+                $q->where('id', $filters['category_id']);
+            });
+        }
+
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        return $query;
     }
 }
-//    public function registerMediaCollections(): void
-//    {
-//        $this->addMediaCollection('product_images')->useDisk('public');
-//    }
-//
-//    public function registerMediaConversions(Media $media = null): void
-//    {
-//        $this->addMediaConversion('thumbnail')
-//            ->width(150)
-//            ->height(150)
-//            ->sharpen(10);
-//
-//        $this->addMediaConversion('medium')
-//            ->width(300)
-//            ->height(300);
-//
-//        $this->addMediaConversion('medium_large')
-//            ->width(768)
-//            ->height(null); // Keeps aspect ratio
-//
-//        $this->addMediaConversion('large')
-//            ->width(1024)
-//            ->height(1024);
-//    }
-//}

@@ -5,7 +5,7 @@
 @push('styles')
     <style>
         /* Hide body until loaded to prevent FOUC */
-        body { visibility: hidden; }
+        /*body { visibility: hidden; }*/
 
         /* Loading spinner */
         #loading-spinner {

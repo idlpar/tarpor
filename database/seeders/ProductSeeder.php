@@ -2,168 +2,274 @@
 
 namespace Database\Seeders;
 
-use Illuminate\Database\Seeder;
+use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductAttribute;
+use App\Models\ProductAttributeValue;
+use App\Models\ProductVariant;
+use App\Models\InventoryItem;
+use App\Models\ProductPricingTier;
+use App\Models\ProductSpecialOffer;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        $products = [
-            [
-                'sku' => 'KID001',
-                'name' => 'Kids T-Shirt',
-                'slug' => 'kids-t-shirt',
-                'description' => 'Comfortable cotton t-shirt for kids, perfect for daily wear.',
-                'short_description' => 'Soft and durable kids’ t-shirt.',
-                'price' => 15.99,
-                'sale_price' => 12.99,
-                'stock_quantity' => 100,
-                'stock_status' => 'in_stock',
-                'brand_id' => 1,
-                'thumbnail' => 'products/kids-t-shirt.jpg',
-                'images' => json_encode(['products/kids-t-shirt-1.jpg', 'products/kids-t-shirt-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'MEN001',
-                'name' => 'Men’s Jacket',
-                'slug' => 'mens-jacket',
-                'description' => 'Stylish and warm jacket for men, ideal for winter.',
-                'short_description' => 'Warm and trendy men’s jacket.',
-                'price' => 49.99,
-                'sale_price' => 39.99,
-                'stock_quantity' => 50,
-                'stock_status' => 'in_stock',
-                'brand_id' => 2,
-                'thumbnail' => 'products/mens-jacket.jpg',
-                'images' => json_encode(['products/mens-jacket-1.jpg', 'products/mens-jacket-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'WOM001',
-                'name' => 'Women’s Dress',
-                'slug' => 'womens-dress',
-                'description' => 'Elegant and comfortable dress for women, perfect for any occasion.',
-                'short_description' => 'Chic and comfortable dress.',
-                'price' => 59.99,
-                'sale_price' => 49.99,
-                'stock_quantity' => 80,
-                'stock_status' => 'in_stock',
-                'brand_id' => 1,
-                'thumbnail' => 'products/womens-dress.jpg',
-                'images' => json_encode(['products/womens-dress-1.jpg', 'products/womens-dress-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'KID002',
-                'name' => 'Kids Sneakers',
-                'slug' => 'kids-sneakers',
-                'description' => 'Durable and stylish sneakers for kids, great for active play.',
-                'short_description' => 'Stylish and sturdy kids’ sneakers.',
-                'price' => 29.99,
-                'sale_price' => 24.99,
-                'stock_quantity' => 120,
-                'stock_status' => 'in_stock',
-                'brand_id' => 3,
-                'thumbnail' => 'products/kids-sneakers.jpg',
-                'images' => json_encode(['products/kids-sneakers-1.jpg', 'products/kids-sneakers-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'MEN002',
-                'name' => 'Men’s Casual Shirt',
-                'slug' => 'mens-casual-shirt',
-                'description' => 'Breathable cotton shirt for men, ideal for casual outings.',
-                'short_description' => 'Casual and breathable shirt.',
-                'price' => 34.99,
-                'sale_price' => 29.99,
-                'stock_quantity' => 70,
-                'stock_status' => 'in_stock',
-                'brand_id' => 2,
-                'thumbnail' => 'products/mens-casual-shirt.jpg',
-                'images' => json_encode(['products/mens-casual-shirt-1.jpg', 'products/mens-casual-shirt-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'WOM002',
-                'name' => 'Women’s Handbag',
-                'slug' => 'womens-handbag',
-                'description' => 'Stylish leather handbag with ample space for essentials.',
-                'short_description' => 'Elegant and spacious handbag.',
-                'price' => 79.99,
-                'sale_price' => 69.99,
-                'stock_quantity' => 40,
-                'stock_status' => 'in_stock',
-                'brand_id' => 1,
-                'thumbnail' => 'products/womens-handbag.jpg',
-                'images' => json_encode(['products/womens-handbag-1.jpg', 'products/womens-handbag-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'ACC001',
-                'name' => 'Sunglasses',
-                'slug' => 'sunglasses',
-                'description' => 'UV-protective sunglasses with a modern design.',
-                'short_description' => 'Stylish sunglasses for all.',
-                'price' => 19.99,
-                'sale_price' => 15.99,
-                'stock_quantity' => 150,
-                'stock_status' => 'in_stock',
-                'brand_id' => 3,
-                'thumbnail' => 'products/sunglasses.jpg',
-                'images' => json_encode(['products/sunglasses-1.jpg', 'products/sunglasses-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'KID003',
-                'name' => 'Kids Backpack',
-                'slug' => 'kids-backpack',
-                'description' => 'Lightweight and colorful backpack for kids, perfect for school.',
-                'short_description' => 'Durable and colorful backpack.',
-                'price' => 24.99,
-                'sale_price' => 19.99,
-                'stock_quantity' => 90,
-                'stock_status' => 'in_stock',
-                'brand_id' => 1,
-                'thumbnail' => 'products/kids-backpack.jpg',
-                'images' => json_encode(['products/kids-backpack-1.jpg', 'products/kids-backpack-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'MEN003',
-                'name' => 'Men’s Watch',
-                'slug' => 'mens-watch',
-                'description' => 'Elegant wristwatch for men with a sleek design.',
-                'short_description' => 'Sleek and modern watch.',
-                'price' => 99.99,
-                'sale_price' => 89.99,
-                'stock_quantity' => 30,
-                'stock_status' => 'in_stock',
-                'brand_id' => 2,
-                'thumbnail' => 'products/mens-watch.jpg',
-                'images' => json_encode(['products/mens-watch-1.jpg', 'products/mens-watch-2.jpg']),
-                'status' => 'published',
-            ],
-            [
-                'sku' => 'WOM003',
-                'name' => 'Women’s Scarf',
-                'slug' => 'womens-scarf',
-                'description' => 'Soft silk scarf, perfect for adding elegance to any outfit.',
-                'short_description' => 'Elegant and versatile scarf.',
-                'price' => 14.99,
-                'sale_price' => 12.99,
-                'stock_quantity' => 200,
-                'stock_status' => 'in_stock',
-                'brand_id' => 1,
-                'thumbnail' => 'products/womens-scarf.jpg',
-                'images' => json_encode(['products/womens-scarf-1.jpg', 'products/womens-scarf-2.jpg']),
-                'status' => 'published',
-            ],
-        ];
+        // Create product attributes: Size and Color
+        $sizeAttr = ProductAttribute::create(['name' => 'Size', 'slug' => 'size']);
+        $colorAttr = ProductAttribute::create(['name' => 'Color', 'slug' => 'color']);
 
-        foreach ($products as $product) {
-            Product::create($product);
-        }
+        // Attribute values
+        $sizes = collect([
+            ['value' => '4-5 Yrs'],
+            ['value' => '6-7 Yrs'],
+            ['value' => 'M'],
+            ['value' => 'L'],
+        ])->map(fn($data) => ProductAttributeValue::create([
+            'attribute_id' => $sizeAttr->id,
+            'value' => $data['value'],
+        ]));
+
+        $colors = collect([
+            ['value' => 'Red', 'color_code' => '#FF0000'],
+            ['value' => 'Blue', 'color_code' => '#0000FF'],
+            ['value' => 'Black', 'color_code' => '#000000'],
+        ])->map(fn($data) => ProductAttributeValue::create([
+            'attribute_id' => $colorAttr->id,
+            'value' => $data['value'],
+            'color_code' => $data['color_code'],
+        ]));
+
+        // Create product 1: Boys Cotton T-Shirt
+        $product1 = Product::create([
+            'name' => 'Boys Cotton T-Shirt – Red & Blue Combo',
+            'slug' => Str::slug('Boys Cotton T-Shirt – Red & Blue Combo'),
+            'description' => 'Pack of 2 soft cotton T-shirts for boys with playful prints. Red and Blue colors, perfect for summer.',
+            'short_description' => 'Boys Cotton T-Shirts (Pack of 2)',
+            'type' => 'variable',
+            'price' => 500.00,
+            'sale_price' => 450.00,
+            'cost_price' => 300.00,
+            'sku' => 'TSHRT-B-KID',
+            'barcode' => '1234567890123',
+            'stock_quantity' => 0,
+            'stock_status' => 'in_stock',
+            'inventory_tracking' => true,
+            'low_stock_threshold' => 5,
+            'weight' => 0.3,
+            'length' => 10.0,
+            'width' => 8.0,
+            'height' => 1.0,
+            'brand_id' => 1, // Ensure brand_id 1 exists
+            'thumbnail' => 'products/tshirt-combo.jpg',
+            'views' => 120,
+            'status' => 'published',
+            'is_featured' => true,
+        ]);
+
+        // Attach categories to product 1
+        $categoryIds = Category::whereIn('slug', ['kids', 'summer-wear'])->pluck('id')->toArray();
+        $product1->categories()->syncWithoutDetaching($categoryIds);
+
+        // Variants for product 1
+        $variant1 = ProductVariant::create([
+            'product_id' => $product1->id,
+            'sku' => 'TSHRT-B-KID-RED-4',
+            'price' => 500.00,
+            'sale_price' => 450.00,
+            'cost_price' => 300.00,
+            'stock_quantity' => 10,
+            'stock_status' => 'in_stock',
+            'weight' => 0.15,
+            'length' => 10,
+            'width' => 8,
+            'height' => 1,
+            'is_default' => true,
+            'image' => 'products/variants/red-4.jpg',
+        ]);
+
+        $variant2 = ProductVariant::create([
+            'product_id' => $product1->id,
+            'sku' => 'TSHRT-B-KID-BLU-6',
+            'price' => 500.00,
+            'sale_price' => 450.00,
+            'cost_price' => 300.00,
+            'stock_quantity' => 15,
+            'stock_status' => 'in_stock',
+            'weight' => 0.15,
+            'length' => 10,
+            'width' => 8,
+            'height' => 1,
+            'is_default' => false,
+            'image' => 'products/variants/blue-6.jpg',
+        ]);
+
+        // Attach attribute values to variants
+        $variant1->attributeValues()->attach([$sizes[0]->id, $colors[0]->id]); // 4-5 Yrs, Red
+        $variant2->attributeValues()->attach([$sizes[1]->id, $colors[1]->id]); // 6-7 Yrs, Blue
+
+        // Inventory for product 1
+        InventoryItem::create([
+            'product_id' => $product1->id,
+            'variant_id' => $variant1->id,
+            'quantity' => 10,
+            'low_stock_threshold' => 2,
+            'location' => 'Warehouse A - Rack 1',
+            'batch_number' => 'B2301',
+        ]);
+
+        InventoryItem::create([
+            'product_id' => $product1->id,
+            'variant_id' => $variant2->id,
+            'quantity' => 15,
+            'low_stock_threshold' => 2,
+            'location' => 'Warehouse A - Rack 1',
+            'batch_number' => 'B2302',
+        ]);
+
+        // Pricing Tiers for product 1
+        ProductPricingTier::create([
+            'product_id' => $product1->id,
+            'variant_id' => $variant1->id,
+            'min_quantity' => 5,
+            'max_quantity' => 10,
+            'price' => 430.00,
+        ]);
+
+        ProductPricingTier::create([
+            'product_id' => $product1->id,
+            'variant_id' => $variant2->id,
+            'min_quantity' => 10,
+            'price' => 400.00,
+        ]);
+
+        // Special Offers for product 1
+        ProductSpecialOffer::create([
+            'product_id' => $product1->id,
+            'variant_id' => null,
+            'name' => 'Eid Offer',
+            'discount_amount' => 50,
+            'discount_type' => 'fixed',
+            'start_date' => now()->subDays(2),
+            'end_date' => now()->addDays(7),
+            'is_active' => true,
+        ]);
+
+        // Create product 2: Men’s Jacket
+        $product2 = Product::create([
+            'name' => 'Men’s Casual Jacket',
+            'slug' => Str::slug('Men’s Casual Jacket'),
+            'description' => 'Stylish black jacket for men, perfect for casual and winter wear.',
+            'short_description' => 'Men’s Casual Jacket',
+            'type' => 'variable',
+            'price' => 1500.00,
+            'sale_price' => 1350.00,
+            'cost_price' => 900.00,
+            'sku' => 'JCKT-MEN',
+            'barcode' => '9876543210987',
+            'stock_quantity' => 0,
+            'stock_status' => 'in_stock',
+            'inventory_tracking' => true,
+            'low_stock_threshold' => 5,
+            'weight' => 0.8,
+            'length' => 20.0,
+            'width' => 15.0,
+            'height' => 2.0,
+            'brand_id' => 1, // Ensure brand_id 1 exists
+            'thumbnail' => 'products/mens-jacket.jpg',
+            'views' => 80,
+            'status' => 'published',
+            'is_featured' => false,
+        ]);
+
+        // Attach categories to product 2
+        $categoryIds2 = Category::whereIn('slug', ['men', 'winter-wear'])->pluck('id')->toArray();
+        $product2->categories()->syncWithoutDetaching($categoryIds2);
+
+        // Variants for product 2
+        $variant3 = ProductVariant::create([
+            'product_id' => $product2->id,
+            'sku' => 'JCKT-MEN-BLK-M',
+            'price' => 1500.00,
+            'sale_price' => 1350.00,
+            'cost_price' => 900.00,
+            'stock_quantity' => 8,
+            'stock_status' => 'in_stock',
+            'weight' => 0.8,
+            'length' => 20,
+            'width' => 15,
+            'height' => 2,
+            'is_default' => true,
+            'image' => 'products/variants/black-m.jpg',
+        ]);
+
+        $variant4 = ProductVariant::create([
+            'product_id' => $product2->id,
+            'sku' => 'JCKT-MEN-BLK-L',
+            'price' => 1500.00,
+            'sale_price' => 1350.00,
+            'cost_price' => 900.00,
+            'stock_quantity' => 12,
+            'stock_status' => 'in_stock',
+            'weight' => 0.8,
+            'length' => 20,
+            'width' => 15,
+            'height' => 2,
+            'is_default' => false,
+            'image' => 'products/variants/black-l.jpg',
+        ]);
+
+        // Attach attribute values to variants
+        $variant3->attributeValues()->attach([$sizes[2]->id, $colors[2]->id]); // M, Black
+        $variant4->attributeValues()->attach([$sizes[3]->id, $colors[2]->id]); // L, Black
+
+        // Inventory for product 2
+        InventoryItem::create([
+            'product_id' => $product2->id,
+            'variant_id' => $variant3->id,
+            'quantity' => 8,
+            'low_stock_threshold' => 2,
+            'location' => 'Warehouse B - Rack 2',
+            'batch_number' => 'B2303',
+        ]);
+
+        InventoryItem::create([
+            'product_id' => $product2->id,
+            'variant_id' => $variant4->id,
+            'quantity' => 12,
+            'low_stock_threshold' => 2,
+            'location' => 'Warehouse B - Rack 2',
+            'batch_number' => 'B2304',
+        ]);
+
+        // Pricing Tiers for product 2
+        ProductPricingTier::create([
+            'product_id' => $product2->id,
+            'variant_id' => $variant3->id,
+            'min_quantity' => 3,
+            'max_quantity' => 7,
+            'price' => 1300.00,
+        ]);
+
+        ProductPricingTier::create([
+            'product_id' => $product2->id,
+            'variant_id' => $variant4->id,
+            'min_quantity' => 8,
+            'price' => 1250.00,
+        ]);
+
+        // Special Offers for product 2
+        ProductSpecialOffer::create([
+            'product_id' => $product2->id,
+            'variant_id' => null,
+            'name' => 'Winter Sale',
+            'discount_amount' => 100,
+            'discount_type' => 'fixed',
+            'start_date' => now()->subDays(2),
+            'end_date' => now()->addDays(7),
+            'is_active' => true,
+        ]);
     }
 }
