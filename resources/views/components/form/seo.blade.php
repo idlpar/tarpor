@@ -22,7 +22,7 @@
             <h4 class="text-lg font-semibold text-gray-800 text-center bg-amber-200 px-2 py-2">Facebook Meta</h4>
             <x-form.input name="og_title" label="Open Graph Title" value="{{ $seo->og_title ?? '' }}" />
             <x-form.textarea name="og_description" label="Open Graph Description">{{ $seo->og_description ?? '' }}</x-form.textarea>
-            <x-form.file-upload name="og_image" label="Open Graph Image" isSingleImage="true" :existingImages="isset($seo->og_image) ? asset($seo->og_image) : null" />
+            <x-form.file-upload name="og_image" label="Open Graph Image" isSingleImage="true" :existingImages="isset($seo->og_image) && $seo->og_image ? [asset($seo->og_image)] : []" />
         </div>
 
         <!-- Twitter Meta -->
@@ -30,7 +30,7 @@
             <h4 class="text-lg font-semibold text-gray-800 text-center bg-amber-200 px-2 py-2">Twitter Meta</h4>
             <x-form.input name="twitter_title" label="Twitter Title" value="{{ $seo->twitter_title ?? '' }}" />
             <x-form.textarea name="twitter_description" label="Twitter Description">{{ $seo->twitter_description ?? '' }}</x-form.textarea>
-            <x-form.file-upload name="twitter_image" label="Twitter Image" isSingleImage="true" :existingImages="isset($seo->twitter_image) ? asset($seo->twitter_image) : null" />
+            <x-form.file-upload name="twitter_image" label="Twitter Image" isSingleImage="true" :existingImages="isset($seo->twitter_image) && $seo->twitter_image ? [asset($seo->twitter_image)] : []" />
         </div>
 
         <!-- Schema & Robots -->

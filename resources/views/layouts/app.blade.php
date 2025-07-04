@@ -10,8 +10,10 @@
         @endif
     </title>
 
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="font-['Urbanist'] bg-[var(--light)] text-gray-900">
+<body class="font-['Urbanist'] bg-[var(--light)] text-gray-900 flex flex-col min-h-screen pt-16">
+<main id="main-content" class="flex-grow">
 <div id="cookie-consent" class="fixed inset-x-0 bottom-0 bg-white shadow-lg z-50 transform transition-transform duration-300 translate-y-full">
     <div class="container mx-auto px-4 py-4">
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -64,8 +66,7 @@
 <!-- Toast Notification  -->
 @include('components.app.toast')
 
-<!-- Manual JavaScript -->
-<script src="{{ asset('js/app.js') }}" defer></script>
+
 
 @stack('scripts')
 </body>

@@ -28,16 +28,16 @@
                     <!-- Image Gallery -->
                     <div>
                         <div class="relative mb-4">
-                            <img id="mainProductImage" src="{{ asset($product->thumbnail ?? 'images/default-product.jpg') }}" alt="{{ $product->name }}" class="w-full h-96 object-contain rounded-lg shadow-sm cursor-zoom-in">
+                            <img id="mainProductImage" src="{{ $product->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $product->name }}" class="w-full h-96 object-contain rounded-lg shadow-sm cursor-zoom-in">
                             <!-- Zoom overlay (optional, can be more complex with JS) -->
                             <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-opacity duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m0 0h-3"></path></svg>
                             </div>
                         </div>
-                        @if ($product->images && count(json_decode($product->images, true)) > 0)
+                        @if ($product->gallery_images->isNotEmpty())
                             <div class="grid grid-cols-4 gap-2">
-                                @foreach (json_decode($product->images, true) as $image)
-                                    <img src="{{ asset($image) }}" alt="{{ $product->name }} thumbnail" class="w-full h-24 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-colors duration-200 thumbnail-image" data-src="{{ asset($image) }}">
+                                @foreach ($product->gallery_images as $image_url)
+                                    <img src="{{ $image_url }}" alt="{{ $product->name }} thumbnail" class="w-full h-24 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-colors duration-200 thumbnail-image" data-src="{{ $image_url }}">
                                 @endforeach
                             </div>
                         @endif
@@ -168,34 +168,6 @@
                             @else
                                 <p class="text-gray-600">No reviews yet. Be the first to review this product!</p>
                             @endif
-
-                            <div class="mt-8">
-                                <h4 class="text-md font-semibold mb-3">Submit Your Review</h4>
-                                @auth
-                                    <form action="{{ route('products.reviews.store', $product->id) }}" method="POST" class="space-y-4">
-                                        @csrf
-                                        <div>
-                                            <label for="rating" class="block text-sm font-medium text-gray-700">Your Rating</label>
-                                            <select id="rating" name="rating" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                                                <option value="5">5 Stars - Excellent</option>
-                                                <option value="4">4 Stars - Very Good</option>
-                                                <option value="3">3 Stars - Good</option>
-                                                <option value="2">2 Stars - Fair</option>
-                                                <option value="1">1 Star - Poor</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label for="comment" class="block text-sm font-medium text-gray-700">Your Review</label>
-                                            <textarea id="comment" name="comment" rows="4" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm"></textarea>
-                                        </div>
-                                        <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                            Submit Review
-                                        </button>
-                                    </form>
-                                @else
-                                    <p class="text-gray-600">Please <a href="{{ route('login') }}" class="text-blue-600 hover:underline">log in</a> to submit a review.</p>
-                                @endauth
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -211,7 +183,7 @@
                             @foreach ($relatedProducts as $relatedProduct)
                                 <div class="flex items-center space-x-4">
                                     <a href="{{ route('products.show.frontend', $relatedProduct->slug) }}">
-                                        <img src="{{ asset($relatedProduct->thumbnail ?? 'images/default-product.jpg') }}" alt="{{ $relatedProduct->name }}" class="w-20 h-20 object-cover rounded-md">
+                                        <img src="{{ $relatedProduct->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $relatedProduct->name }}" class="w-20 h-20 object-cover rounded-md">
                                     </a>
                                     <div>
                                         <a href="{{ route('products.show.frontend', $relatedProduct->slug) }}" class="text-gray-800 hover:text-blue-600 font-medium">{{ $relatedProduct->name }}</a>

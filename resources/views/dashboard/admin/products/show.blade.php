@@ -7,12 +7,12 @@
     <meta name="keywords" content="{{ $product->seo->meta_keywords ?? ($product->categories->isNotEmpty() ? $product->categories->pluck('name')->implode(', ') : $product->name) }}">
     <meta property="og:title" content="{{ $product->seo->og_title ?? $product->name }}">
     <meta property="og:description" content="{{ $product->seo->og_description ?? Str::limit(strip_tags($product->description), 160) }}">
-    <meta property="og:image" content="{{ asset(optional($product->seo)->og_image ?? $product->thumbnail ?? 'images/default-product.jpg') }}">
+    <meta property="og:image" content="{{ asset(optional($product->seo)->og_image ?? $product->thumbnail_url ?? 'images/default-product.jpg') }}">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="{{ $product->seo->twitter_title ?? $product->name }}">
     <meta name="twitter:description" content="{{ $product->seo->twitter_description ?? Str::limit(strip_tags($product->description), 160) }}">
-    <meta name="twitter:image" content="{{ asset($product->seo->twitter_image ?? $product->thumbnail ?? 'images/default-product.jpg') }}">
+    <meta name="twitter:image" content="{{ asset($product->seo->twitter_image ?? $product->thumbnail_url ?? 'images/default-product.jpg') }}">
 @endsection
 
 @section('content')
@@ -45,6 +45,13 @@
 
                 @canany(['update', 'delete'], $product)
                     <div class="flex flex-wrap gap-3">
+                        @if($product->status === 'published')
+                            <a href="{{ route('products.show.frontend', $product->slug) }}" target="_blank"
+                               class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                View on Frontend
+                            </a>
+                        @endif
                         @can('update', $product)
                             <a href="{{ route('products.edit', $product->id) }}"
                                class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition ease-in-out duration-150">
@@ -93,18 +100,18 @@
                     <!-- Image Gallery -->
                     <div class="space-y-4">
                         <div class="bg-gray-50 rounded-lg p-4 flex items-center justify-center h-96">
-                            <img src="{{ asset($product->thumbnail ?? 'images/default-product.jpg') }}"
+                            <img src="{{ $product->thumbnail_url }}"
                                  alt="{{ $product->name }}"
                                  class="max-h-full max-w-full object-contain"
                                  id="main-product-image"
                                  loading="lazy">
                         </div>
 
-                        @if ($product->images)
+                        @if ($product->gallery_images->isNotEmpty())
                             <div class="grid grid-cols-4 gap-2">
-                                @foreach (json_decode($product->images, true) as $image)
+                                @foreach ($product->gallery_images as $image)
                                     <div class="bg-gray-50 rounded-md overflow-hidden h-24 cursor-pointer product-thumbnail">
-                                        <img src="{{ asset($image) }}"
+                                        <img src="{{ $image }}"
                                              alt="{{ $product->name }} image"
                                              class="w-full h-full object-cover"
                                              loading="lazy">
@@ -282,15 +289,29 @@
                         </div>
                         <div>
                             <h3 class="text-sm font-semibold text-gray-900 mb-2">Attributes</h3>
-                            <div class="bg-gray-50 rounded p-3">
-                                <pre class="text-xs text-gray-600 overflow-x-auto">{{ $product->attributes ? json_encode($product->attributes, JSON_PRETTY_PRINT) : 'N/A' }}</pre>
-                            </div>
+                            @if ($product->attributes && is_array($product->attributes) && count($product->attributes) > 0)
+                                <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
+                                    @foreach ($product->attributes as $key => $value)
+                                        <div class="border-b border-gray-100 pb-1">
+                                            <dt class="text-xs text-gray-500">{{ ucfirst(str_replace('_', ' ', $key)) }}</dt>
+                                            <dd class="text-sm text-gray-900">{{ $value }}</dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                            @else
+                                <div class="bg-gray-50 rounded p-3">
+                                    <p class="text-xs text-gray-600">N/A</p>
+                                </div>
+                            @endif
                         </div>
                         <div>
                             <h3 class="text-sm font-semibold text-gray-900 mb-2">Collections</h3>
                             <div class="flex flex-wrap gap-1">
-                                @if($product->product_collections)
-                                    @foreach($product->product_collections as $collection)
+                                @php
+                                    $productCollections = collect($product->product_collections ?? []);
+                                @endphp
+                                @if ($productCollections->isNotEmpty())
+                                    @foreach($productCollections as $collection)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
                                         {{ ucfirst(str_replace('_', ' ', $collection)) }}
                                     </span>
@@ -303,10 +324,10 @@
                         <div>
                             <h3 class="text-sm font-semibold text-gray-900 mb-2">Labels</h3>
                             <div class="flex flex-wrap gap-1">
-                                @if($product->labels)
+                                @if(collect($product->labels)->isNotEmpty())
                                     @foreach($product->labels as $label)
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                        {{ ucfirst($label) }}
+                                        {{ ucfirst($label->name) }}
                                     </span>
                                     @endforeach
                                 @else
@@ -451,7 +472,7 @@
                                 <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
                                     <div class="bg-gray-50 h-48 flex items-center justify-center p-4">
                                         <img
-                                            src="{{ asset($relatedProduct->thumbnail ?? 'images/default-product.jpg') }}"
+                                            src="{{ asset($relatedProduct->thumbnail_url ?? 'images/default-product.jpg') }}"
                                             alt="{{ $relatedProduct->name }}"
                                             class="max-h-full max-w-full object-contain"
                                             loading="lazy"
@@ -531,12 +552,15 @@
             const thumbnails = document.querySelectorAll('.product-thumbnail img');
 
             if (thumbnails.length > 0) {
+                // Set the first thumbnail as active initially
                 thumbnails[0].parentElement.classList.add('ring-2', 'ring-blue-500');
 
                 thumbnails.forEach(thumb => {
                     thumb.parentElement.addEventListener('click', function() {
                         mainImage.src = thumb.src;
+                        // Remove active class from all thumbnails
                         thumbnails.forEach(t => t.parentElement.classList.remove('ring-2', 'ring-blue-500'));
+                        // Add active class to the clicked thumbnail
                         this.classList.add('ring-2', 'ring-blue-500');
                     });
                 });

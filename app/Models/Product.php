@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\OrderItem;
 
 class Product extends Model
 {
@@ -28,6 +29,8 @@ class Product extends Model
         'height' => 'decimal:2',
         'inventory_tracking' => 'boolean',
         'is_featured' => 'boolean',
+        'product_collections' => 'array',
+        'labels' => 'array',
     ];
 
     public function brand()
@@ -77,9 +80,24 @@ class Product extends Model
 
     public function relatedProducts()
     {
-        return $this->belongsToMany(Product::class, 'product_relations', 'product_id', 'related_product_id')
+        return $this->belongsToMany(Product::class, 'product_related', 'product_id', 'related_product_id')
             ->withPivot('relation_type', 'position')
             ->withTimestamps();
+    }
+
+    public function collections()
+    {
+        return $this->belongsToMany(Collection::class);
+    }
+
+    public function labels()
+    {
+        return $this->belongsToMany(Label::class);
+    }
+
+    public function seo()
+    {
+        return $this->morphOne(Seo::class, 'seoable', 'entity_type', 'entity_id');
     }
 
     public function getFinalPriceAttribute()
@@ -88,6 +106,26 @@ class Product extends Model
             return $this->sale_price;
         }
         return $this->price;
+    }
+
+    public function getThumbnailUrlAttribute()
+    {
+        if ($this->thumbnail) {
+            $media = Media::find($this->thumbnail);
+            return $media ? $media->url : asset('images/default-product.jpg');
+        }
+        return asset('images/default-product.jpg');
+    }
+
+    public function getGalleryImagesAttribute()
+    {
+        $mediaItems = $this->media;
+
+        if ($this->thumbnail) {
+            $mediaItems = $mediaItems->where('id', '!=', $this->thumbnail);
+        }
+
+        return $mediaItems->map(fn($media) => $media->url);
     }
 
     public function getStockStatusLabelAttribute()
@@ -114,6 +152,14 @@ class Product extends Model
     public function reviews()
     {
         return $this->hasMany(ProductReview::class);
+    }
+
+    /**
+     * Get the order items for the product.
+     */
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 
     public function scopeFilter($query, $filters)

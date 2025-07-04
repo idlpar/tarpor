@@ -1,4 +1,4 @@
-<header class="w-full z-50 sticky top-0">
+<header class="w-full z-50 fixed top-0">
     <div class="nav-container py-4 px-4 sm:px-6 shadow-lg bg-gray-950 ">
         <div class="container mx-auto flex items-center justify-between">
             <a href="{{ route('home') }}" class="flex items-center" aria-label="Tarpor Home">

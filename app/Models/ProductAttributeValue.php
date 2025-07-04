@@ -15,7 +15,7 @@ class ProductAttributeValue extends Model
 
     public function attribute()
     {
-        return $this->belongsTo(ProductAttribute::class);
+        return $this->belongsTo(ProductAttribute::class, 'attribute_id');
     }
 
     public function variants()

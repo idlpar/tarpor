@@ -17,7 +17,7 @@
 
         <!-- Form Container -->
         <div class="max-w-full mx-auto bg-white shadow-lg rounded-lg p-8">
-            <form action="{{ route('product.store') }}" method="POST" enctype="multipart/form-data">
+            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <!-- Name & Slug -->

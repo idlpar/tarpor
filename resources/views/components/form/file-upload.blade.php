@@ -10,7 +10,7 @@
 ])
 
 <div class="col-span-1 lg:col-span-2" x-data="{
-    images: {{ json_encode(collect($existingImages)->map(fn($img) => ['url' => $img])->toArray(), JSON_THROW_ON_ERROR) }},
+    images: {{ json_encode(collect($existingImages)->map(fn($url) => ['url' => $url, 'file' => null])->toArray(), JSON_THROW_ON_ERROR) }},
     inputId: 'file-input-' + Math.random().toString(36).substring(7),
     isSingleImage: {{ $isSingleImage ? 'true' : 'false' }},
     fileInput: null

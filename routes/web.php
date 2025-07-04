@@ -67,7 +67,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
 
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
-        Route::resource('products', ProductController::class)->names('products');
+        Route::resource('products', ProductController::class)->except(['show'])->names('products');
+        Route::get('/admin/products/{product}', [ProductController::class, 'show'])->name('products.show');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
 
         // Explicitly define categories routes (except index, show)
@@ -138,6 +139,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     });
 });
 
+// Public Routes
+Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
 Route::middleware('install')->group(function () {
     Route::get('/install', [App\Http\Controllers\InstallerController::class, 'index'])->name('install.index');
     Route::get('/install/environment', [App\Http\Controllers\InstallerController::class, 'showEnvironmentForm'])->name('install.environment.form');
@@ -150,7 +153,6 @@ Route::middleware('install')->group(function () {
 // Queue Processing Route
 Route::get('/queue/process', [App\Http\Controllers\QueueController::class, 'process'])->name('queue.process')->middleware('throttle:60,1');
 
-// Public Routes
 Route::get('/', fn() => view('home'))->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/search', [ShopController::class, 'search'])->name('shop.search');

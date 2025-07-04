@@ -25,9 +25,7 @@ export default defineConfig({
         minify: 'esbuild',
         rollupOptions: {
             output: {
-                manualChunks: {
-                    vendor: ['tailwindcss', 'ckeditor'],
-                },
+                
             },
         },
     },

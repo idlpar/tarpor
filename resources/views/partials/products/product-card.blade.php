@@ -18,7 +18,7 @@
     </div>
     <div class="p-4">
         <h3 class="text-sm font-medium text-gray-900">
-            <a href="{{ route('products.show', $product->slug) }}">
+            <a href="{{ route('products.show.frontend', $product->slug) }}">
                 <span aria-hidden="true" class="absolute inset-0"></span>
                 {{ Str::limit($product->name, 50) }}
             </a>
