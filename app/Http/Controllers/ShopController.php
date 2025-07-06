@@ -59,8 +59,7 @@ class ShopController extends Controller
     {
         $product = Product::where('slug', $product_slug)
             ->where('status', 'published')
-            ->with('brand')
-            ->with('categories')
+            ->with('brand', 'categories', 'variants.attributeValues.attribute')
             ->firstOrFail();
 
         // Increment view count

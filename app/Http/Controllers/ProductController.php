@@ -22,12 +22,74 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\ProductsExport;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with(['brand', 'categories', 'defaultVariant'])
+        $products = Product::with(['brand', 'categories'])
+            ->withCount('variants')
+            ->when($request->has('type') && $request->input('type') !== '', function ($query) use ($request) {
+                $query->where('type', $request->input('type'));
+            })
+            ->when($request->has('status') && $request->input('status') !== '', function ($query) use ($request) {
+                $query->where('status', $request->input('status'));
+            })
+            ->when($request->has('stock_status') && $request->input('stock_status') !== '', function ($query) use ($request) {
+                $query->where('stock_status', $request->input('stock_status'));
+            })
+            ->when($request->has('price_min') && $request->input('price_min') !== '', function ($query) use ($request) {
+                $query->where('price', '>=', $request->input('price_min'));
+            })
+            ->when($request->has('price_max') && $request->input('price_max') !== '', function ($query) use ($request) {
+                $query->where('price', '<=', $request->input('price_max'));
+            })
+            ->when($request->has('date_from') && $request->input('date_from') !== '', function ($query) use ($request) {
+                $query->whereDate('created_at', '>=', $request->input('date_from'));
+            })
+            ->when($request->has('date_to') && $request->input('date_to') !== '', function ($query) use ($request) {
+                $query->whereDate('created_at', '<=', $request->input('date_to'));
+            })
+            ->when($request->has('sort'), function ($query) use ($request) {
+                $sort = explode(':', $request->input('sort'));
+                $column = $sort[0];
+                $direction = $sort[1] ?? 'asc';
+
+                if ($column === 'name') {
+                    $query->orderBy('name', $direction);
+                } elseif ($column === 'price') {
+                    $query->orderBy('price', $direction);
+                } elseif ($column === 'stock') {
+                    $query->orderBy('stock_quantity', $direction);
+                } elseif ($column === 'created_at') {
+                    $query->orderBy('created_at', $direction);
+                } elseif ($column === 'sales') {
+                    // Assuming 'sales' is a calculated field or relationship, you'd need a more complex orderBy
+                    // For now, we'll just skip it or order by a default if not explicitly handled
+                    // Example: $query->withCount('orderItems')->orderBy('order_items_count', $direction);
+                }
+            }, function ($query) {
+                $query->latest(); // Default sort
+            })
+            ->when(request('type') === 'variable', function ($query) {
+                $query->with(['variants' => function ($query) {
+                    $query->with('attributeValues.attribute');
+                }]);
+            })
+            ->paginate(25);
+
+        $brands = Brand::orderBy('name')->get();
+        $categories = Category::orderBy('name')->get();
+
+        return view('dashboard.admin.products.index', compact('products', 'brands', 'categories'));
+    }
+
+    public function indexVariants(Request $request)
+    {
+        $products = Product::where('type', 'variable')
+            ->with(['brand', 'categories'])
             ->withCount('variants')
             ->filter($request->all())
             ->latest()
@@ -36,8 +98,28 @@ class ProductController extends Controller
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
 
-        return view('dashboard.admin.products.index', compact('products', 'brands', 'categories'));
+        return view('dashboard.admin.products.variants.index', compact('products', 'brands', 'categories'));
     }
+
+    public function importForm()
+    {
+        return view('dashboard.admin.products.import');
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        try {
+            Excel::import(new ProductsImport, $request->file('file'));
+            return redirect()->route('products.index')->with('success', 'Products imported successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error importing products: ' . $e->getMessage());
+        }
+    }
+
 
     public function create()
     {
@@ -52,7 +134,7 @@ class ProductController extends Controller
     {
         $validated = $this->validateProduct($request);
 
-        DB::transaction(function() use ($validated, $request) {
+        DB::transaction(function () use ($validated, $request) {
             $product = new Product();
             $product->fill($validated);
             $product->save();
@@ -73,9 +155,7 @@ class ProductController extends Controller
                 $this->syncTags($product, json_decode($validated['tags'], true));
             }
 
-            if ($product->type === 'variable' && !empty($validated['variants'])) {
-                $this->createVariants($product, $validated['variants']);
-            }
+
 
             if ($product->type === 'simple') {
                 $this->createInventoryItem($product, $validated);
@@ -86,7 +166,10 @@ class ProductController extends Controller
             }
 
             if (!empty($validated['related_products'])) {
-                $product->relatedProducts()->sync(json_decode($validated['related_products'], true));
+                $relatedProductsToSync = is_string($validated['related_products']) ? json_decode($validated['related_products'], true) : ($validated['related_products'] ?? []);
+                if (is_array($relatedProductsToSync)) {
+                    $product->relatedProducts()->sync($relatedProductsToSync);
+                }
             }
 
             if (!empty($validated['cross_selling_products'])) {
@@ -196,35 +279,32 @@ class ProductController extends Controller
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
         $attributes = ProductAttribute::with('values')->orderBy('position')->get();
-        $selectedCategories = $product->categories->pluck('id')->toArray();
-        $selectedTags = $product->tags->pluck('name')->toArray();
 
         $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo']);
-
-        $existingImages = $product->media->map(fn($media) => $media->url)->toArray();
-        $thumbnail = $product->thumbnail ? Media::find($product->thumbnail)->url : null;
 
         return view('dashboard.admin.products.edit', compact(
             'product',
             'brands',
             'categories',
-            'attributes',
-            'selectedCategories',
-            'selectedTags',
-            'existingImages',
-            'thumbnail'
+            'attributes'
         ));
     }
 
     public function update(Request $request, Product $product)
     {
+        Log::info('Product update request received:', $request->all());
+        Log::info('Type of tags input: ' . gettype($request->input('tags')) . ' Value: ' . print_r($request->input('tags'), true));
+        Log::info('Type of related_products input: ' . gettype($request->input('related_products')) . ' Value: ' . print_r($request->input('related_products'), true));
+        Log::info('Type of cross_selling_products input: ' . gettype($request->input('cross_selling_products')) . ' Value: ' . print_r($request->input('cross_selling_products'), true));
+        Log::info('Type of product_faqs input: ' . gettype($request->input('product_faqs')) . ' Value: ' . print_r($request->input('product_faqs'), true));
         $validated = $this->validateProduct($request, $product);
 
-        DB::transaction(function() use ($product, $validated, $request) {
+        DB::transaction(function () use ($product, $validated, $request) {
             $product->fill($validated);
 
             // Handle product images
-            $this->handleProductImages($product, $request->file('images_new'), $request->input('images_existing'));
+            $existingImages = $request->input('images_existing', []);
+            $this->handleProductImages($product, $request->file('images_new'), $existingImages);
 
             // Handle thumbnail
             $thumbnailId = $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
@@ -235,12 +315,11 @@ class ProductController extends Controller
             $product->categories()->sync($validated['category_ids'] ?? []);
 
             // Handle tags
-            $this->syncTags($product, $validated['tags'] ?? []);
+            $tagsToSync = is_string($validated['tags']) ? json_decode($validated['tags'], true) : ($validated['tags'] ?? []);
+            $this->syncTags($product, $tagsToSync);
 
             // Handle variants
-            if ($product->type === 'variable') {
-                $this->updateVariants($product, $validated['variants'] ?? []);
-            }
+
 
             // Handle inventory
             if ($product->type === 'simple') {
@@ -270,7 +349,17 @@ class ProductController extends Controller
             );
         });
 
-        return redirect()->route('admin.products.index')
+        if ($request->ajax() || $request->wantsJson()) {
+            $response = [
+                'success' => true,
+                'message' => 'Product updated successfully.',
+                'redirect' => route('products.index')
+            ];
+
+            return response()->json($response);
+        }
+
+        return redirect()->route('products.index')
             ->with('success', 'Product updated successfully');
     }
 
@@ -278,7 +367,7 @@ class ProductController extends Controller
     {
         $product->delete();
 
-        return redirect()->route('admin.products.index')
+        return redirect()->route('products.index')
             ->with('success', 'Product deleted successfully');
     }
 
@@ -287,14 +376,14 @@ class ProductController extends Controller
         $product = Product::withTrashed()->findOrFail($id);
         $product->restore();
 
-        return redirect()->route('admin.products.index')
+        return redirect()->route('products.index')
             ->with('success', 'Product restored successfully');
     }
 
     /**
      * Display the specified product on the frontend.
      *
-     * @param  \App\Models\Product  $product
+     * @param \App\Models\Product $product
      * @return \Illuminate\Http\Response
      */
     public function showFrontend(Product $product)
@@ -429,6 +518,7 @@ class ProductController extends Controller
             'twitter_image' => 'nullable|image|max:2048',
             'schema_markup' => 'nullable|string',
             'robots' => 'nullable|string',
+            'type' => 'required|in:simple,variable',
         ];
 
         $validatedData = $request->validate($rules);
@@ -465,33 +555,34 @@ class ProductController extends Controller
 
     protected function handleProductImages(Product $product, $newFiles = [], $existingIds = [])
     {
+        $newFiles = $newFiles ?? [];
+        $existingIds = $existingIds ?? [];
+
+        Log::info('handleProductImages: Start', ['product_id' => $product->id, 'newFiles_count' => count($newFiles), 'existingIds' => $existingIds]);
+
         $currentMediaIds = $product->media->pluck('id')->toArray();
+        Log::info('handleProductImages: Current media IDs on product', ['currentMediaIds' => $currentMediaIds]);
+
         $retainedMediaIds = [];
 
-        // Process existing media IDs
+        // Process existing media IDs (from frontend hidden input)
         if (is_array($existingIds)) {
             foreach ($existingIds as $id) {
-                if (in_array($id, $currentMediaIds)) {
-                    $retainedMediaIds[] = (int)$id;
-                } else {
-                    // If an existing ID is sent but not currently associated, re-associate it
-                    Media::where('id', $id)->update([
-                        'model_id' => $product->id,
-                        'model_type' => Product::class,
-                    ]);
-                    $retainedMediaIds[] = (int)$id;
-                }
+                $retainedMediaIds[] = (int)$id;
             }
         }
+        Log::info('handleProductImages: Retained media IDs after processing existingIds', ['retainedMediaIds_after_existing' => $retainedMediaIds]);
 
-        // Process new files
+        // Process new files (uploaded via file input)
         if (is_array($newFiles)) {
             foreach ($newFiles as $file) {
                 if ($file instanceof \Illuminate\Http\UploadedFile) {
                     try {
                         $fileName = $file->hashName(); // Generate a unique file name
                         $path = $file->storeAs('products/' . $product->id, $fileName, 'public');
-                        $media = $product->media()->create([
+                        $media = Media::create([ // Use Media::create directly, then associate
+                            'model_type' => Product::class, // Temporarily set, will be updated by sync
+                            'model_id' => $product->id, // Temporarily set, will be updated by sync
                             'disk' => 'public',
                             'collection_name' => 'products',
                             'name' => $file->getClientOriginalName(),
@@ -501,19 +592,38 @@ class ProductController extends Controller
                             'custom_properties' => [],
                             'responsive_images' => [],
                         ]);
+                        $retainedMediaIds[] = $media->id;
+                        Log::info('handleProductImages: New file uploaded and media record created', ['media_id' => $media->id, 'file_name' => $fileName]);
                     } catch (\Exception $e) {
-                        \Log::error("Error handling product image: " . $e->getMessage());
+                        Log::error("Error handling new product image: " . $e->getMessage(), ['file_name' => $file->getClientOriginalName()]);
                         continue; // Skip to the next file
                     }
-                    $retainedMediaIds[] = $media->id;
                 }
             }
         }
+        Log::info('handleProductImages: Retained media IDs after processing newFiles', ['retainedMediaIds_final' => $retainedMediaIds]);
 
-        // Delete media that are no longer retained
-        $mediaToDelete = array_diff($currentMediaIds, $retainedMediaIds);
-        if (!empty($mediaToDelete)) {
-            Media::whereIn('id', $mediaToDelete)->delete();
+        // Detach media that are no longer retained (i.e., removed from the frontend)
+        $mediaToDetach = array_diff($currentMediaIds, $retainedMediaIds);
+        if (!empty($mediaToDetach)) {
+            Media::whereIn('id', $mediaToDetach)->update([
+                'model_id' => null,
+                'model_type' => null,
+            ]);
+            Log::info('handleProductImages: Detached media IDs', ['detachedMediaIds' => $mediaToDetach]);
+        }
+
+        // Explicitly attach/re-attach all retained media to the product
+        // This ensures correct order and association for both old and new images
+        $product->media()->sync($retainedMediaIds); // This is the correct way to sync morphMany relationships if you have a pivot table, but Media is MorphMany, so direct update is needed.
+
+        // Re-attaching logic for MorphMany
+        if (!empty($retainedMediaIds)) {
+            Media::whereIn('id', $retainedMediaIds)->update([
+                'model_id' => $product->id,
+                'model_type' => Product::class,
+            ]);
+            Log::info('handleProductImages: Re-attached/attached media IDs', ['attachedMediaIds' => $retainedMediaIds]);
         }
 
         return $retainedMediaIds;
@@ -521,132 +631,301 @@ class ProductController extends Controller
 
     protected function handleThumbnail(Product $product, $newFile = null, $existingId = null)
     {
-        $thumbnailId = null;
+        $currentThumbnailId = $product->thumbnail;
 
+        // If a new file is uploaded, process it
         if ($newFile instanceof \Illuminate\Http\UploadedFile) {
-            // Delete old thumbnail if it exists and is a Media record
-            if ($product->thumbnail && is_numeric($product->thumbnail)) {
-                Media::destroy($product->thumbnail);
-            }
             try {
-                $fileName = $newFile->hashName(); // Generate a unique file name
-                $path = $newFile->storeAs('products/thumbnails', $fileName, 'public');
+                // Delete old thumbnail if it exists
+                if ($currentThumbnailId) {
+                    Media::where('id', $currentThumbnailId)->update([
+                        'model_id' => null,
+                        'model_type' => null,
+                    ]);
+                }
+
+                $fileName = $newFile->hashName();
+                $path = $newFile->storeAs('products/thumbnails/' . $product->id, $fileName, 'public');
                 $media = $product->media()->create([
                     'disk' => 'public',
                     'collection_name' => 'thumbnails',
                     'name' => $newFile->getClientOriginalName(),
-                    'file_name' => $fileName, // Use the unique file name
+                    'file_name' => $fileName,
                     'mime_type' => $newFile->getMimeType(),
                     'size' => $newFile->getSize(),
                     'custom_properties' => [],
                     'responsive_images' => [],
                 ]);
-                $thumbnailId = $media->id; // Move this inside the try block
+                return $media->id;
             } catch (\Exception $e) {
-                Log::error("Error handling product thumbnail: " . $e->getMessage());
-                return null; // Return null if thumbnail upload fails
+                \Log::error("Error handling product thumbnail: " . $e->getMessage());
+                return $currentThumbnailId;
             }
-        } elseif ($existingId && is_numeric($existingId)) {
-            $thumbnailId = (int)$existingId;
-            // Ensure the existing media is associated with this product
-            Media::where('id', $thumbnailId)->update([
-                'model_id' => $product->id,
-                'model_type' => Product::class,
+        }
+
+        // If an existing ID is provided, and no new file, retain it
+        if ($existingId) {
+            return (int)$existingId;
+        }
+
+        // No new file and no existing ID provided, so detach the current thumbnail
+        if ($currentThumbnailId) {
+            Media::where('id', $currentThumbnailId)->update([
+                'model_id' => null,
+                'model_type' => null,
             ]);
-        } else {
-            // If no new file and no existing ID, and there was an old thumbnail, delete it
-            if ($product->thumbnail && is_numeric($product->thumbnail)) {
-                Media::destroy($product->thumbnail);
-            }
         }
 
-        return $thumbnailId;
+        return null;
     }
 
-    protected function createVariants(Product $product, array $variants)
+    protected function createVariants(Product $product, array $variantsData)
     {
-        foreach ($variants as $variantData) {
-            $variant = $product->variants()->create($variantData);
-            $variant->attributeValues()->sync($variantData['attribute_values']);
+        foreach ($variantsData as $variantData) {
+            $variant = $product->variants()->create([
+                'sku' => $variantData['sku'] ?? null,
+                'price' => $variantData['price'],
+                'sale_price' => $variantData['sale_price'] ?? null,
+                'stock_quantity' => $variantData['stock_quantity'],
+                'stock_status' => $variantData['stock_status'],
+                'barcode' => $variantData['barcode'] ?? null,
+                'weight' => $variantData['weight'] ?? null,
+                'length' => $variantData['length'] ?? null,
+                'width' => $variantData['width'] ?? null,
+                'height' => $variantData['height'] ?? null,
+            ]);
 
-            if (isset($variantData['image'])) {
-                $path = $variantData['image']->store('products/' . $product->id . '/variants', 'public');
-                $variant->update(['image' => $path]);
+            if (!empty($variantData['attribute_value_ids'])) {
+                $variant->attributeValues()->sync($variantData['attribute_value_ids']);
             }
         }
     }
 
-    protected function updateVariants(Product $product, array $variants)
+    protected function updateVariants(Product $product, array $variantsData)
     {
         $existingVariantIds = $product->variants->pluck('id')->toArray();
         $updatedVariantIds = [];
 
-        foreach ($variants as $variantData) {
-            $variant = isset($variantData['id'])
-                ? $product->variants()->findOrFail($variantData['id'])
-                : new ProductVariant(['product_id' => $product->id]);
-
-            $variant->fill($variantData);
-            $variant->save();
-            $variant->attributeValues()->sync($variantData['attribute_values']);
-
-            if (isset($variantData['image'])) {
-                $path = $variantData['image']->store('products/' . $product->id . '/variants', 'public');
-                $variant->update(['image' => $path]);
+        foreach ($variantsData as $variantData) {
+            if (isset($variantData['id']) && in_array($variantData['id'], $existingVariantIds)) {
+                // Update existing variant
+                $variant = $product->variants()->find($variantData['id']);
+                if ($variant) {
+                    $variant->update([
+                        'sku' => $variantData['sku'] ?? null,
+                        'price' => $variantData['price'],
+                        'sale_price' => $variantData['sale_price'] ?? null,
+                        'stock_quantity' => $variantData['stock_quantity'],
+                        'stock_status' => $variantData['stock_status'],
+                        'barcode' => $variantData['barcode'] ?? null,
+                        'weight' => $variantData['weight'] ?? null,
+                        'length' => $variantData['length'] ?? null,
+                        'width' => $variantData['width'] ?? null,
+                        'height' => $variantData['height'] ?? null,
+                    ]);
+                    if (!empty($variantData['attribute_value_ids'])) {
+                        $variant->attributeValues()->sync($variantData['attribute_value_ids']);
+                    }
+                    $updatedVariantIds[] = $variant->id;
+                }
+            } else {
+                // Create new variant
+                $variant = $product->variants()->create([
+                    'sku' => $variantData['sku'] ?? null,
+                    'price' => $variantData['price'],
+                    'sale_price' => $variantData['sale_price'] ?? null,
+                    'stock_quantity' => $variantData['stock_quantity'],
+                    'stock_status' => $variantData['stock_status'],
+                    'barcode' => $variantData['barcode'] ?? null,
+                    'weight' => $variantData['weight'] ?? null,
+                    'length' => $variantData['length'] ?? null,
+                    'width' => $variantData['width'] ?? null,
+                    'height' => $variantData['height'] ?? null,
+                ]);
+                if (!empty($variantData['attribute_value_ids'])) {
+                    $variant->attributeValues()->sync($variantData['attribute_value_ids']);
+                }
+                $updatedVariantIds[] = $variant->id;
             }
-
-            $updatedVariantIds[] = $variant->id;
         }
 
+        // Delete variants that were not in the updated list
         $variantsToDelete = array_diff($existingVariantIds, $updatedVariantIds);
         if (!empty($variantsToDelete)) {
-            $product->variants()->whereIn('id', $variantsToDelete)->delete();
+            ProductVariant::whereIn('id', $variantsToDelete)->delete();
         }
     }
 
-    protected function createInventoryItem(Product $product, array $data)
+    protected function createInventoryItem(Product $product, array $validatedData)
     {
         $product->inventoryItems()->create([
-            'quantity' => $data['stock_quantity'],
-            'low_stock_threshold' => $data['low_stock_threshold'] ?? 0,
+            'sku' => $validatedData['sku'] ?? null,
+            'stock_quantity' => $validatedData['stock_quantity'],
+            'stock_status' => $validatedData['stock_status'],
+            'barcode' => $validatedData['barcode'] ?? null,
+            'weight' => $validatedData['weight'] ?? null,
+            'length' => $validatedData['length'] ?? null,
+            'width' => $validatedData['width'] ?? null,
+            'height' => $validatedData['height'] ?? null,
         ]);
     }
 
-    protected function updateInventoryItem(Product $product, array $data)
+    protected function updateInventoryItem(Product $product, array $validatedData)
     {
-        $inventoryItem = $product->inventoryItems()->firstOrNew([]);
-        $inventoryItem->fill([
-            'quantity' => $data['stock_quantity'],
-            'low_stock_threshold' => $data['low_stock_threshold'] ?? 0,
-        ]);
-        $inventoryItem->save();
+        $inventoryItem = $product->inventoryItems()->first();
+        if ($inventoryItem) {
+            $inventoryItem->update([
+                'sku' => $validatedData['sku'] ?? null,
+                'stock_quantity' => $validatedData['stock_quantity'],
+                'stock_status' => $validatedData['stock_status'],
+                'barcode' => $validatedData['barcode'] ?? null,
+                'weight' => $validatedData['weight'] ?? null,
+                'length' => $validatedData['length'] ?? null,
+                'width' => $validatedData['width'] ?? null,
+                'height' => $validatedData['height'] ?? null,
+            ]);
+        } else {
+            $this->createInventoryItem($product, $validatedData);
+        }
     }
 
-    protected function createPricingTiers(Product $product, array $pricingTiers)
+    protected function createPricingTiers(Product $product, array $pricingTiersData)
     {
-        foreach ($pricingTiers as $tierData) {
+        foreach ($pricingTiersData as $tierData) {
             $product->pricingTiers()->create($tierData);
         }
     }
 
-    protected function updatePricingTiers(Product $product, array $pricingTiers)
+    protected function updatePricingTiers(Product $product, array $pricingTiersData)
     {
-        $existingTierIds = $product->pricingTiers->pluck('id')->toArray();
-        $updatedTierIds = [];
+        $product->pricingTiers()->delete(); // Remove all existing tiers
+        foreach ($pricingTiersData as $tierData) {
+            $product->pricingTiers()->create($tierData);
+        }
+    }
 
-        foreach ($pricingTiers as $tierData) {
-            $tier = isset($tierData['id'])
-                ? $product->pricingTiers()->findOrFail($tierData['id'])
-                : new ProductPricingTier(['product_id' => $product->id]);
-
-            $tier->fill($tierData);
-            $tier->save();
-            $updatedTierIds[] = $tier->id;
+    public function editVariants(Product $product)
+    {
+        // Ensure only variable products can have variants managed this way
+        if ($product->type !== 'variable') {
+            return redirect()->route('products.edit', $product->id)
+                ->with('error', 'Variants can only be managed for variable products.');
         }
 
-        $tiersToDelete = array_diff($existingTierIds, $updatedTierIds);
-        if (!empty($tiersToDelete)) {
-            $product->pricingTiers()->whereIn('id', $tiersToDelete)->delete();
+        $product->load('variants.attributeValues.attribute');
+        $attributes = ProductAttribute::with('values')->orderBy('position')->get();
+
+        return view('dashboard.admin.products.variants.edit', compact('product', 'attributes'));
+    }
+
+    public function syncVariants(Request $request, Product $product)
+    {
+        if ($product->type !== 'variable') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Variants can only be managed for variable products.'
+            ], 400);
         }
+
+        $validated = $request->validate([
+            'variants' => 'nullable|array',
+            'variants.*.id' => 'nullable|exists:product_variants,id',
+            'variants.*.sku' => 'nullable|string|max:50',
+            'variants.*.price' => 'required|numeric|min:0',
+            'variants.*.sale_price' => 'nullable|numeric|min:0',
+            'variants.*.stock_quantity' => 'required|integer|min:0',
+            'variants.*.stock_status' => 'required|in:in_stock,out_of_stock,backorder',
+            'variants.*.barcode' => 'nullable|string|max:255',
+            'variants.*.weight' => 'nullable|numeric|min:0',
+            'variants.*.length' => 'nullable|numeric|min:0',
+            'variants.*.width' => 'nullable|numeric|min:0',
+            'variants.*.height' => 'nullable|numeric|min:0',
+            'variants.*.attribute_value_ids' => 'required|array',
+            'variants.*.attribute_value_ids.*' => 'exists:product_attribute_values,id',
+        ]);
+
+        DB::transaction(function () use ($product, $validated) {
+            $this->updateVariants($product, $validated['variants'] ?? []);
+        });
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Product variants updated successfully.',
+                'redirect' => route('products.edit', $product->id)
+            ]);
+        }
+
+        return redirect()->route('products.edit', $product->id)
+            ->with('success', 'Product variants updated successfully.');
+    }
+
+    public function bulkAction(Request $request)
+    {
+        $request->validate([
+            'action' => 'required|string|in:publish,draft,archive,delete,update-categories,update-tags',
+            'ids' => 'required|array',
+            'ids.*' => 'exists:products,id',
+            'category_ids' => 'nullable|array', // For update-categories
+            'category_ids.*' => 'exists:categories,id',
+            'tags' => 'nullable|array', // For update-tags
+            'tags.*' => 'string',
+        ]);
+
+        $action = $request->input('action');
+        $productIds = $request->input('ids');
+
+        DB::transaction(function () use ($action, $productIds, $request) {
+            switch ($action) {
+                case 'publish':
+                    Product::whereIn('id', $productIds)->update(['status' => 'published']);
+                    break;
+                case 'draft':
+                    Product::whereIn('id', $productIds)->update(['status' => 'draft']);
+                    break;
+                case 'archive':
+                    Product::whereIn('id', $productIds)->update(['status' => 'archived']);
+                    break;
+                case 'delete':
+                    Product::whereIn('id', $productIds)->delete();
+                    break;
+                case 'update-categories':
+                    $categoryIds = $request->input('category_ids', []);
+                    foreach ($productIds as $productId) {
+                        $product = Product::find($productId);
+                        if ($product) {
+                            $product->categories()->sync($categoryIds);
+                        }
+                    }
+                    break;
+                case 'update-tags':
+                    $tags = $request->input('tags', []);
+                    foreach ($productIds as $productId) {
+                        $product = Product::find($productId);
+                        if ($product) {
+                            $this->syncTags($product, $tags);
+                        }
+                    }
+                    break;
+                default:
+                    // Should not happen due to validation
+                    break;
+            }
+        });
+
+        return response()->json(['success' => true, 'message' => 'Bulk action completed successfully.']);
+    }
+
+    public function export(Request $request)
+    {
+        $productIds = $request->input('product_ids', []);
+
+        // If no IDs provided, export all products
+        if (empty($productIds)) {
+            return Excel::download(new ProductsExport(), 'products.xlsx');
+        }
+
+        // Export only selected products
+        return Excel::download(new ProductsExport($productIds), 'products.xlsx');
     }
 }

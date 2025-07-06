@@ -67,7 +67,7 @@
 @include('components.app.toast')
 
 
-
+@vite(['resources/css/app.css', 'resources/js/app.js'])
 @stack('scripts')
 </body>
 </html>

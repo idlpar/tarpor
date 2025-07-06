@@ -15,6 +15,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('product_attribute_values', function (Blueprint $table) {
@@ -24,6 +25,7 @@ return new class extends Migration
             $table->string('color_code')->nullable();
             $table->unsignedInteger('position')->default(0);
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('product_variants', function (Blueprint $table) {
@@ -43,6 +45,7 @@ return new class extends Migration
             $table->boolean('is_default')->default(false);
             $table->string('image')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
 
         Schema::create('product_variant_attribute_values', function (Blueprint $table) {

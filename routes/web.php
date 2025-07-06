@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ProductAttributeController;
 use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
@@ -55,6 +56,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
 
     // Verified User Routes
     Route::middleware('verified')->group(function () {
+        Route::get('/my-rewards', [RewardController::class, 'showMyRewards'])->name('my.rewards');
         Route::get('/orders', [OrderController::class, 'userOrders'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
@@ -70,6 +72,30 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
         Route::get('/admin/products/{product}', [ProductController::class, 'show'])->name('products.show');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
+        Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import');
+        Route::post('/products/import', [ProductController::class, 'import'])->name('products.import.store');
+        Route::post('/products/export', [ProductController::class, 'export'])->name('products.export');
+        Route::get('/products/bulk-edit', [ProductController::class, 'bulkEditForm'])->name('products.bulk-edit');
+        Route::post('/products/bulk-edit', [ProductController::class, 'bulkUpdate'])->name('products.bulk-edit.update');
+        Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulk-action');
+
+        // Product Variant Management
+        Route::get('/products/variants', [ProductController::class, 'indexVariants'])->name('products.variants.index');
+        Route::get('/products/{product}/variants/edit', [ProductController::class, 'editVariants'])->name('products.variants.edit');
+        Route::put('/products/{product}/variants/sync', [ProductController::class, 'syncVariants'])->name('products.variants.sync');
+
+        // Product Attributes Management
+        Route::get('/product-attributes', [ProductAttributeController::class, 'index'])->name('product_attributes.index');
+        Route::get('/product-attributes/create', [ProductAttributeController::class, 'create'])->name('product_attributes.create');
+        Route::post('/product-attributes', [ProductAttributeController::class, 'store'])->name('product_attributes.store');
+        Route::get('/product-attributes/{product_attribute}/edit', [ProductAttributeController::class, 'edit'])->name('product_attributes.edit');
+        Route::put('/product-attributes/{product_attribute}', [ProductAttributeController::class, 'update'])->name('product_attributes.update');
+        Route::delete('/product-attributes/{product_attribute}', [ProductAttributeController::class, 'destroy'])->name('product_attributes.destroy');
+
+        // Product Attribute Values Management
+        Route::post('/product-attributes/{product_attribute}/values', [ProductAttributeController::class, 'storeValue'])->name('product_attributes.values.store');
+        Route::put('/product-attributes/{product_attribute}/values/{value}', [ProductAttributeController::class, 'updateValue'])->name('product_attributes.values.update');
+        Route::delete('/product-attributes/{product_attribute}/values/{value}', [ProductAttributeController::class, 'destroyValue'])->name('product_attributes.values.destroy');
 
         // Explicitly define categories routes (except index, show)
         Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
@@ -138,6 +164,25 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::post('/rename', [GalleryController::class, 'rename'])->name('rename');
     });
 });
+
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\RewardController;
+
+// Cart & Checkout
+    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+    Route::put('/cart/update', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
+Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
+
+// Coupons
+Route::post('/coupons/apply', [CouponController::class, 'apply'])->name('coupons.apply');
+
+// Reward Points
+Route::post('/rewards/apply', [RewardController::class, 'apply'])->name('rewards.apply');
 
 // Public Routes
 Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');

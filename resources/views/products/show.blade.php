@@ -56,24 +56,60 @@
                         </div>
 
                         <div class="mb-4">
-                            @if($product->sale_price && $product->sale_price < $product->price)
-                                <p class="text-xl font-bold text-red-600">BDT {{ number_format($product->sale_price, 2) }}</p>
-                                <p class="text-sm text-gray-500 line-through">BDT {{ number_format($product->price, 2) }}</p>
-                            @else
-                                <p class="text-xl font-bold text-gray-900">BDT {{ number_format($product->price, 2) }}</p>
-                            @endif
+                            <p id="product-price" class="text-xl font-bold text-gray-900">BDT {{ number_format($product->price, 2) }}</p>
+                            <p id="product-sale-price" class="text-sm text-gray-500 line-through"></p>
                         </div>
 
                         <p class="text-gray-700 mb-4">{{ $product->short_description }}</p>
 
+                        <!-- Variant Selection -->
+                        @if ($product->type === 'variable' && $product->variants->isNotEmpty())
+                            <div class="mb-6">
+                                <h3 class="text-sm font-semibold text-gray-700 mb-2">Select Variant:</h3>
+                                <div id="variant-options" class="flex flex-wrap gap-2">
+                                    @foreach ($product->variants as $variant)
+                                        <div class="variant-option-wrapper">
+                                            <input type="radio" name="variant_id" id="variant-{{ $variant->id }}" value="{{ $variant->id }}" class="sr-only variant-radio"
+                                                   data-price="{{ $variant->sale_price ?? $variant->price }}"
+                                                   data-stock="{{ $variant->stock_quantity }}"
+                                                   data-stock-status="{{ $variant->stock_status }}"
+                                                   @if ($loop->first) checked @endif
+                                                   @if ($variant->stock_status === 'out_of_stock') disabled @endif>
+                                            <label for="variant-{{ $variant->id }}" class="variant-label cursor-pointer block border border-gray-300 rounded-md p-3 text-center transition-all duration-200">
+                                                <span class="variant-name text-sm font-medium text-gray-800">
+                                                    {{ $variant->attributes_list }}
+                                                </span>
+                                                <span class="variant-price text-xs text-gray-500 block mt-1">
+                                                    BDT {{ number_format($variant->sale_price ?? $variant->price, 2) }}
+                                                </span>
+                                                @if($variant->stock_status !== 'in_stock')
+                                                <span class="variant-stock-status text-xs font-bold mt-1 block">
+                                                    @if($variant->stock_status === 'out_of_stock')
+                                                        <span class="text-red-600">Out of Stock</span>
+                                                    @else
+                                                        <span class="text-yellow-600">Backorder</span>
+                                                    @endif
+                                                </span>
+                                                @endif
+                                            </label>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+
                         <!-- Stock Status -->
                         <div class="mb-4">
                             <span class="font-semibold text-gray-700">Availability: </span>
-                            @if($product->stock_quantity > 0)
-                                <span class="text-green-600 font-medium">In Stock ({{ $product->stock_quantity }} items)</span>
-                            @else
-                                <span class="text-red-600 font-medium">Out of Stock</span>
-                            @endif
+                            <span id="stock-status-display" class="font-medium">
+                                @if ($product->type === 'simple')
+                                    @if($product->stock_quantity > 0)
+                                        <span class="text-green-600">In Stock ({{ $product->stock_quantity }} items)</span>
+                                    @else
+                                        <span class="text-red-600">Out of Stock</span>
+                                    @endif
+                                @endif
+                            </span>
                         </div>
 
                         <!-- Quantity Selector -->
@@ -87,15 +123,25 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex space-x-4 mb-6">
-                            <button class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                Add to Cart
-                            </button>
-                            <button class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
-                                <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                            </button>
-                        </div>
+                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
+                            @csrf
+                            <input type="hidden" name="product_id" value="{{ $product->id }}">
+                            <input type="hidden" name="variant_id" id="selected_variant_id" value="{{ $product->variants->first()->id ?? '' }}">
+                            <input type="hidden" name="quantity" id="form_quantity" value="1">
+
+                            <div class="flex space-x-4 mb-6">
+                                <button type="submit" name="action" value="add_to_cart" id="add-to-cart-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
+                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                    Add to Cart
+                                </button>
+                                <button type="submit" name="action" value="buy_now" id="buy-now-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200">
+                                    Buy Now
+                                </button>
+                                <button type="button" class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
+                                    <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                                </button>
+                            </div>
+                        </form>
 
                         <!-- Share Buttons -->
                         <div class="flex items-center space-x-3 text-gray-600">
@@ -275,8 +321,77 @@
                 tabButtons[0].classList.add('active-tab', 'border-blue-500', 'text-blue-600');
                 tabPanes[0].classList.remove('hidden');
             }
+
+            // Variant Selection
+            const variantRadios = document.querySelectorAll('.variant-radio');
+            const priceDisplay = document.getElementById('product-price');
+            const salePriceDisplay = document.getElementById('product-sale-price');
+            const stockStatusDisplay = document.getElementById('stock-status-display');
+            const selectedVariantIdInput = document.getElementById('selected_variant_id');
+            const formQuantityInput = document.getElementById('form_quantity');
+            const quantityInput = document.getElementById('quantity');
+
+            function updateProductDisplay(radio) {
+                const price = radio.dataset.price;
+                const stock = radio.dataset.stock;
+                const stockStatus = radio.dataset.stockStatus;
+                const variantId = radio.value;
+
+                priceDisplay.textContent = `BDT ${parseFloat(price).toFixed(2)}`;
+                salePriceDisplay.textContent = '';
+
+                if (stockStatus === 'in_stock') {
+                    stockStatusDisplay.innerHTML = `<span class="text-green-600">In Stock (${stock} items)</span>`;
+                } else if (stockStatus === 'out_of_stock') {
+                    stockStatusDisplay.innerHTML = `<span class="text-red-600">Out of Stock</span>`;
+                } else {
+                    stockStatusDisplay.innerHTML = `<span class="text-yellow-600">Backorder</span>`;
+                }
+
+                if (selectedVariantIdInput) {
+                    selectedVariantIdInput.value = variantId;
+                }
+                if (quantityInput) {
+                    quantityInput.max = stock;
+                }
+            }
+
+            variantRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    updateProductDisplay(this);
+                });
+            });
+
+            if (quantityInput && formQuantityInput) {
+                quantityInput.addEventListener('change', () => {
+                    formQuantityInput.value = quantityInput.value;
+                });
+            }
+
+            // Initial display update for variable products
+            const firstSelectedVariant = document.querySelector('.variant-radio:checked');
+            if (firstSelectedVariant) {
+                updateProductDisplay(firstSelectedVariant);
+            }
         });
     </script>
     <!-- Font Awesome for social share icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+@endpush
+
+@push('styles')
+    <style>
+        .variant-radio:checked + .variant-label {
+            border-color: #3b82f6; /* blue-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+        }
+        .variant-radio:disabled + .variant-label {
+            cursor: not-allowed;
+            background-color: #f3f4f6; /* gray-100 */
+            opacity: 0.7;
+        }
+        .variant-radio:disabled + .variant-label .variant-name {
+            text-decoration: line-through;
+        }
+    </style>
 @endpush

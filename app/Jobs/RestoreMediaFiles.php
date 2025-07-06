@@ -53,6 +53,9 @@ class RestoreMediaFiles implements ShouldQueue
                 ? $media->directory.'/'.$media->file_name
                 : $media->file_name;
 
+            // Restore the media record
+            $media->restore();
+
             // Check if original file exists
             if (!Storage::disk($media->disk)->exists($filePath)) {
                 throw new \Exception("Original file not found for restoration");

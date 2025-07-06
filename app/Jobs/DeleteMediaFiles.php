@@ -49,34 +49,8 @@ class DeleteMediaFiles implements ShouldQueue
     protected function deleteMediaFile(Media $media)
     {
         try {
-            // Delete original file
-            $filePath = $media->directory
-                ? $media->directory.'/'.$media->file_name
-                : $media->file_name;
-
-            if (Storage::disk($media->disk)->exists($filePath)) {
-                Storage::disk($media->disk)->delete($filePath);
-            }
-
-            // Delete conversions
-            foreach ($this->conversions as $conversion => $settings) {
-                $conversionPath = ($media->directory
-                        ? $media->directory.'/'.$conversion
-                        : $conversion).'/'.$media->file_name;
-
-                if (Storage::disk($media->disk)->exists($conversionPath)) {
-                    Storage::disk($media->disk)->delete($conversionPath);
-                }
-            }
-
-            // Delete any thumbnails (for videos)
-            $thumbPath = $media->directory
-                ? $media->directory.'/thumb/'.$media->file_name.'.jpg'
-                : 'thumb/'.$media->file_name.'.jpg';
-
-            if (Storage::disk($media->disk)->exists($thumbPath)) {
-                Storage::disk($media->disk)->delete($thumbPath);
-            }
+            // Soft delete the media record
+            $media->delete();
 
         } catch (\Exception $e) {
             \Log::error('Failed to delete files for media ID: '.$media->id, [

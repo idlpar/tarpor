@@ -12,7 +12,7 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'short_description', 'type',
+        'name', 'slug', 'description', 'short_description', 'type', 'type',
         'price', 'sale_price', 'cost_price', 'sku', 'barcode',
         'stock_quantity', 'stock_status', 'inventory_tracking', 'low_stock_threshold',
         'weight', 'length', 'width', 'height', 'brand_id', 'thumbnail',
@@ -108,24 +108,27 @@ class Product extends Model
         return $this->price;
     }
 
+    public function getThumbnailMediaAttribute()
+    {
+        return $this->belongsTo(Media::class, 'thumbnail')->first();
+    }
+
     public function getThumbnailUrlAttribute()
     {
-        if ($this->thumbnail) {
-            $media = Media::find($this->thumbnail);
-            return $media ? $media->url : asset('images/default-product.jpg');
+        if ($this->thumbnail_media) {
+            return $this->thumbnail_media->url;
         }
         return asset('images/default-product.jpg');
     }
 
+    public function getGalleryMediaAttribute()
+    {
+        return $this->media()->where('id', '!=', $this->thumbnail)->get();
+    }
+
     public function getGalleryImagesAttribute()
     {
-        $mediaItems = $this->media;
-
-        if ($this->thumbnail) {
-            $mediaItems = $mediaItems->where('id', '!=', $this->thumbnail);
-        }
-
-        return $mediaItems->map(fn($media) => $media->url);
+        return $this->gallery_media->map(fn($media) => $media->url);
     }
 
     public function getStockStatusLabelAttribute()
@@ -144,6 +147,14 @@ class Product extends Model
             'published' => 'Published',
             'archived' => 'Archived',
         ][$this->status] ?? $this->status;
+    }
+
+    public function getTotalStockAttribute()
+    {
+        if ($this->type === 'variable') {
+            return $this->variants->sum('stock_quantity');
+        }
+        return $this->stock_quantity;
     }
 
     /**
@@ -167,7 +178,8 @@ class Product extends Model
         if (!is_array($filters)) return $query;
 
         if (!empty($filters['search'])) {
-            $query->where('name', 'like', '%' . $filters['search'] . '%');
+            $query->where('name', 'like', '%' . $filters['search'] . '%')
+                  ->orWhere('sku', 'like', '%' . $filters['search'] . '%');
         }
 
         if (!empty($filters['brand_id'])) {
@@ -176,12 +188,38 @@ class Product extends Model
 
         if (!empty($filters['category_id'])) {
             $query->whereHas('categories', function ($q) use ($filters) {
-                $q->where('id', $filters['category_id']);
+                $q->where('categories.id', $filters['category_id']);
             });
+        }
+
+        if (!empty($filters['type'])) {
+            $query->where('type', $filters['type']);
         }
 
         if (!empty($filters['status'])) {
             $query->where('status', $filters['status']);
+        }
+
+        if (!empty($filters['stock_status'])) {
+            $query->where('stock_status', $filters['stock_status']);
+        }
+
+        if (!empty($filters['sort_by'])) {
+            $sort = explode('_', $filters['sort_by']);
+            $column = $sort[0];
+            $direction = $sort[1] ?? 'asc';
+
+            if ($column === 'name') {
+                $query->orderBy('name', $direction);
+            } elseif ($column === 'price') {
+                $query->orderBy('price', $direction);
+            } elseif ($column === 'stock') {
+                $query->orderBy('stock_quantity', $direction);
+            } elseif ($column === 'date') {
+                $query->orderBy('created_at', $direction);
+            }
+        } else {
+            $query->latest(); // Default sort
         }
 
         return $query;

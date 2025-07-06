@@ -86,6 +86,11 @@ class User extends Authenticatable
     }
 
 // Add this method to your model
+    public function rewardPoints()
+    {
+        return $this->hasMany(RewardPoint::class);
+    }
+
     public function getMediaDirectory(string $collectionName = ''): string
     {
         return match($collectionName) {

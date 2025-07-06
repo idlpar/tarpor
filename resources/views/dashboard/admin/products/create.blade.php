@@ -119,6 +119,8 @@
                     <div class="bg-white p-8 rounded-lg shadow-lg">
                         <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
 
+                        
+
                         <!-- Name -->
                         <div class="mb-6">
                             <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
@@ -144,22 +146,10 @@
                         </div>
 
                         <!-- Description -->
-                        <div class="mb-6">
-                            <label class="block font-semibold text-gray-700 mb-2">Description</label>
-                            <textarea id="description" name="description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror">{{ old('description') }}</textarea>
-                            @error('description')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <x-forms.ckeditor id="description" name="description" value="{{ old('description') }}">Description</x-forms.ckeditor>
 
                         <!-- Content (short_description) -->
-                        <div class="mb-6">
-                            <label class="block font-semibold text-gray-700 mb-2">Content</label>
-                            <textarea id="short_description" name="short_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('short_description') border-red-500 @enderror">{{ old('short_description') }}</textarea>
-                            @error('short_description')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </div>
+                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description') }}">Content</x-forms.ckeditor>
 
                         <!-- Images -->
                         <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg">
@@ -510,6 +500,19 @@
                         </div>
                     </div>
 
+                    
+
+                    <!-- Product Type -->
+                    <x-form.card label="Product Type" required="true">
+                        <select name="type" id="product_type" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('type') border-red-500 @enderror">
+                            <option value="simple" {{ old('type') == 'simple' ? 'selected' : '' }}>Simple Product</option>
+                            <option value="variable" {{ old('type') == 'variable' ? 'selected' : '' }}>Variable Product</option>
+                        </select>
+                        @error('type')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        @enderror
+                    </x-form.card>
+
                     <!-- Status Card -->
                     <x-form.card label="Status" required="true">
                         <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
@@ -714,6 +717,66 @@
             };
         }
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productTypeSelect = document.getElementById('product_type');
+
+            function toggleInventoryFields() {
+                const isSimpleProduct = productTypeSelect.value === 'simple';
+
+                // Select specific inventory-related input fields
+                const stockQuantityInput = document.querySelector('input[name="stock_quantity"]');
+                const barcodeInput = document.querySelector('input[name="barcode"]');
+                const stockStatusRadios = document.querySelectorAll('input[name="stock_status"]');
+
+                // Enable/disable stock quantity and barcode
+                if (stockQuantityInput) {
+                    stockQuantityInput.disabled = !isSimpleProduct;
+                    stockQuantityInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    stockQuantityInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+                if (barcodeInput) {
+                    barcodeInput.disabled = !isSimpleProduct;
+                    barcodeInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    barcodeInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+
+                // Enable/disable stock status radio buttons
+                stockStatusRadios.forEach(radio => {
+                    radio.disabled = !isSimpleProduct;
+                    // Visually dim the parent label or container for radio buttons
+                    if (radio.closest('label')) {
+                        radio.closest('label').style.opacity = isSimpleProduct ? '1' : '0.5';
+                        radio.closest('label').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                    }
+                });
+
+                // Ensure price fields are always enabled
+                const priceFields = [
+                    document.querySelector('input[name="price"]'),
+                    document.querySelector('input[name="sale_price"]'),
+                    document.querySelector('input[name="cost_price"]')
+                ];
+                priceFields.forEach(field => {
+                    if (field) {
+                        field.disabled = false;
+                        field.closest('div').style.opacity = '1';
+                        field.closest('div').style.pointerEvents = 'auto';
+                    }
+                });
+            }
+
+            productTypeSelect.addEventListener('change', toggleInventoryFields);
+            toggleInventoryFields(); // Initial call on page load
+        });
+    </script>
+
+
+
+
+
+
 
     <!-- Image Handling, and Form Submission -->
     <script>
@@ -1058,6 +1121,24 @@
             }
 
             form.addEventListener('submit', handleSubmit);
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productTypeSelect = document.getElementById('product_type');
+            const simpleProductFields = document.querySelectorAll('.x-form-card[label="Overview"], .x-form-card[label="Stock Status"], .x-form-card[label="Shipping"]');
+
+            function toggleSimpleProductFields() {
+                if (productTypeSelect.value === 'simple') {
+                    simpleProductFields.forEach(card => card.style.display = 'block');
+                } else {
+                    simpleProductFields.forEach(card => card.style.display = 'none');
+                }
+            }
+
+            productTypeSelect.addEventListener('change', toggleSimpleProductFields);
+            toggleSimpleProductFields(); // Initial call on page load
         });
     </script>
 
@@ -1712,4 +1793,4 @@
             }
         });
     </script>
-@endpush
+    @endpush
