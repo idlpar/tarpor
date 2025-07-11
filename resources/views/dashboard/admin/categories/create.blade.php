@@ -1,6 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('content')
+@section('title', 'Create Category')
+
+@section('admin_content')
     <div class="min-h-screen bg-gradient-to-br from-purple-100 to-blue-50">
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex justify-between items-center mb-8">

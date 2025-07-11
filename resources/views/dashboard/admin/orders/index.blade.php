@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @push('styles')
     <style>
@@ -127,7 +127,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('admin_content')
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">

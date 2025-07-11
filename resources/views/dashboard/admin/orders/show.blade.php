@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @push('styles')
     <style>
@@ -94,7 +94,7 @@
 
 @section('title', 'Order Details')
 
-@section('content')
+@section('admin_content')
     <div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 relative">
             @php
@@ -248,19 +248,19 @@
                                 </button>
                             </form>
 
-                                @if($order->status !== 'delivered' && $order->status !== 'cancelled' && $nextStatus)
-                                    <form id="statusUpdateForm" action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline">
-                                        @csrf
-                                        @method('PATCH')
-                                        <input type="hidden" name="status" value="{{ $nextStatus }}">
-                                        <button type="submit" class="action-btn inline-flex items-center px-5 py-2.5 bg-green-500 text-white font-medium rounded-lg hover:bg-green-700">
-                                            <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                            Mark as {{ ucfirst($nextStatus) }}
-                                        </button>
-                                    </form>
-                                @endif
+                            @if($order->status !== 'delivered' && $order->status !== 'cancelled' && $nextStatus)
+                                <form id="statusUpdateForm" action="{{ route('admin.orders.update-status', $order) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('PATCH')
+                                    <input type="hidden" name="status" value="{{ $nextStatus }}">
+                                    <button type="submit" class="action-btn inline-flex items-center px-5 py-2.5 bg-green-500 text-white font-medium rounded-lg hover:bg-green-700">
+                                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Mark as {{ ucfirst($nextStatus) }}
+                                    </button>
+                                </form>
+                            @endif
                         @endif
                     </div>
                 </div>

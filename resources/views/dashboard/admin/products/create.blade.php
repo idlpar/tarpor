@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Add Product | ' . strtoupper(config('app.name')))
 
@@ -86,7 +86,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('admin_content')
     <div class="min-h-screen bg-gray-100 p-6 md:p-8">
         <!-- Display Success/Error Messages -->
         @if (session('success'))
@@ -119,7 +119,7 @@
                     <div class="bg-white p-8 rounded-lg shadow-lg">
                         <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
 
-                        
+
 
                         <!-- Name -->
                         <div class="mb-6">
@@ -133,15 +133,17 @@
                         <!-- Permalink -->
                         <div class="mb-6">
                             <label class="block font-semibold text-gray-700 mb-2">Permalink *</label>
-                            <div class="relative">
-                                <span class="absolute border-l border-t border-b border-gray-300 inset-y-0 left-0 flex items-center pl-3 bg-teal-50 text-gray-500 select-none rounded-lg">{{ url('/product') . '/' }}</span>
-                                <input type="text" name="slug" value="{{ old('slug') }}" class="w-full pl-[230px] border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
+                            <div class="flex rounded-lg shadow-sm border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 @error('slug') border-red-500 @enderror">
+                                <span class="inline-flex items-center px-3 rounded-l-lg border-r border-gray-300 bg-gray-50 text-gray-500 text-sm">
+                                    {{ url('/product') }}/
+                                </span>
+                                <input type="text" name="slug" value="{{ old('slug') }}" class="flex-1 block w-full border-0 p-2.5 focus:ring-0 focus:outline-none rounded-r-lg" placeholder="your-slug">
                             </div>
                             @error('slug')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
                             <p class="text-sm text-gray-500 mt-2">
-                                Preview: <a href="#" class="text-blue-500 hover:underline" id="permalink-preview">{{ url('/product/' . (old('slug', 'your-slug'))) }}</a>
+                                Preview: <a href="#" class="text-blue-500 hover:underline" id="permalink-preview"></a>
                             </p>
                         </div>
 
@@ -500,7 +502,7 @@
                         </div>
                     </div>
 
-                    
+
 
                     <!-- Product Type -->
                     <x-form.card label="Product Type" required="true">
@@ -559,7 +561,7 @@
                                 </svg>
                             </span>
                         </div>
-                        <div class="max-h-96 overflow-auto">
+                        <div class="max-h-48 overflow-y-auto">
                             <ul id="category-tree" class="mt-2 space-y-1">
                                 @include('partials.category-checkboxes', ['categories' => $categories])
                             </ul>
@@ -892,7 +894,7 @@
                     this.productImages = [];
 
                     const fetchPromises = currentImageIds.map(id =>
-                        fetch(`{{ route("gallery.file.show", '') }}/${id}`, {
+                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', id), {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
@@ -924,7 +926,7 @@
                     // For featured image, if preloaded
                     const featuredImageId = this.featuredImageInput.value;
                     if (featuredImageId) {
-                        fetch(`{{ route("gallery.file.show", '') }}/${featuredImageId}`, {
+                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', featuredImageId), {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
@@ -1098,7 +1100,7 @@
                                 } else {
                                     // Fallback for fields without a direct input (e.g., arrays like product_collections)
                                     const errorContainer = form.querySelector(`[name="${field}[]"]`)?.closest('.x-form-card') ||
-                                                           form.querySelector(`[name="${field}"]`)?.closest('.x-form-card');
+                                        form.querySelector(`[name="${field}"]`)?.closest('.x-form-card');
                                     if (errorContainer) {
                                         const errorDiv = document.createElement('p');
                                         errorDiv.className = 'text-red-500 text-sm mt-1';
@@ -1200,6 +1202,7 @@
             const slugInput = document.querySelector('input[name="slug"]');
             const permalinkPreview = document.getElementById('permalink-preview');
             const baseUrl = "{{ url('/product') }}";
+            let manualSlugEdit = false; // Flag to track manual edits
 
             function createSlug(text) {
                 return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -1211,45 +1214,62 @@
                 permalinkPreview.href = baseUrl + '/' + slug;
             }
 
-            const checkSlug = debounce(async (slug) => {
-                if (!slug || slug === 'your-slug') return;
+            const checkSlug = debounce(async (slugToCheck, isManual = false) => {
+                if (!slugToCheck || slugToCheck === 'your-slug') {
+                    updatePreview(''); // Clear preview if slug is empty
+                    return;
+                }
+
                 try {
-                    const response = await fetch(`/product/slug/check?slug=${encodeURIComponent(slug)}`);
+                    const response = await fetch(`/api/product/slug/check?slug=${encodeURIComponent(slugToCheck)}`);
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error('Error checking slug:', response.status, errorText);
-                        // Optionally, display an error message to the user or revert to a default slug
                         return;
                     }
                     const data = await response.json();
-                    updatePreview(data.suggested);
-                    if (data.exists && slugInput.value === slug) {
+                    if (!isManual) {
+                        slugInput.value = data.suggested;
+                    } else if (slugToCheck !== data.suggested) {
+                        // If manually entered slug is not unique, update with suggested unique slug
                         slugInput.value = data.suggested;
                     }
+                    updatePreview(data.suggested);
                 } catch (error) {
                     console.error('Error checking slug:', error);
                 }
-            }, 5000);
+            }, 2000); // Debounce for 2000ms (2 seconds)
 
             nameInput.addEventListener('input', () => {
-                const generatedSlug = createSlug(nameInput.value);
-                slugInput.value = generatedSlug;
-                updatePreview(generatedSlug);
-                checkSlug(generatedSlug);
-            });
-
-            slugInput.addEventListener('input', () => {
-                const manualSlug = slugInput.value.trim();
-                if (manualSlug) {
-                    updatePreview(manualSlug);
-                    checkSlug(manualSlug);
-                } else {
+                if (!manualSlugEdit) {
                     const generatedSlug = createSlug(nameInput.value);
-                    slugInput.value = generatedSlug;
-                    updatePreview(generatedSlug);
+                    slugInput.value = generatedSlug; // Immediately update slug input
+                    checkSlug(generatedSlug);
                 }
             });
 
+            slugInput.addEventListener('input', () => {
+                manualSlugEdit = true; // User is manually editing
+                const currentSlug = slugInput.value.trim();
+                if (currentSlug) {
+                    checkSlug(currentSlug, true); // Check uniqueness for manual slug
+                } else {
+                    // If manual slug is cleared, revert to auto-generating from name
+                    manualSlugEdit = false;
+                    const generatedSlug = createSlug(nameInput.value);
+                    slugInput.value = generatedSlug;
+                    checkSlug(generatedSlug);
+                }
+            });
+
+            // Reset manualSlugEdit flag if name input is focused after a manual edit
+            nameInput.addEventListener('focus', () => {
+                if (manualSlugEdit && slugInput.value.trim() === createSlug(nameInput.value)) {
+                    manualSlugEdit = false;
+                }
+            });
+
+            // Initial preview update on page load
             updatePreview(slugInput.value || 'your-slug');
         });
     </script>
@@ -1344,21 +1364,24 @@
 
             async function fetchGeneratedSku() {
                 const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(checkbox => parseInt(checkbox.value));
-                if (!selectedCategories.length) {
+                const productName = document.getElementById('name').value;
+                const brandId = document.getElementById('selected-brand-id').value;
+
+                if (!selectedCategories.length && !productName && !brandId) {
                     if (skuInput) skuInput.value = '';
                     return;
                 }
-                console.log('Sending category IDs for SKU generation:', selectedCategories);
+                console.log('Sending data for SKU generation:', { selectedCategories, productName, brandId });
                 try {
                     if (skuInput) skuInput.value = 'Generating SKU...';
-                    const response = await fetch('/generate-sku', {
+                    const response = await fetch('/api/generate-sku', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ category_ids: selectedCategories })
+                        body: JSON.stringify({ category_ids: selectedCategories, product_name: productName, brand_id: brandId })
                     });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const data = await response.json();
@@ -1793,4 +1816,4 @@
             }
         });
     </script>
-    @endpush
+@endpush

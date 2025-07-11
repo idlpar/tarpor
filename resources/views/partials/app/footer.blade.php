@@ -6,7 +6,7 @@
             <div class="flex flex-col items-center md:items-start">
                 <a href="/" class="flex items-center mb-6">
                     @if (file_exists(public_path('logos/logo.svg')))
-                        <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-10" loading="lazy">
+                        <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-6 sm:h-8 w-auto" loading="lazy">
                     @else
                         <span class="font-brand text-2xl ml-2 text-white tracking-wide">Tarpor</span>
                     @endif
@@ -63,10 +63,12 @@
                 <p class="text-gray-300 text-sm mb-4 font-light leading-relaxed">
                     Subscribe for exclusive offers, new arrivals and style tips.
                 </p>
-                <form class="w-full">
+                <form action="{{ route('newsletter.subscribe') }}" method="POST" class="w-full">
+                    @csrf
                     <div class="flex flex-col sm:flex-row gap-2">
                         <input
                             type="email"
+                            name="email"
                             placeholder="Your email address"
                             class="flex-grow px-4 py-2 rounded bg-gray-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[var(--primary)] placeholder-gray-400"
                             required
@@ -78,6 +80,15 @@
                             Subscribe
                         </button>
                     </div>
+                    @error('email')
+                        <p class="text-red-400 text-xs mt-1 text-left">{{ $message }}</p>
+                    @enderror
+                    @if(session('success'))
+                        <p class="text-green-400 text-xs mt-1 text-left">{{ session('success') }}</p>
+                    @endif
+                    @if(session('error'))
+                        <p class="text-red-400 text-xs mt-1 text-left">{{ session('error') }}</p>
+                    @endif
                 </form>
                 <p class="text-gray-400 text-xs mt-3 font-light">
                     We respect your privacy. Unsubscribe at any time.

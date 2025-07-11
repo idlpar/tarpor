@@ -1,13 +1,28 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-uTSYgmna.css",
+    "file": "assets/app-B6n9QDWw.css",
     "src": "resources/css/app.css",
     "isEntry": true
   },
   "resources/js/app.js": {
-    "file": "assets/app-CRjs2MAM.js",
+    "file": "assets/app-0D5Fq3Oe.js",
     "name": "app",
     "src": "resources/js/app.js",
+    "isEntry": true,
+    "css": [
+      "assets/app-BHH8rdGj.css"
+    ]
+  },
+  "resources/js/cookie-consent.js": {
+    "file": "assets/cookie-consent-Bm6kjyWT.js",
+    "name": "cookie-consent",
+    "src": "resources/js/cookie-consent.js",
+    "isEntry": true
+  },
+  "resources/js/wishlist.js": {
+    "file": "assets/wishlist-coYDU_cb.js",
+    "name": "wishlist",
+    "src": "resources/js/wishlist.js",
     "isEntry": true
   }
 }

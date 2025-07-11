@@ -56,11 +56,15 @@
                         </div>
 
                         <div class="mb-4">
+                            <p class="text-xl font-bold text-gray-900" id="product-price">
+                                BDT {{ number_format($product->final_price, 2) }}
+                            </p>
                             @if($product->sale_price && $product->sale_price < $product->price)
-                                <p class="text-xl font-bold text-red-600">BDT {{ number_format($product->sale_price, 2) }}</p>
-                                <p class="text-sm text-gray-500 line-through">BDT {{ number_format($product->price, 2) }}</p>
+                                <p class="text-sm text-gray-500 line-through" id="original-price">
+                                    BDT {{ number_format($product->price, 2) }}
+                                </p>
                             @else
-                                <p class="text-xl font-bold text-gray-900">BDT {{ number_format($product->price, 2) }}</p>
+                                <p class="text-sm text-gray-500 line-through hidden" id="original-price"></p>
                             @endif
                         </div>
 
@@ -69,12 +73,51 @@
                         <!-- Stock Status -->
                         <div class="mb-4">
                             <span class="font-semibold text-gray-700">Availability: </span>
-                            @if($product->stock_quantity > 0)
-                                <span class="text-green-600 font-medium">In Stock ({{ $product->stock_quantity }} items)</span>
-                            @else
-                                <span class="text-red-600 font-medium">Out of Stock</span>
-                            @endif
+                            <span id="stock-status" class="font-medium">
+                                @if($product->stock_quantity > 0)
+                                    <span class="text-green-600">In Stock (<span id="stock-quantity">{{ $product->stock_quantity }}</span> items)</span>
+                                @else
+                                    <span class="text-red-600">Out of Stock</span>
+                                @endif
+                            </span>
                         </div>
+
+                        <!-- Variant Selection -->
+                        @if($product->variants->isNotEmpty())
+                            <div class="mb-4">
+                                @php
+                                    $groupedAttributes = [];
+                                    foreach ($product->variants as $variant) {
+                                        foreach ($variant->attributeValues as $attributeValue) {
+                                            $attributeName = $attributeValue->attribute->name;
+                                            $attributeValueName = $attributeValue->value;
+                                            if (!isset($groupedAttributes[$attributeName])) {
+                                                $groupedAttributes[$attributeName] = [];
+                                            }
+                                            if (!in_array($attributeValueName, $groupedAttributes[$attributeName])) {
+                                                $groupedAttributes[$attributeName][] = $attributeValueName;
+                                            }
+                                        }
+                                    }
+                                @endphp
+
+                                @foreach($groupedAttributes as $attributeName => $attributeValues)
+                                    <div class="mb-3">
+                                        <label class="font-semibold text-gray-700 block mb-2">{{ $attributeName }}:</label>
+                                        <div class="flex flex-wrap gap-2">
+                                            @foreach($attributeValues as $value)
+                                                <button type="button"
+                                                        class="attribute-selector px-4 py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-100 data-[selected=true]:bg-blue-600 data-[selected=true]:text-white data-[selected=true]:border-blue-600 transition-colors duration-200"
+                                                        data-attribute-name="{{ $attributeName }}"
+                                                        data-attribute-value="{{ $value }}">
+                                                    {{ $value }}
+                                                </button>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
 
                         <!-- Quantity Selector -->
                         <div class="flex items-center mb-6">
@@ -88,13 +131,27 @@
 
                         <!-- Action Buttons -->
                         <div class="flex space-x-4 mb-6">
-                            <button class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                Add to Cart
-                            </button>
-                            <button class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
-                                <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                            </button>
+                            <form id="add-to-cart-form" action="{{ route('cart.add') }}" method="POST" class="flex-1">
+                                @csrf
+                                <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                <input type="hidden" name="variant_id" id="selected-variant-id" value="{{ $product->variants->first()->id ?? '' }}">
+                                <input type="hidden" name="quantity" id="cart-quantity" value="1">
+                                <input type="hidden" name="action" value="add_to_cart">
+                                <button type="submit" class="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
+                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 014 0zM10 7v3m0 0v3m0-3h3m0 0h-3"></path></svg>
+                                    Add to Cart
+                                </button>
+                            </form>
+                            <form id="buy-now-form" action="{{ route('cart.add') }}" method="POST">
+                                @csrf
+                                <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                <input type="hidden" name="variant_id" id="buy-now-selected-variant-id" value="{{ $product->variants->first()->id ?? '' }}">
+                                <input type="hidden" name="quantity" id="buy-now-quantity" value="1">
+                                <input type="hidden" name="action" value="buy_now">
+                                <button type="submit" class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
+                                    Buy Now
+                                </button>
+                            </form>
                         </div>
 
                         <!-- Share Buttons -->
@@ -271,6 +328,7 @@
                     if (currentValue < parseInt(quantityInput.max)) {
                         quantityInput.value = currentValue + 1;
                     }
+                    updateCartQuantity();
                 });
 
                 decrementButton.addEventListener('click', function() {
@@ -278,7 +336,18 @@
                     if (currentValue > parseInt(quantityInput.min)) {
                         quantityInput.value = currentValue - 1;
                     }
+                    updateCartQuantity();
                 });
+
+                quantityInput.addEventListener('change', function() {
+                    updateCartQuantity();
+                });
+            }
+
+            function updateCartQuantity() {
+                const currentQuantity = quantityInput.value;
+                document.getElementById('cart-quantity').value = currentQuantity;
+                document.getElementById('buy-now-quantity').value = currentQuantity;
             }
 
             // Tabs functionality
@@ -302,6 +371,127 @@
             if (tabButtons.length > 0) {
                 tabButtons[0].classList.add('active-tab', 'border-blue-500', 'text-blue-600');
                 tabPanes[0].classList.remove('hidden');
+            }
+
+            // Variant Selection Logic
+            const productVariants = @json($product->variants->keyBy('id'));
+            const attributeSelectors = document.querySelectorAll('.attribute-selector');
+            const selectedAttributes = {};
+            const productPriceEl = document.getElementById('product-price');
+            const originalPriceEl = document.getElementById('original-price');
+            const stockStatusEl = document.getElementById('stock-status');
+            const stockQuantityEl = document.getElementById('stock-quantity');
+            const selectedVariantIdInput = document.getElementById('selected-variant-id');
+            const buyNowSelectedVariantIdInput = document.getElementById('buy-now-selected-variant-id');
+            const addToCartButton = document.querySelector('#add-to-cart-form button[type="submit"]');
+            const buyNowButton = document.querySelector('#buy-now-form button[type="submit"]');
+
+            // Initialize selected attributes based on the first variant if available
+            @if($product->variants->isNotEmpty())
+                const firstVariant = productVariants[{{ $product->variants->first()->id }}];
+                firstVariant.attribute_values.forEach(attrVal => {
+                    selectedAttributes[attrVal.attribute.name] = attrVal.value;
+                });
+                updateVariantDisplay(firstVariant);
+            @else
+                // For simple products, ensure buttons are enabled and variant_id is empty
+                addToCartButton.disabled = false;
+                buyNowButton.disabled = false;
+                selectedVariantIdInput.value = '';
+                buyNowSelectedVariantIdInput.value = '';
+            @endif
+
+
+            attributeSelectors.forEach(selector => {
+                selector.addEventListener('click', function() {
+                    const attributeName = this.dataset.attributeName;
+                    const attributeValue = this.dataset.attributeValue;
+
+                    // Deselect other buttons for the same attribute
+                    document.querySelectorAll(`.attribute-selector[data-attribute-name="${attributeName}"]`).forEach(btn => {
+                        btn.dataset.selected = 'false';
+                    });
+
+                    // Select the clicked button
+                    this.dataset.selected = 'true';
+                    selectedAttributes[attributeName] = attributeValue;
+
+                    findMatchingVariant();
+                });
+            });
+
+            function findMatchingVariant() {
+                let matchedVariant = null;
+                for (const variantId in productVariants) {
+                    const variant = productVariants[variantId];
+                    let isMatch = true;
+                    const variantAttributeMap = {};
+                    variant.attribute_values.forEach(attrVal => {
+                        variantAttributeMap[attrVal.attribute.name] = attrVal.value;
+                    });
+
+                    for (const attrName in selectedAttributes) {
+                        if (selectedAttributes[attrName] !== variantAttributeMap[attrName]) {
+                            isMatch = false;
+                            break;
+                        }
+                    }
+
+                    if (isMatch) {
+                        matchedVariant = variant;
+                        break;
+                    }
+                }
+                updateVariantDisplay(matchedVariant);
+            }
+
+            function updateVariantDisplay(variant) {
+                if (variant) {
+                    productPriceEl.textContent = `BDT ${formatCurrency(variant.final_price)}`;
+                    if (variant.sale_price && variant.sale_price < variant.price) {
+                        originalPriceEl.textContent = `BDT ${formatCurrency(variant.price)}`;
+                        originalPriceEl.classList.remove('hidden');
+                    } else {
+                        originalPriceEl.classList.add('hidden');
+                    }
+
+                    stockQuantityEl.textContent = variant.stock_quantity;
+                    if (variant.stock_quantity > 0) {
+                        stockStatusEl.innerHTML = `<span class="text-green-600">In Stock (<span id="stock-quantity">${variant.stock_quantity}</span> items)</span>`;
+                        quantityInput.max = variant.stock_quantity;
+                        addToCartButton.disabled = false;
+                        buyNowButton.disabled = false;
+                    } else {
+                        stockStatusEl.innerHTML = `<span class="text-red-600">Out of Stock</span>`;
+                        quantityInput.max = 0;
+                        quantityInput.value = 0;
+                        addToCartButton.disabled = true;
+                        buyNowButton.disabled = true;
+                    }
+                    selectedVariantIdInput.value = variant.id;
+                    buyNowSelectedVariantIdInput.value = variant.id;
+                } else {
+                    // No matching variant found
+                    productPriceEl.textContent = `BDT {{ number_format($product->final_price, 2) }}`; // Fallback to product base price
+                    originalPriceEl.classList.add('hidden');
+                    stockStatusEl.innerHTML = `<span class="text-red-600">No matching variant available</span>`;
+                    stockQuantityEl.textContent = 0;
+                    quantityInput.max = 0;
+                    quantityInput.value = 0;
+                    addToCartButton.disabled = true;
+                    buyNowButton.disabled = true;
+                    selectedVariantIdInput.value = ''; // Clear variant ID
+                    buyNowSelectedVariantIdInput.value = '';
+                }
+                // Ensure quantity input doesn't exceed new max
+                if (parseInt(quantityInput.value) > parseInt(quantityInput.max)) {
+                    quantityInput.value = quantityInput.max > 0 ? 1 : 0;
+                }
+                updateCartQuantity();
+            }
+
+            function formatCurrency(amount) {
+                return parseFloat(amount).toFixed(2).replace(/\d(?=(\d{3})+\.)/g, '$&,');
             }
         });
     </script>

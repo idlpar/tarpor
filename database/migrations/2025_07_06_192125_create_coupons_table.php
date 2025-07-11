@@ -19,7 +19,8 @@ return new class extends Migration
             $table->decimal('min_amount', 8, 2)->nullable();
             $table->date('expires_at')->nullable();
             $table->integer('usage_limit')->nullable();
-            $table->integer('used')->default(0);
+            $table->decimal('max_discount_amount', 8, 2)->nullable();
+            $table->integer('times_used')->default(0);
             $table->timestamps();
         });
     }

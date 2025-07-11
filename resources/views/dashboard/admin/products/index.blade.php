@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Products Management')
 
-@section('content')
+@section('admin_content')
     <div class="container mx-auto px-4 py-6">
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">

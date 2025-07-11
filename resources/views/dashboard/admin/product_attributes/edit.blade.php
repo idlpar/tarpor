@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Edit Product Attribute | ' . strtoupper(config('app.name')))
 
-@section('content')
+@section('admin_content')
     <div class="container mx-auto px-4 py-8">
         <!-- Display Success/Error Messages -->
         @if (session('success'))

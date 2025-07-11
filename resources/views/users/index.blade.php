@@ -1,4 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.admin')
+
+@section('title', 'All Users')
 
 @push('styles')
     <style>
@@ -16,9 +18,7 @@
     </style>
 @endpush
 
-@section('title', 'All Users')
-
-@section('content')
+@section('admin_content')
     <section class="py-12 bg-gradient-to-b from-blue-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->

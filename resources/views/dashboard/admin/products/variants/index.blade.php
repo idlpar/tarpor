@@ -1,8 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @section('title', 'Manage All Product Variants | ' . strtoupper(config('app.name')))
 
-@section('content')
+@section('admin_content')
     <div class="container mx-auto px-4 py-8">
         <div class="flex justify-between items-center mb-6">
             <h1 class="text-3xl font-bold text-gray-800">Manage All Product Variants</h1>

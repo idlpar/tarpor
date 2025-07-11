@@ -1,19 +1,21 @@
 <!DOCTYPE html>
 <html lang="en" dir="ltr" prefix="og: http://ogp.me/ns#">
 <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     @include('components.app.meta')
     <title>
-        @if(request()->is('/'))
-            Tarpor - Premium Fashion for Kids & Men in Bangladesh
+        @hasSection('title')
+            @yield('title') | {{ config('app.name') }}
         @else
-            {{ config('app.name') . ' - ' }}@yield('title', 'Dashboard')
+            {{ config('app.name') }} - Premium Fashion for Kids & Men in Bangladesh
         @endif
     </title>
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="font-['Urbanist'] bg-[var(--light)] text-gray-900 flex flex-col min-h-screen pt-16">
-<main id="main-content" class="flex-grow">
 <div id="cookie-consent" class="fixed inset-x-0 bottom-0 bg-white shadow-lg z-50 transform transition-transform duration-300 translate-y-full">
     <div class="container mx-auto px-4 py-4">
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -47,7 +49,7 @@
 @include('components.app.mobile-nav')
 
 <!-- Main Content -->
-<main id="main-content">
+<main id="main-content" class="flex-grow">
     @yield('content')
 </main>
 
@@ -67,7 +69,14 @@
 @include('components.app.toast')
 
 
-@vite(['resources/css/app.css', 'resources/js/app.js'])
+@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/wishlist.js', 'resources/js/cookie-consent.js'])
 @stack('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        tippy('[data-tippy-content]', {
+            allowHTML: true,
+        });
+    });
+</script>
 </body>
 </html>

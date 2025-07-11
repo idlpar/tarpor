@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
 @push('styles')
     <style>
@@ -215,7 +215,7 @@
 
 @section('title', 'Create Order')
 
-@section('content')
+@section('admin_content')
     <div class="order-create-container">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="form-card">

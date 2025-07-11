@@ -73,7 +73,6 @@
                                                    data-price="{{ $variant->sale_price ?? $variant->price }}"
                                                    data-stock="{{ $variant->stock_quantity }}"
                                                    data-stock-status="{{ $variant->stock_status }}"
-                                                   @if ($loop->first) checked @endif
                                                    @if ($variant->stock_status === 'out_of_stock') disabled @endif>
                                             <label for="variant-{{ $variant->id }}" class="variant-label cursor-pointer block border border-gray-300 rounded-md p-3 text-center transition-all duration-200">
                                                 <span class="variant-name text-sm font-medium text-gray-800">
@@ -82,15 +81,6 @@
                                                 <span class="variant-price text-xs text-gray-500 block mt-1">
                                                     BDT {{ number_format($variant->sale_price ?? $variant->price, 2) }}
                                                 </span>
-                                                @if($variant->stock_status !== 'in_stock')
-                                                <span class="variant-stock-status text-xs font-bold mt-1 block">
-                                                    @if($variant->stock_status === 'out_of_stock')
-                                                        <span class="text-red-600">Out of Stock</span>
-                                                    @else
-                                                        <span class="text-yellow-600">Backorder</span>
-                                                    @endif
-                                                </span>
-                                                @endif
                                             </label>
                                         </div>
                                     @endforeach
@@ -108,6 +98,8 @@
                                     @else
                                         <span class="text-red-600">Out of Stock</span>
                                     @endif
+                                @else
+                                    <span class="text-gray-600">Select a variant to see availability</span>
                                 @endif
                             </span>
                         </div>
@@ -116,32 +108,25 @@
                         <div class="flex items-center mb-6">
                             <label for="quantity" class="font-semibold text-gray-700 mr-3">Quantity:</label>
                             <div class="flex items-center border border-gray-300 rounded-md">
-                                <button id="decrement-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md">-</button>
-                                <input type="number" id="quantity" value="1" min="1" max="{{ $product->stock_quantity }}" class="w-16 text-center border-l border-r border-gray-300 focus:outline-none">
-                                <button id="increment-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md">+</button>
+                                <button id="decrement-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md" @if (($product->type === 'simple' && $product->stock_quantity <= 0) || $product->type === 'variable') disabled @endif>-</button>
+                                <input type="number" id="quantity" value="1" min="1" max="{{ $product->stock_quantity }}" class="w-16 text-center border-l border-r border-gray-300 focus:outline-none" @if (($product->type === 'simple' && $product->stock_quantity <= 0) || $product->type === 'variable') disabled @endif>
+                                <button id="increment-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md" @if (($product->type === 'simple' && $product->stock_quantity <= 0) || $product->type === 'variable') disabled @endif>+</button>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <form action="{{ route('cart.add') }}" method="POST" id="add-to-cart-form">
-                            @csrf
-                            <input type="hidden" name="product_id" value="{{ $product->id }}">
-                            <input type="hidden" name="variant_id" id="selected_variant_id" value="{{ $product->variants->first()->id ?? '' }}">
-                            <input type="hidden" name="quantity" id="form_quantity" value="1">
-
-                            <div class="flex space-x-4 mb-6">
-                                <button type="submit" name="action" value="add_to_cart" id="add-to-cart-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200">
-                                    <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                                    Add to Cart
-                                </button>
-                                <button type="submit" name="action" value="buy_now" id="buy-now-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200">
-                                    Buy Now
-                                </button>
-                                <button type="button" class="bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200">
-                                    <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
-                                </button>
-                            </div>
-                        </form>
+                        <div id="action-buttons" class="flex space-x-4 mb-6">
+                            <button type="button" id="add-to-cart-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
+                                <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                                Add to Cart
+                            </button>
+                            <button type="button" id="buy-now-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
+                                Buy Now
+                            </button>
+                            <button type="button" class="add-to-wishlist bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200" data-product-id="{{ $product->id }}">
+                                <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            </button>
+                        </div>
 
                         <!-- Share Buttons -->
                         <div class="flex items-center space-x-3 text-gray-600">
@@ -266,132 +251,222 @@
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Image Gallery
-            const mainProductImage = document.getElementById('mainProductImage');
-            const thumbnailImages = document.querySelectorAll('.thumbnail-image');
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const productType = '{{ $product->type }}';
+        const productId = {{ $product->id }};
 
-            thumbnailImages.forEach(thumbnail => {
-                thumbnail.addEventListener('click', function() {
-                    mainProductImage.src = this.dataset.src;
-                });
+        const mainProductImage = document.getElementById('mainProductImage');
+        const thumbnailImages = document.querySelectorAll('.thumbnail-image');
+        const quantityInput = document.getElementById('quantity');
+        const incrementButton = document.getElementById('increment-quantity');
+        const decrementButton = document.getElementById('decrement-quantity');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const variantRadios = document.querySelectorAll('.variant-radio');
+        const priceDisplay = document.getElementById('product-price');
+        const salePriceDisplay = document.getElementById('product-sale-price');
+        const stockStatusDisplay = document.getElementById('stock-status-display');
+        const actionButtons = document.getElementById('action-buttons');
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+        const buyNowBtn = document.getElementById('buy-now-btn');
+
+        // --- IMAGE GALLERY ---
+        thumbnailImages.forEach(thumbnail => {
+            thumbnail.addEventListener('click', function () {
+                mainProductImage.src = this.dataset.src;
             });
+        });
 
-            // Quantity Selector
-            const quantityInput = document.getElementById('quantity');
-            const incrementButton = document.getElementById('increment-quantity');
-            const decrementButton = document.getElementById('decrement-quantity');
-
-            if (quantityInput && incrementButton && decrementButton) {
-                incrementButton.addEventListener('click', function() {
-                    let currentValue = parseInt(quantityInput.value);
-                    if (currentValue < parseInt(quantityInput.max)) {
-                        quantityInput.value = currentValue + 1;
-                    }
-                });
-
-                decrementButton.addEventListener('click', function() {
-                    let currentValue = parseInt(quantityInput.value);
-                    if (currentValue > parseInt(quantityInput.min)) {
-                        quantityInput.value = currentValue - 1;
-                    }
-                });
-            }
-
-            // Tabs functionality
-            const tabButtons = document.querySelectorAll('.tab-button');
-            const tabPanes = document.querySelectorAll('.tab-pane');
-
-            tabButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    // Deactivate all tabs and panes
-                    tabButtons.forEach(btn => btn.classList.remove('active-tab', 'border-blue-500', 'text-blue-600'));
-                    tabPanes.forEach(pane => pane.classList.add('hidden'));
-
-                    // Activate clicked tab and corresponding pane
-                    this.classList.add('active-tab', 'border-blue-500', 'text-blue-600');
-                    const targetTab = this.dataset.tab;
-                    document.getElementById(targetTab).classList.remove('hidden');
-                });
+        // --- TABS ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', function () {
+                tabButtons.forEach(btn => btn.classList.remove('active-tab', 'border-blue-500', 'text-blue-600'));
+                tabPanes.forEach(pane => pane.classList.add('hidden'));
+                this.classList.add('active-tab', 'border-blue-500', 'text-blue-600');
+                document.getElementById(this.dataset.tab).classList.remove('hidden');
             });
+        });
 
-            // Activate the first tab by default
-            if (tabButtons.length > 0) {
-                tabButtons[0].classList.add('active-tab', 'border-blue-500', 'text-blue-600');
-                tabPanes[0].classList.remove('hidden');
-            }
+        // --- QUANTITY SELECTOR ---
+        function updateQuantity(change) {
+            const currentValue = parseInt(quantityInput.value);
+            const max = parseInt(quantityInput.max);
+            const min = parseInt(quantityInput.min);
+            let newValue = currentValue + change;
 
-            // Variant Selection
-            const variantRadios = document.querySelectorAll('.variant-radio');
-            const priceDisplay = document.getElementById('product-price');
-            const salePriceDisplay = document.getElementById('product-sale-price');
-            const stockStatusDisplay = document.getElementById('stock-status-display');
-            const selectedVariantIdInput = document.getElementById('selected_variant_id');
-            const formQuantityInput = document.getElementById('form_quantity');
-            const quantityInput = document.getElementById('quantity');
+            if (newValue > max) newValue = max;
+            if (newValue < min) newValue = min;
 
-            function updateProductDisplay(radio) {
-                const price = radio.dataset.price;
-                const stock = radio.dataset.stock;
-                const stockStatus = radio.dataset.stockStatus;
-                const variantId = radio.value;
+            quantityInput.value = newValue;
+        }
 
-                priceDisplay.textContent = `BDT ${parseFloat(price).toFixed(2)}`;
-                salePriceDisplay.textContent = '';
-
-                if (stockStatus === 'in_stock') {
-                    stockStatusDisplay.innerHTML = `<span class="text-green-600">In Stock (${stock} items)</span>`;
-                } else if (stockStatus === 'out_of_stock') {
-                    stockStatusDisplay.innerHTML = `<span class="text-red-600">Out of Stock</span>`;
-                } else {
-                    stockStatusDisplay.innerHTML = `<span class="text-yellow-600">Backorder</span>`;
-                }
-
-                if (selectedVariantIdInput) {
-                    selectedVariantIdInput.value = variantId;
-                }
-                if (quantityInput) {
-                    quantityInput.max = stock;
-                }
-            }
-
-            variantRadios.forEach(radio => {
-                radio.addEventListener('change', function() {
-                    updateProductDisplay(this);
-                });
+        if (incrementButton && decrementButton && quantityInput) {
+            incrementButton.addEventListener('click', () => updateQuantity(1));
+            decrementButton.addEventListener('click', () => updateQuantity(-1));
+            quantityInput.addEventListener('change', () => {
+                updateQuantity(0);
             });
+        }
 
-            if (quantityInput && formQuantityInput) {
-                quantityInput.addEventListener('change', () => {
-                    formQuantityInput.value = quantityInput.value;
-                });
+        // --- VARIANT SELECTION ---
+        function updateProductDisplay(radio) {
+            if (!radio) return;
+
+            const price = radio.dataset.price;
+            const stock = parseInt(radio.dataset.stock);
+            const stockStatus = radio.dataset.stockStatus;
+
+            priceDisplay.textContent = `BDT ${parseFloat(price).toFixed(2)}`;
+            salePriceDisplay.textContent = '';
+
+            if (stockStatus === 'in_stock') {
+                stockStatusDisplay.innerHTML = `<span class="text-green-600">In Stock (${stock} items)</span>`;
+                actionButtons.classList.remove('hidden');
+            } else if (stockStatus === 'out_of_stock') {
+                stockStatusDisplay.innerHTML = `<span class="text-red-600">Out of Stock</span>`;
+                actionButtons.classList.add('hidden');
+            } else {
+                stockStatusDisplay.innerHTML = `<span class="text-yellow-600">Backorder</span>`;
+                actionButtons.classList.remove('hidden');
             }
 
-            // Initial display update for variable products
+            quantityInput.max = stock;
+            if (parseInt(quantityInput.value) > stock) {
+                quantityInput.value = 1;
+            }
+
+            const isOutOfStock = (stockStatus === 'out_of_stock');
+            addToCartBtn.disabled = isOutOfStock;
+            buyNowBtn.disabled = isOutOfStock;
+            quantityInput.disabled = isOutOfStock;
+            incrementButton.disabled = isOutOfStock;
+            decrementButton.disabled = isOutOfStock;
+        }
+
+        variantRadios.forEach(radio => {
+            radio.addEventListener('change', function () {
+                updateProductDisplay(this);
+            });
+        });
+
+        // --- INITIAL STATE ---
+        if (productType === 'variable') {
             const firstSelectedVariant = document.querySelector('.variant-radio:checked');
             if (firstSelectedVariant) {
                 updateProductDisplay(firstSelectedVariant);
             }
+        }
+
+        // --- CART ACTIONS ---
+        function addToCart(buttonElement, isBuyNow = false) {
+            const selectedVariantRadio = document.querySelector('.variant-radio:checked');
+            const variantId = productType === 'variable' ? (selectedVariantRadio ? selectedVariantRadio.value : null) : null;
+
+            if (productType === 'variable' && !variantId) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Oops...',
+                    text: 'Please select a variant first!',
+                });
+                return;
+            }
+
+            const quantity = quantityInput.value;
+            const action = isBuyNow ? 'buy_now' : 'add_to_cart';
+            const originalText = buttonElement.innerHTML;
+            buttonElement.innerHTML = `
+                <svg class="w-4 h-4 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                </svg>
+                ${isBuyNow ? 'Redirecting...' : 'Adding...'}
+            `;
+            buttonElement.disabled = true;
+
+            fetch('{{ route('cart.add') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ product_id: productId, quantity: quantity, variant_id: variantId, action: action })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    if (isBuyNow) {
+                        window.location.href = '{{ route('checkout.index') }}';
+                    } else {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Added to Cart!',
+                            text: data.message,
+                            showConfirmButton: false,
+                            timer: 1500
+                        });
+                    }
+                    updateCartCount(data.cart_count);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: data.message || 'Could not add to cart.',
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error with cart action:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: 'An error occurred.',
+                });
+            })
+            .finally(() => {
+                buttonElement.innerHTML = originalText;
+                buttonElement.disabled = false;
+            });
+        }
+
+        function updateCartCount(count) {
+            const cartCountElements = document.querySelectorAll('.cart-count');
+            cartCountElements.forEach(element => {
+                element.textContent = count;
+                if (count > 0) {
+                    element.classList.remove('hidden');
+                } else {
+                    element.classList.add('hidden');
+                }
+            });
+        }
+
+        addToCartBtn.addEventListener('click', function() {
+            addToCart(this, false);
         });
-    </script>
-    <!-- Font Awesome for social share icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+        buyNowBtn.addEventListener('click', function() {
+            addToCart(this, true);
+        });
+    });
+</script>
+<!-- Font Awesome for social share icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" integrity="sha512-iBBXm8fW90+nuLcSKlbmrPcLa0OT92xO1BIsZ+ywDWZCvqsWgccV3gFoRBv0z+8dLJgyAHIhR35VZc2oM/gI1w==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 @endpush
 
 @push('styles')
-    <style>
-        .variant-radio:checked + .variant-label {
-            border-color: #3b82f6; /* blue-500 */
-            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-        }
-        .variant-radio:disabled + .variant-label {
-            cursor: not-allowed;
-            background-color: #f3f4f6; /* gray-100 */
-            opacity: 0.7;
-        }
-        .variant-radio:disabled + .variant-label .variant-name {
-            text-decoration: line-through;
-        }
-    </style>
+<style>
+    .variant-radio:checked + .variant-label {
+        border-color: #3b82f6; /* blue-500 */
+        box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+    }
+    .variant-radio:disabled + .variant-label {
+        cursor: not-allowed;
+        background-color: #f3f4f6; /* gray-100 */
+        opacity: 0.7;
+    }
+    .variant-radio:disabled + .variant-label .variant-name {
+        text-decoration: line-through;
+    }
+</style>
 @endpush

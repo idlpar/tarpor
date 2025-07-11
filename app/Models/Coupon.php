@@ -10,11 +10,12 @@ class Coupon extends Model
     use HasFactory;
 
     protected $fillable = [
-        'code', 'type', 'value', 'min_amount', 'expires_at', 'usage_limit', 'used',
+        'code', 'type', 'value', 'min_amount', 'expires_at', 'usage_limit', 'times_used', 'max_discount_amount',
     ];
 
     protected $casts = [
         'expires_at' => 'date',
+        'max_discount_amount' => 'decimal:2',
     ];
 
     public function isExpired()
@@ -24,15 +25,19 @@ class Coupon extends Model
 
     public function isUsedUp()
     {
-        return $this->usage_limit && $this->used >= $this->usage_limit;
+        return $this->usage_limit && $this->times_used >= $this->usage_limit;
     }
 
     public function getDiscount($total)
     {
         if ($this->type === 'fixed') {
             return $this->value;
-        } elseif ($this->type === 'percent') {
-            return ($this->value / 100) * $total;
+        } elseif ($this->type === 'percentage') {
+            $discount = ($this->value / 100) * $total;
+            if ($this->max_discount_amount && $discount > $this->max_discount_amount) {
+                return $this->max_discount_amount;
+            }
+            return $discount;
         }
         return 0;
     }

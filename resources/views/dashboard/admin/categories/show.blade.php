@@ -1,6 +1,8 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('content')
+@section('title', $category->name )
+
+@section('admin_content')
     <div class="min-h-screen bg-gray-50">
         <!-- Header Section -->
         <div class="bg-white shadow">

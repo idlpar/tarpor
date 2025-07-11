@@ -13,7 +13,10 @@ class ShopController extends Controller
     {
         $query = Product::where('status', 'published')
             ->with('brand')
-            ->with('categories');
+            ->with('categories')
+            ->with(['variants' => function ($query) {
+                $query->with('attributeValues.attribute');
+            }]);
 
         // Filter by category if requested
         if ($request->has('category')) {

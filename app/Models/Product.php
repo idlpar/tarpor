@@ -16,7 +16,7 @@ class Product extends Model
         'price', 'sale_price', 'cost_price', 'sku', 'barcode',
         'stock_quantity', 'stock_status', 'inventory_tracking', 'low_stock_threshold',
         'weight', 'length', 'width', 'height', 'brand_id', 'thumbnail',
-        'views', 'status', 'is_featured'
+        'views', 'status', 'is_featured', 'is_hot', 'is_sale'
     ];
 
     protected $casts = [
@@ -29,6 +29,8 @@ class Product extends Model
         'height' => 'decimal:2',
         'inventory_tracking' => 'boolean',
         'is_featured' => 'boolean',
+        'is_hot' => 'boolean',
+        'is_sale' => 'boolean',
         'product_collections' => 'array',
         'labels' => 'array',
     ];
@@ -110,7 +112,7 @@ class Product extends Model
 
     public function getThumbnailMediaAttribute()
     {
-        return $this->belongsTo(Media::class, 'thumbnail')->first();
+        return $this->media->where('id', $this->thumbnail)->first();
     }
 
     public function getThumbnailUrlAttribute()

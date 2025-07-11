@@ -1,6 +1,6 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 
-@section('title', 'Edit Product | ' . strtoupper(config('app.name')))
+@section('title', 'Add Product | ' . strtoupper(config('app.name')))
 
 @push('styles')
     <style>
@@ -86,7 +86,7 @@
     </style>
 @endpush
 
-@section('content')
+@section('admin_content')
     <div class="min-h-screen bg-gray-100 p-6 md:p-8">
         <!-- Display Success/Error Messages -->
         @if (session('success'))
@@ -106,26 +106,25 @@
         @include('components.breadcrumbs', [
             'links' => [
                 'Products' => route('products.index'),
-                'Edit Product' => null
+                'Create Product' => null
             ]
         ])
 
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-            <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
+            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
                 @csrf
-                @method('PUT')
                 <!-- Left Column -->
                 <div class="w-full lg:w-9/12">
                     <!-- Product Details -->
                     <div class="bg-white p-8 rounded-lg shadow-lg">
-                        <h2 class="text-3xl font-bold mb-6 text-gray-800">Edit Product</h2>
+                        <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
 
-                        {{-- General Information --}}
+
 
                         <!-- Name -->
                         <div class="mb-6">
                             <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
-                            <input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Product Name">
+                            <input type="text" id="name" name="name" value="{{ old('name') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Product Name">
                             @error('name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -133,24 +132,23 @@
 
                         <!-- Permalink -->
                         <div class="mb-6">
-                            <label class="block font-semibold text-gray-700 mb-2">Permalink *</label>
+                            <label for="slug" class="block font-semibold text-gray-700 mb-2">Permalink *</label>
                             <div class="relative">
-                                <span class="absolute border-l border-t border-b border-gray-300 inset-y-0 left-0 flex items-center pl-3 bg-teal-50 text-gray-500 select-none rounded-lg">{{ url('/product') . '/' }}</span>
-                                <input type="text" name="slug" value="{{ old('slug', $product->slug) }}" class="w-full pl-[230px] border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
+                                <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
                             </div>
                             @error('slug')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
                             <p class="text-sm text-gray-500 mt-2">
-                                Preview: <a href="{{ url('/product/' . $product->slug) }}" target="_blank" class="text-blue-500 hover:underline" id="permalink-preview">{{ url('/product/' . (old('slug', $product->slug))) }}</a>
+                                Preview: <span class="text-gray-500">{{ url('/product') . '/' }}</span><a href="#" class="text-blue-500 hover:underline" id="permalink-preview">{{ old('slug', 'your-slug') }}</a>
                             </p>
                         </div>
 
                         <!-- Description -->
-                        <x-forms.ckeditor id="description" name="description" value="{{ old('description', $product->description ?? '') }}">Description</x-forms.ckeditor>
+                        <x-forms.ckeditor id="description" name="description" value="{{ old('description') }}">Description</x-forms.ckeditor>
 
                         <!-- Content (short_description) -->
-                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description', $product->short_description ?? '') }}">Content</x-forms.ckeditor>
+                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description') }}">Content</x-forms.ckeditor>
 
                         <!-- Images -->
                         <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg">
@@ -169,14 +167,14 @@
                                     <span class="text-gray-500 text-lg">Click here to add images.</span>
                                 </div>
                                 <div id="selectedImagesPreview" class="flex flex-wrap gap-4 mb-4 hidden">
-                                    <!-- Dynamic images will be populated here by JavaScript -->
+                                    <!-- Dynamic images will be populated here -->
                                 </div>
                                 <div id="imageActionButtons" class="flex justify-start gap-4 mt-4 hidden">
                                     <button type="button" id="addMoreImages" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-all">Add Images</button>
                                     <button type="button" id="resetImages" class="px-5 py-2.5 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-all">Reset</button>
                                 </div>
                             </div>
-                            <input type="hidden" name="images" id="productImagesInput" value="{{ old('images', json_encode($product->media->map(function($media) { return ['id' => $media->id, 'url' => $media->url, 'thumb_url' => $media->thumb_url, 'name' => $media->name]; })->toArray())) }}">
+                            <input type="hidden" name="images" id="productImagesInput" value="{{ Js::from(old('images', [])) }}">
                             @error('images')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -194,8 +192,8 @@
                                 <label class="block font-semibold text-lg text-gray-700 mb-2">Specification Tables</label>
                                 <select id="specificationDropdown" name="attributes" class="border text-sm p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                                     <option value="">None</option>
-                                    <option value="general" {{ old('attributes', $product->attributes) == 'general' ? 'selected' : '' }}>General Specification</option>
-                                    <option value="technical" {{ old('attributes', $product->attributes) == 'technical' ? 'selected' : '' }}>Technical Specification</option>
+                                    <option value="general" {{ old('attributes') == 'general' ? 'selected' : '' }}>General Specification</option>
+                                    <option value="technical" {{ old('attributes') == 'technical' ? 'selected' : '' }}>Technical Specification</option>
                                 </select>
                             </div>
                             <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
@@ -221,21 +219,21 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">SKU</label>
-                                    <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sku') border-red-500 @enderror" placeholder="SKU-CZA-PZ-997">
+                                    <input type="text" name="sku" value="{{ old('sku') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sku') border-red-500 @enderror" placeholder="SKU-CZA-PZ-997">
                                     @error('sku')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Price</label>
-                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="price" value="{{ old('price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     @error('price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
-                                    <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="sale_price" value="{{ old('sale_price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
                                     @error('sale_price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -243,7 +241,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Cost per Item</label>
-                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cost_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="cost_price" value="{{ old('cost_price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cost_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Customers won't see this price.</p>
                                     @error('cost_price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -251,7 +249,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Stock Quantity</label>
-                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
+                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
                                     <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
                                     @error('stock_quantity')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -259,7 +257,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
-                                    <input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('barcode') border-red-500 @enderror" placeholder="Enter barcode">
+                                    <input type="text" name="barcode" value="{{ old('barcode') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('barcode') border-red-500 @enderror" placeholder="Enter barcode">
                                     @error('barcode')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
@@ -271,15 +269,15 @@
                         <x-form.card label="Stock Status" class="bg-transparent">
                             <div class="flex items-center space-x-6">
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', $product->stock_status) == 'in_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', 'in_stock') == 'in_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">In Stock</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status', $product->stock_status) == 'out_of_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status') == 'out_of_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">Out of Stock</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status', $product->stock_status) == 'backorder' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status') == 'backorder' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">Backorder</span>
                                 </label>
                             </div>
@@ -293,28 +291,28 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Weight (g)</label>
-                                    <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('weight') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="weight" value="{{ old('weight') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('weight') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('weight')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Length (cm)</label>
-                                    <input type="number" name="length" value="{{ old('length', $product->length) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('length') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="length" value="{{ old('length') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('length') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('length')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Width (cm)</label>
-                                    <input type="number" name="width" value="{{ old('width', $product->width) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('width') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="width" value="{{ old('width') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('width') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('width')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Height (cm)</label>
-                                    <input type="number" name="height" value="{{ old('height', $product->height) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('height') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="height" value="{{ old('height') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('height') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('height')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
@@ -356,9 +354,23 @@
                                 </div>
                                 <div id="related-products-results" class="absolute z-10 w-full bg-white shadow-lg border border-gray-300 max-h-64 overflow-y-auto hidden"></div>
                                 <div id="selected-related-products" class="w-full bg-white border border-gray-300 border-t-0 rounded-b-lg space-y-2 p-2">
-                                    {{-- Existing related products will be loaded by JS --}}
+                                    @if(old('related_products'))
+                                        @foreach(json_decode(old('related_products')) as $relatedId)
+                                            @php $related = App\Models\Product::find($relatedId); @endphp
+                                            @if($related)
+                                                <div class="flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item" data-id="{{ $related->id }}">
+                                                    <span>{{ $related->name }} (SKU: {{ $related->sku }})</span>
+                                                    <button type="button" class="text-red-500 remove-related-product">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    @endif
                                 </div>
-                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', json_encode($product->relatedProducts?->pluck('id') ?? [])) }}">
+                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', '[]') }}">
                                 @error('related_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -390,42 +402,42 @@
                             <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
-                                <input type="text" name="meta_title" value="{{ old('meta_title', $product->seo->meta_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
+                                <input type="text" name="meta_title" value="{{ old('meta_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
                                 @error('meta_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
-                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description', $product->seo->meta_description ?? '') }}</textarea>
+                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description') }}</textarea>
                                 @error('meta_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Keywords</label>
-                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->seo->meta_keywords ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
+                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
                                 @error('meta_keywords')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Canonical URL</label>
-                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $product->seo->canonical_url ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
+                                <input type="url" name="canonical_url" value="{{ old('canonical_url') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
                                 @error('canonical_url')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
-                                <input type="text" name="og_title" value="{{ old('og_title', $product->seo->og_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
+                                <input type="text" name="og_title" value="{{ old('og_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
                                 @error('og_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
-                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description', $product->seo->og_description ?? '') }}</textarea>
+                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description') }}</textarea>
                                 @error('og_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -439,35 +451,28 @@
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
-                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $product->seo->twitter_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
+                                <input type="text" name="twitter_title" value="{{ old('twitter_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
                                 @error('twitter_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
-                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description', $product->seo->twitter_description ?? '') }}</textarea>
+                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description') }}</textarea>
                                 @error('twitter_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Image</label>
-                                <input type="file" name="twitter_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_image') border-red-500 @enderror">
-                                @error('twitter_image')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Schema Markup</label>
-                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup', $product->seo->schema_markup ?? '') }}</textarea>
+                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup') }}</textarea>
                                 @error('schema_markup')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Robots</label>
-                                <input type="text" name="robots" value="{{ old('robots', $product->seo->robots ?? 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
+                                <input type="text" name="robots" value="{{ old('robots', 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
                                 @error('robots')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -482,36 +487,30 @@
                     <div class="mb-6 bg-white p-6 rounded-lg shadow-lg">
                         <h3 class="text-2xl font-bold text-gray-800 mb-2">Publish</h3>
                         <div class="pt-4 border-t border-gray-200 flex gap-4">
-                            <button type="submit" id="saveButton" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover-effect">Update</button>
-                            <button type="submit" id="saveExitButton" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover-effect">Update & Exit</button>
+                            <button type="submit" id="saveButton" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover-effect">Save</button>
+                            <button type="submit" id="saveExitButton" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover-effect">Save & Exit</button>
                         </div>
                     </div>
 
-                    {{-- Product Organization --}}
+
 
                     <!-- Product Type -->
                     <x-form.card label="Product Type" required="true">
                         <select name="type" id="product_type" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('type') border-red-500 @enderror">
-                            <option value="simple" {{ old('type', $product->type) == 'simple' ? 'selected' : '' }}>Simple Product</option>
-                            <option value="variable" {{ old('type', $product->type) == 'variable' ? 'selected' : '' }}>Variable Product</option>
+                            <option value="simple" {{ old('type') == 'simple' ? 'selected' : '' }}>Simple Product</option>
+                            <option value="variable" {{ old('type') == 'variable' ? 'selected' : '' }}>Variable Product</option>
                         </select>
                         @error('type')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
-                    @if ($product->type === 'variable')
-                        <div class="mb-6">
-                            <a href="{{ route('products.variants.edit', $product->id) }}" class="btn btn-info px-5 py-2.5 bg-purple-600 text-white rounded-lg font-semibold text-sm hover:bg-purple-700 transition-all">Manage Variants</a>
-                        </div>
-                    @endif
-
                     <!-- Status Card -->
                     <x-form.card label="Status" required="true">
                         <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
-                            <option value="published" {{ old('status', $product->status) == 'published' ? 'selected' : '' }}>Published</option>
-                            <option value="draft" {{ old('status', $product->status) == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="archived" {{ old('status', $product->status) == 'archived' ? 'selected' : '' }}>Archived</option>
+                            <option value="published" {{ old('status', 'published') == 'published' ? 'selected' : '' }}>Published</option>
+                            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                         </select>
                         @error('status')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -532,7 +531,7 @@
                     <!-- Is Featured? Card -->
                     <x-form.card label="Is Featured?">
                         <label class="relative inline-flex items-center cursor-pointer ml-2">
-                            <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}>
+                            <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle" {{ old('is_featured') ? 'checked' : '' }}>
                             <div class="w-11 h-6 bg-gray-100 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                         @error('is_featured')
@@ -552,9 +551,9 @@
                                 </svg>
                             </span>
                         </div>
-                        <div class="max-h-96 overflow-auto">
+                        <div class="max-h-[200px] overflow-auto">
                             <ul id="category-tree" class="mt-2 space-y-1">
-                                @include('partials.category-checkboxes', ['categories' => $categories, 'selected' => old('category_ids', $product->categories?->pluck('id')->toArray() ?? [])])
+                                @include('partials.category-checkboxes', ['categories' => $categories])
                             </ul>
                         </div>
                         @error('category_ids')
@@ -568,7 +567,7 @@
                     <!-- Brand Card -->
                     <x-form.card label="Brand">
                         <div class="relative">
-                            <input type="text" id="brand-search" value="{{ old('brand_id', $product->brand_id) ? App\Models\Brand::find(old('brand_id', $product->brand_id))->name : '' }}" class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm @error('brand_id') border-red-500 @enderror" placeholder="Search brands...">
+                            <input type="text" id="brand-search" value="{{ old('brand_id') ? App\Models\Brand::find(old('brand_id'))->name : '' }}" class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm @error('brand_id') border-red-500 @enderror" placeholder="Search brands...">
                             <div id="brand-dropdown" class="absolute z-20 bg-white mt-1 w-full border border-gray-200 rounded-md shadow-md hidden max-h-64 overflow-y-auto">
                                 <ul id="brand-list" class="divide-y divide-gray-100 text-sm text-gray-700">
                                     @foreach($brands as $brand)
@@ -576,7 +575,7 @@
                                     @endforeach
                                 </ul>
                             </div>
-                            <input type="hidden" name="brand_id" id="selected-brand-id" value="{{ old('brand_id', $product->brand_id) }}">
+                            <input type="hidden" name="brand_id" id="selected-brand-id" value="{{ old('brand_id') }}">
                             @error('brand_id')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -585,7 +584,7 @@
 
                     <!-- Featured Image Card -->
                     <x-form.card label="Featured Image (Optional)">
-                        <div id="featuredImageContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40 {{ $product->thumbnail_media ? 'hidden' : '' }}">
+                        <div id="featuredImageContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
                             <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                 <path d="M15 8h.01"></path>
@@ -597,9 +596,9 @@
                             </svg>
                             <span class="text-gray-500 text-md">Choose Image</span>
                         </div>
-                        <div id="featuredImagePreview" class="mt-4 {{ $product->thumbnail_media ? '' : 'hidden' }}">
+                        <div id="featuredImagePreview" class="mt-4 hidden">
                             <div class="relative w-full max-w-xs mx-auto">
-                                <img id="featuredImageThumbnail" src="{{ $product->thumbnail_media ? $product->thumbnail_media->thumb_url : '' }}" alt="Featured Image" class="w-full h-auto rounded-lg border border-gray-200">
+                                <img id="featuredImageThumbnail" src="" alt="Featured Image" class="w-full h-auto rounded-lg border border-gray-200">
                                 <button type="button" id="removeFeaturedImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -607,7 +606,7 @@
                                 </button>
                             </div>
                         </div>
-                        <input type="hidden" name="thumbnail" id="featuredImageInput" value="{{ old('thumbnail', $product->thumbnail_media ? $product->thumbnail_media->id : '') }}">
+                        <input type="hidden" name="thumbnail" id="featuredImageInput" value="{{ old('thumbnail') }}">
                         @error('featured_image')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
@@ -617,7 +616,7 @@
 
                     <!-- Product Collections Card -->
                     @php
-                        $collections = old('product_collections', $product->product_collections ?? []);
+                        $collections = old('product_collections', []);
                     @endphp
                     <x-form.card label="Product Collections">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
@@ -627,7 +626,7 @@
                                 'special_offer' => ['Special Offer', 'text-amber-600'],
                             ] as $value => [$label, $activeClass])
                                 <label class="flex items-center space-x-3" x-data="{ checked: {{ in_array($value, $collections) ? 'true' : 'false' }} }">
-                                    <input type="checkbox" name="product_collections[]" value="{{ $value }}" @change="checked = $event->target.checked" {{ in_array($value, $collections) ? 'checked' : '' }} class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <input type="checkbox" name="product_collections[]" value="{{ $value }}" @change="checked = $event.target.checked" {{ in_array($value, $collections) ? 'checked' : '' }} class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                     <span :class="checked ? '{{ $activeClass }} font-semibold' : 'text-gray-700 font-medium'">{{ $label }}</span>
                                 </label>
                             @endforeach
@@ -642,14 +641,11 @@
 
                     <!-- Labels Card -->
                     @php
-                        $labels = old('labels', $product->labels ?? []);
+                        $labels = old('labels', []);
                     @endphp
                     <x-form.card label="Labels">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
-                            @foreach (['hot' => ['
-', 'red'], 'new' => ['
-', 'green'], 'sale' => ['
-', 'blue']] as $value => [$emoji, $color])
+                            @foreach (['hot' => ['🔥', 'red'], 'new' => ['🆕', 'green'], 'sale' => ['💸', 'blue']] as $value => [$emoji, $color])
                                 <label x-data="{ checked: {{ in_array($value, $labels) ? 'true' : 'false' }} }" class="flex items-center space-x-3" :class="{ 'text-{{ $color }}-600': checked }">
                                     <input type="checkbox" name="labels[]" value="{{ $value }}" x-model="checked" class="w-5 h-5 border-gray-300 rounded focus:ring-{{ $color }}-500">
                                     <span class="font-medium">{{ ucfirst($value) }} {{ $emoji }}</span>
@@ -666,7 +662,7 @@
 
                     <!-- Minimum Order Quantity Card -->
                     <x-form.card label="Minimum Order Quantity" required="true">
-                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', $product->min_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('min_order_quantity') border-red-500 @enderror" placeholder="0">
+                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('min_order_quantity') border-red-500 @enderror" placeholder="0">
                         <p class="text-sm text-gray-500 mt-2">Minimum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('min_order_quantity')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -675,7 +671,7 @@
 
                     <!-- Maximum Order Quantity Card -->
                     <x-form.card label="Maximum Order Quantity" required="true">
-                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', $product->max_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('max_order_quantity') border-red-500 @enderror" placeholder="0">
+                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('max_order_quantity') border-red-500 @enderror" placeholder="0">
                         <p class="text-sm text-gray-500 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('max_order_quantity')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -689,7 +685,7 @@
                                 <input type="text" id="tag-input" class="flex-grow outline-none min-w-[100px]" placeholder="Add tags..." autocomplete="off">
                             </div>
                             <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
-                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', json_encode($product->tags?->pluck('name') ?? [])) }}">
+                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', '[]') }}">
                             @error('tags')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -702,9 +698,6 @@
 @endsection
 
 @push('scripts')
-    <script>
-        const productThumbnailId = {{ $product->thumbnail_media ? $product->thumbnail_media->id : 'null' }};
-    </script>
     <!-- Utility Functions -->
     <script>
         // Reusable debounce function
@@ -716,6 +709,66 @@
             };
         }
     </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productTypeSelect = document.getElementById('product_type');
+
+            function toggleInventoryFields() {
+                const isSimpleProduct = productTypeSelect.value === 'simple';
+
+                // Select specific inventory-related input fields
+                const stockQuantityInput = document.querySelector('input[name="stock_quantity"]');
+                const barcodeInput = document.querySelector('input[name="barcode"]');
+                const stockStatusRadios = document.querySelectorAll('input[name="stock_status"]');
+
+                // Enable/disable stock quantity and barcode
+                if (stockQuantityInput) {
+                    stockQuantityInput.disabled = !isSimpleProduct;
+                    stockQuantityInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    stockQuantityInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+                if (barcodeInput) {
+                    barcodeInput.disabled = !isSimpleProduct;
+                    barcodeInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    barcodeInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+
+                // Enable/disable stock status radio buttons
+                stockStatusRadios.forEach(radio => {
+                    radio.disabled = !isSimpleProduct;
+                    // Visually dim the parent label or container for radio buttons
+                    if (radio.closest('label')) {
+                        radio.closest('label').style.opacity = isSimpleProduct ? '1' : '0.5';
+                        radio.closest('label').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                    }
+                });
+
+                // Ensure price fields are always enabled
+                const priceFields = [
+                    document.querySelector('input[name="price"]'),
+                    document.querySelector('input[name="sale_price"]'),
+                    document.querySelector('input[name="cost_price"]')
+                ];
+                priceFields.forEach(field => {
+                    if (field) {
+                        field.disabled = false;
+                        field.closest('div').style.opacity = '1';
+                        field.closest('div').style.pointerEvents = 'auto';
+                    }
+                });
+            }
+
+            productTypeSelect.addEventListener('change', toggleInventoryFields);
+            toggleInventoryFields(); // Initial call on page load
+        });
+    </script>
+
+
+
+
+
+
 
     <!-- Image Handling, and Form Submission -->
     <script>
@@ -796,8 +849,8 @@
                         });
                     });
 
-                    // Update hidden input with IDs of existing media
-                    this.productImagesInput.value = JSON.stringify(this.productImages.filter(img => img.id).map(img => img.id));
+                    // Update hidden input with IDs of existing media, or mark as new for files
+                    this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id || null));
                     this.updateVisibility();
                 },
 
@@ -821,8 +874,8 @@
                 },
 
                 initPreloadedImages() {
-                    const initialImagesData = JSON.parse(this.productImagesInput.value || '[]');
-                    if (initialImagesData.length === 0) {
+                    const currentImageIds = JSON.parse(this.productImagesInput.value || '[]');
+                    if (currentImageIds.length === 0) {
                         this.updateVisibility();
                         return;
                     }
@@ -830,23 +883,40 @@
                     this.selectedImagesPreview.innerHTML = '';
                     this.productImages = [];
 
-                    initialImagesData.forEach(mediaData => {
-                        // mediaData is already a full object from the Blade template
-                        this.productImages.push({
-                            id: mediaData.id,
-                            url: mediaData.url,
-                            thumb_url: mediaData.thumb_url,
-                            name: mediaData.name,
-                            file: null // No file object for preloaded images
+                    const fetchPromises = currentImageIds.map(id =>
+                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', id), {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            }
+                        })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success && data.file) {
+                                    // Store the fetched file object, including its ID and URL
+                                    return { id: data.file.id, url: data.file.url, thumb_url: data.file.thumb_url, name: data.file.name, file: null };
+                                }
+                                throw new Error(`Failed to fetch image ID: ${id}`);
+                            })
+                            .catch(error => {
+                                console.error(error);
+                                return null;
+                            })
+                    );
+
+                    Promise.all(fetchPromises).then(files => {
+                        files.forEach(file => {
+                            if (file) this.productImages.push(file);
                         });
+                        this.renderImages();
+                        this.updateVisibility();
                     });
-                    this.renderImages();
-                    this.updateVisibility();
 
                     // For featured image, if preloaded
                     const featuredImageId = this.featuredImageInput.value;
-                    if (featuredImageId && productThumbnailId !== null) { // Use productThumbnailId from Blade
-                        fetch(`{{ route("gallery.file.show", '') }}/${featuredImageId}`, {
+                    if (featuredImageId) {
+                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', featuredImageId), {
                             headers: {
                                 'Accept': 'application/json',
                                 'X-Requested-With': 'XMLHttpRequest',
@@ -868,15 +938,25 @@
                 },
 
                 init() {
+                    console.log('galleryManager.init() called');
                     this.initPreloadedImages();
                     const uploadArea = document.querySelector('.clickable-upload-area');
-                    uploadArea?.addEventListener('click', this.handleProductUpload.bind(this));
+                    uploadArea?.addEventListener('click', () => {
+                        console.log('Click event on uploadArea');
+                        this.handleProductUpload();
+                    });
                     const addMoreImages = document.getElementById('addMoreImages');
-                    addMoreImages?.addEventListener('click', this.handleProductUpload.bind(this));
+                    addMoreImages?.addEventListener('click', () => {
+                        console.log('Click event on addMoreImages button');
+                        this.handleProductUpload();
+                    });
                     const resetImages = document.getElementById('resetImages');
                     resetImages?.addEventListener('click', () => this.resetImages());
                     const featuredContainer = document.getElementById('featuredImageContainer');
-                    featuredContainer?.addEventListener('click', this.handleFeaturedUpload.bind(this));
+                    featuredContainer?.addEventListener('click', () => {
+                        console.log('Click event on featuredImageContainer');
+                        this.handleFeaturedUpload();
+                    });
                     const removeFeatured = document.getElementById('removeFeaturedImage');
                     removeFeatured?.addEventListener('click', () => {
                         this.featuredImageInput.value = '';
@@ -903,27 +983,43 @@
                 },
 
                 handleProductUpload() {
-                    window.openGalleryModal('', (files) => {
-                        if (!files) return;
-                        const fileArray = Array.isArray(files) ? files : [files];
-                        fileArray.forEach(file => {
-                            // If it's a new file from the gallery, it will have a 'file' property
-                            // If it's an existing media item, it will have an 'id' and 'url'
-                            this.addImage(file);
-                        });
-                    }, { mode: 'multiple', accept: 'image/*' });
+                    console.log('handleProductUpload called, dispatching open-gallery event');
+                    const event = new CustomEvent('open-gallery', {
+                        detail: {
+                            callback: (files) => {
+                                if (!files) return;
+                                const fileArray = Array.isArray(files) ? files : [files];
+                                fileArray.forEach(file => {
+                                    this.addImage(file);
+                                });
+                            },
+                            options: { mode: 'multiple', accept: 'image/*' }
+                        }
+                    });
+                    window.dispatchEvent(event);
                 },
 
                 handleFeaturedUpload() {
-                    window.openGalleryModal('', (file) => {
-                        if (file) {
-                            this.setFeaturedImage(file);
+                    console.log('handleFeaturedUpload called, dispatching open-gallery event');
+                    const event = new CustomEvent('open-gallery', {
+                        detail: {
+                            callback: (file) => {
+                                if (file) {
+                                    this.setFeaturedImage(file);
+                                }
+                            },
+                            options: { mode: 'single', accept: 'image/*' }
                         }
-                    }, { mode: 'single', accept: 'image/*' });
+                    });
+                    window.dispatchEvent(event);
                 }
             };
 
-            galleryManager.init();
+            // Wait for the gallery to be ready before initializing the manager
+            window.addEventListener('gallery-ready', () => {
+                console.log('Product page: Gallery is ready, initializing galleryManager.');
+                galleryManager.init();
+            });
 
             const form = document.getElementById('productForm');
             const saveButton = document.getElementById('saveButton');
@@ -953,10 +1049,6 @@
                 // Clear previous errors
                 document.querySelectorAll('.text-red-500.text-sm.mt-1').forEach(el => el.remove());
                 document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
-
-                galleryManager.renderImages(); // Ensure productImagesInput is up-to-date
-                console.log('Frontend: galleryManager.productImages before submission:', galleryManager.productImages);
-                console.log('Frontend: productImagesInput.value before submission:', galleryManager.productImagesInput.value);
 
                 const formData = new FormData(form);
 
@@ -992,7 +1084,7 @@
                     }
 
                     const response = await fetch(form.action, {
-                        method: 'POST', // Form method spoofing handles PUT
+                        method: 'POST',
                         body: formData,
                         headers: {
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
@@ -1003,7 +1095,7 @@
                     const result = await response.json();
 
                     if (response.ok) {
-                        showToast('Product updated successfully!');
+                        showToast('Product saved successfully!');
                         if (result.redirect) {
                             window.location.href = result.redirect;
                         } else if (isSaveExit) {
@@ -1033,11 +1125,11 @@
                                 }
                             }
                         }
-                        showToast(result.message || 'Failed to update product.', 'error');
+                        showToast(result.message || 'Failed to save product.', 'error');
                     }
                 } catch (error) {
                     console.error('Submission error:', error);
-                    showToast('An error occurred while updating the product.', 'error');
+                    showToast('An error occurred while saving the product.', 'error');
                 } finally {
                     saveButton.disabled = false;
                     saveExitButton.disabled = false;
@@ -1049,6 +1141,24 @@
         });
     </script>
 
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const productTypeSelect = document.getElementById('product_type');
+            const simpleProductFields = document.querySelectorAll('.x-form-card[label="Overview"], .x-form-card[label="Stock Status"], .x-form-card[label="Shipping"]');
+
+            function toggleSimpleProductFields() {
+                if (productTypeSelect.value === 'simple') {
+                    simpleProductFields.forEach(card => card.style.display = 'block');
+                } else {
+                    simpleProductFields.forEach(card => card.style.display = 'none');
+                }
+            }
+
+            productTypeSelect.addEventListener('change', toggleSimpleProductFields);
+            toggleSimpleProductFields(); // Initial call on page load
+        });
+    </script>
+
     <!-- Dynamic Specification Table -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -1056,7 +1166,7 @@
             const specFields = document.getElementById('specificationFields');
             const specTableBody = document.getElementById('specTableBody');
 
-            function updateSpecTable() {
+            dropdown.addEventListener('change', () => {
                 specTableBody.innerHTML = '';
                 if (dropdown.value === '') {
                     specFields.classList.add('hidden');
@@ -1076,26 +1186,18 @@
                     ]
                 };
 
-                // Pre-fill existing attributes if available
-                const existingAttributes = @json($product->attributes ?? []);
-
                 specifications[dropdown.value].forEach(spec => {
                     const row = document.createElement('tr');
-                    const existingValue = existingAttributes[spec.attribute] || spec.value || '';
                     row.innerHTML = `
                         <td class="border p-3">${spec.group}</td>
                         <td class="border p-3">${spec.attribute}</td>
                         <td class="border p-3">
-                            <input type="text" name="attributes[${spec.attribute}]" class="w-full border rounded p-2" value="${existingValue}">
+                            <input type="text" class="w-full border rounded p-2" value="${spec.value || ''}">
                         </td>
                     `;
                     specTableBody.appendChild(row);
                 });
-            }
-
-            dropdown.addEventListener('change', updateSpecTable);
-            // Initial load
-            updateSpecTable();
+            });
         });
     </script>
 
@@ -1115,7 +1217,6 @@
             const slugInput = document.querySelector('input[name="slug"]');
             const permalinkPreview = document.getElementById('permalink-preview');
             const baseUrl = "{{ url('/product') }}";
-            let isSlugManuallyEdited = false;
 
             function createSlug(text) {
                 return text.toLowerCase().replace(/\s+/g, '-').replace(/[^\w-]+/g, '');
@@ -1123,59 +1224,50 @@
 
             function updatePreview(slug) {
                 slug = slug || 'your-slug';
-                permalinkPreview.textContent = baseUrl + '/' + slug;
+                permalinkPreview.textContent = slug;
                 permalinkPreview.href = baseUrl + '/' + slug;
             }
 
             const checkSlug = debounce(async (slug) => {
                 if (!slug || slug === 'your-slug') return;
                 try {
-                    const response = await fetch(`/product/slug/check?slug=${encodeURIComponent(slug)}&ignore_id={{ $product->id }}`, {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        }
-                    });
+                    const response = await fetch(`{{ route('api.slug.check') }}?slug=${encodeURIComponent(slug)}`);
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error('Error checking slug:', response.status, errorText);
+                        // Optionally, display an error message to the user or revert to a default slug
                         return;
                     }
                     const data = await response.json();
+                    updatePreview(data.suggested);
                     if (data.exists && slugInput.value === slug) {
-                        showToast('Slug already exists. A unique slug has been generated.', 'error');
                         slugInput.value = data.suggested;
-                        updatePreview(data.suggested);
-                    } else if (!data.exists && slugInput.value === slug) {
-                        updatePreview(slug);
                     }
                 } catch (error) {
                     console.error('Error checking slug:', error);
                 }
-            }, 500); // Debounce for 500ms
+            }, 5000);
 
             nameInput.addEventListener('input', () => {
-                if (!isSlugManuallyEdited) {
-                    const generatedSlug = createSlug(nameInput.value);
-                    slugInput.value = generatedSlug;
-                    updatePreview(generatedSlug);
-                    checkSlug(generatedSlug);
-                }
+                const generatedSlug = createSlug(nameInput.value);
+                slugInput.value = generatedSlug;
+                updatePreview(generatedSlug);
+                checkSlug(generatedSlug);
             });
 
             slugInput.addEventListener('input', () => {
-                isSlugManuallyEdited = true;
                 const manualSlug = slugInput.value.trim();
-                updatePreview(manualSlug);
-                checkSlug(manualSlug);
+                if (manualSlug) {
+                    updatePreview(manualSlug);
+                    checkSlug(manualSlug);
+                } else {
+                    const generatedSlug = createSlug(nameInput.value);
+                    slugInput.value = generatedSlug;
+                    updatePreview(generatedSlug);
+                }
             });
 
-            // Initial state
-            if (slugInput.value) {
-                isSlugManuallyEdited = true;
-            }
-            updatePreview(slugInput.value);
+            updatePreview(slugInput.value || 'your-slug');
         });
     </script>
 
@@ -1200,7 +1292,7 @@
                         const text = label.textContent.trim().toLowerCase();
                         isMatch = text.includes(searchTerm);
                         if (isMatch && searchTerm) {
-                            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\$&')})`, 'gi');
+                            const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
                             label.innerHTML = label.textContent.replace(regex, '<span class="highlight">$1</span>');
                         }
                     }
@@ -1265,7 +1357,7 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const categoryCheckboxes = document.querySelectorAll('input[name="categories[]"]');
-            const skuInput = document.querySelector('input[name="sku"]'); // Changed selector to target by name
+            const skuInput = document.querySelector('input[placeholder="SKU-CZA-PZ-997"]');
 
             async function fetchGeneratedSku() {
                 const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(checkbox => parseInt(checkbox.value));
@@ -1276,14 +1368,21 @@
                 console.log('Sending category IDs for SKU generation:', selectedCategories);
                 try {
                     if (skuInput) skuInput.value = 'Generating SKU...';
-                    const response = await fetch('/generate-sku', {
+                    const selectedBrandId = document.getElementById('selected-brand-id').value;
+                    const productName = document.getElementById('name').value;
+
+                    const response = await fetch(`/api/generate-sku`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content
                         },
-                        body: JSON.stringify({ category_ids: selectedCategories, product_id: {{ $product->id }} }) // Pass product ID to exclude current product's slug
+                        body: JSON.stringify({
+                            category_ids: selectedCategories,
+                            brand_id: selectedBrandId,
+                            product_name: productName
+                        })
                     });
                     if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const data = await response.json();
@@ -1292,7 +1391,7 @@
                     console.error('Error:', error);
                     if (skuInput) {
                         skuInput.value = '';
-                        showToast('SKU generation failed. Please check console for details.', 'error');
+                        alert('SKU generation failed. Please check console for details.');
                     }
                 }
             }
@@ -1301,8 +1400,7 @@
                 checkbox.addEventListener('change', fetchGeneratedSku);
             });
 
-            // Initial SKU generation if categories are already selected on load
-            if (document.querySelectorAll('input[name="categories[]"]:checked').length > 0) {
+            if (document.querySelector('input[name="categories[]"]:checked')) {
                 fetchGeneratedSku();
             }
         });
@@ -1316,52 +1414,43 @@
             const selectedContainer = document.getElementById('selected-related-products');
             const hiddenInput = document.getElementById('related-products-input');
             const loadingIndicator = document.getElementById('related-products-loading');
-            const categorySelects = document.querySelectorAll('input[name="category_ids[]"]'); // Corrected selector
-            const tagSelects = document.querySelectorAll('#tags-hidden-input'); // Corrected selector
-            let selectedProducts = [];
+            const categorySelects = document.querySelectorAll('input[name="categories[]"]');
+            const tagSelects = document.querySelectorAll('input[name="tags[]"]');
+            let selectedProducts = JSON.parse(hiddenInput.value || '[]');
             let searchController = null;
 
-            function updateSelectedProductsUI() {
+            function updateSelectedProducts() {
+                selectedProducts = selectedProducts.filter(id => id && !isNaN(id));
+                hiddenInput.value = JSON.stringify(selectedProducts);
                 selectedContainer.innerHTML = '';
                 if (selectedProducts.length === 0) {
                     selectedContainer.classList.add('hidden');
                 } else {
                     selectedContainer.classList.remove('hidden');
-                    selectedProducts.forEach(product => {
-                        const productEl = document.createElement('div');
-                        productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item';
-                        productEl.dataset.id = product.id;
-                        productEl.innerHTML = `
-                            <span>${product.name} (SKU: ${product.sku})</span>
-                            <button type="button" class="text-red-500 remove-related-product">
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </button>
-                        `;
-                        selectedContainer.appendChild(productEl);
+                    selectedProducts.forEach(async productId => {
+                        try {
+                            const response = await fetch(`/product/${productId}/brief`);
+                            const product = await response.json();
+                            const productEl = document.createElement('div');
+                            productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item';
+                            productEl.dataset.id = product.id;
+                            productEl.innerHTML = `
+                                <span>${product.name} (SKU: ${product.sku})</span>
+                                <button type="button" class="text-red-500 remove-related-product">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </span>`;
+                            selectedContainer.appendChild(productEl);
+                        } catch (error) {
+                            console.error('Failed to fetch product:', error);
+                        }
                     });
-                }
-                hiddenInput.value = JSON.stringify(selectedProducts.map(p => p.id));
-            }
-
-            async function initRelatedProducts() {
-                const initialIds = JSON.parse(hiddenInput.value || '[]');
-                if (initialIds.length > 0) {
-                    const response = await fetch(`/product/brief-batch`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({ ids: initialIds })
-                    });
-                    selectedProducts = await response.json();
-                    updateSelectedProductsUI();
                 }
             }
 
-            initRelatedProducts();
+            updateSelectedProducts();
 
             searchInput.addEventListener('focus', () => {
                 searchInput.value = '';
@@ -1379,7 +1468,7 @@
                 loadingIndicator.classList.remove('hidden');
                 resultsContainer.classList.add('hidden');
                 try {
-                    const response = await fetch(`/product/search?q=${encodeURIComponent(term)}&exclude_id={{ $product->id }}`, {
+                    const response = await fetch(`/api/product/search?q=${encodeURIComponent(term)}`, {
                         signal: searchController.signal
                     });
                     if (!response.ok) throw new Error('Network response was not ok');
@@ -1405,9 +1494,8 @@
                     }
                 } finally {
                     loadingIndicator.classList.add('hidden');
-                    searchController = null;
                 }
-            }, 300);
+            }
 
             searchInput.addEventListener('input', () => {
                 const term = searchInput.value.trim();
@@ -1422,18 +1510,16 @@
             });
 
             async function loadSmartSuggestions() {
-                const selectedCategories = Array.from(document.querySelectorAll('input[name="category_ids[]"]:checked')).map(el => el.value);
-                const selectedTags = JSON.parse(document.getElementById('tags-hidden-input').value || '[]').map(tag => tag); // Get tags from hidden input
+                const selectedCategories = Array.from(document.querySelectorAll('input[name="categories[]"]:checked')).map(el => el.value);
+                const selectedTags = Array.from(document.querySelectorAll('input[name="tags[]"]')).map(el => el.value);
                 loadingIndicator.classList.remove('hidden');
                 resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Loading suggestions...</div>';
                 resultsContainer.classList.remove('hidden');
                 try {
                     const params = new URLSearchParams();
                     selectedCategories.forEach(id => params.append('category_ids[]', id));
-                    selectedTags.forEach(tag => params.append('tag_names[]', tag)); // Use tag_names for tags
-                    params.append('exclude_id', {{ $product->id }}); // Exclude current product
-
-                    const response = await fetch(`/product/suggestions?${params.toString()}`);
+                    selectedTags.forEach(id => params.append('tag_ids[]', id));
+                    const response = await fetch(`/api/product/suggestions?${params.toString()}`);
                     if (!response.ok) throw new Error('Network response was not ok');
                     const suggestions = await response.json();
                     resultsContainer.innerHTML = suggestions.length > 0
@@ -1468,24 +1554,19 @@
                 });
             });
 
-            // Listen for changes on the hidden tags input
-            const tagsObserver = new MutationObserver(() => {
-                if (searchInput === document.activeElement) loadSmartSuggestions();
+            tagSelects.forEach(select => {
+                select.addEventListener('change', () => {
+                    if (searchInput === document.activeElement) loadSmartSuggestions();
+                });
             });
-            tagsObserver.observe(document.getElementById('tags-hidden-input'), { attributes: true, childList: true, subtree: true });
-
 
             resultsContainer.addEventListener('click', (e) => {
                 const resultItem = e.target.closest('.product-result');
                 if (!resultItem) return;
-                const product = {
-                    id: parseInt(resultItem.dataset.id),
-                    name: resultItem.dataset.name,
-                    sku: resultItem.dataset.sku
-                };
-                if (!selectedProducts.some(p => p.id === product.id)) {
-                    selectedProducts.push(product);
-                    updateSelectedProductsUI();
+                const productId = parseInt(resultItem.dataset.id);
+                if (!selectedProducts.includes(productId)) {
+                    selectedProducts.push(productId);
+                    updateSelectedProducts();
                 }
                 searchInput.value = '';
                 resultsContainer.classList.add('hidden');
@@ -1495,8 +1576,8 @@
                 if (e.target.closest('.remove-related-product')) {
                     const item = e.target.closest('[data-id]');
                     const productId = parseInt(item.dataset.id);
-                    selectedProducts = selectedProducts.filter(p => p.id !== productId);
-                    updateSelectedProductsUI();
+                    selectedProducts = selectedProducts.filter(id => id !== productId);
+                    updateSelectedProducts();
                 }
             });
         });
@@ -1668,7 +1749,8 @@
                         if (suggestions.length > 0 && hoveredIndex >= 0) {
                             selectSuggestion(suggestions[hoveredIndex]);
                             e.preventDefault();
-                        } else {
+                        }
+                        else {
                             const currentTag = tagInput.value.trim();
                             if (currentTag !== '') {
                                 addTag(currentTag);

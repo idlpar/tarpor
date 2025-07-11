@@ -116,11 +116,11 @@
                             @endif
                         </div>
 
-                        @if ($product->gallery_images->isNotEmpty())
+                        @if ($product->media->isNotEmpty())
                             <div class="grid grid-cols-4 gap-2">
-                                @foreach ($product->gallery_images as $image)
+                                @foreach ($product->media as $media_item)
                                     <div class="bg-gray-50 rounded-md overflow-hidden h-24 cursor-pointer product-thumbnail transition-all duration-200 hover:ring-2 hover:ring-blue-500">
-                                        <img src="{{ $image }}"
+                                        <img src="{{ $media_item->url }}"
                                              alt="{{ $product->name }} image"
                                              class="w-full h-full object-cover"
                                              loading="lazy">

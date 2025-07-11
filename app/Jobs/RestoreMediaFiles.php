@@ -9,6 +9,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 
@@ -58,7 +59,14 @@ class RestoreMediaFiles implements ShouldQueue
 
             // Check if original file exists
             if (!Storage::disk($media->disk)->exists($filePath)) {
-                throw new \Exception("Original file not found for restoration");
+                \Log::warning('Original file not found for restoration. Media record restored, but physical file is missing.', [
+                    'media_id' => $media->id,
+                    'file_path' => $filePath,
+                    'disk' => $media->disk
+                ]);
+                // Still restore the media record in the database
+                $media->restore();
+                return;
             }
 
             // For images, regenerate conversions if missing

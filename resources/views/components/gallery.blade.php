@@ -617,6 +617,10 @@
         display: none;
     }
 
+    .trash-view .breadcrumb-and-pagination {
+        display: none;
+    }
+
     .deleted-item {
         opacity: 0.8;
         position: relative;
@@ -725,7 +729,7 @@
         </div>
 
         <!-- Breadcrumbs and Pagination -->
-        <div class="breadcrumb-and-pagination">
+        <div class="breadcrumb-and-pagination" :class="{'hidden-in-trash': gallery.state.isTrashView}">
             <div id="breadcrumbContainer" class="breadcrumb-container">
                 <!-- Dynamic breadcrumbs -->
             </div>
@@ -1152,7 +1156,7 @@
 
             loadContents() {
                 this.showLoading();
-                const url = new URL('{{ route("gallery.index") }}');
+                const url = new URL('{{ route("gallery.getContents") }}');
                 url.searchParams.append('path', this.state.currentPath);
                 url.searchParams.append('page', this.state.pagination.currentPage);
                 url.searchParams.append('per_page', this.state.pagination.perPage);
@@ -1205,13 +1209,13 @@
                     .then(data => {
                         if (data.success) {
                             this.state.currentTrashParent = parentId;
-                            this.state.pagination = data.pagination || {
-                                currentPage: 1,
-                                perPage: 12,
-                                totalItems: 0,
-                                totalPages: 1,
-                                hasPrevious: false,
-                                hasNext: false
+                            this.state.pagination = {
+                                currentPage: data.pagination.current_page || 1,
+                                perPage: data.pagination.per_page || 12,
+                                totalItems: data.pagination.total_items || 0,
+                                totalPages: data.pagination.total_pages || 1,
+                                hasPrevious: data.pagination.has_previous || false,
+                                hasNext: data.pagination.has_next || false
                             };
                             this.renderContents(data.contents);
                             this.updatePaginationControls();
@@ -1233,6 +1237,9 @@
 
             renderBreadcrumbs(breadcrumbs) {
                 this.elements.breadcrumbs.innerHTML = '';
+                if (this.state.isTrashView) {
+                    return;
+                }
                 breadcrumbs.forEach((crumb, index) => {
                     if (index > 0) {
                         const separator = document.createElement('span');
@@ -1621,7 +1628,7 @@
             },
 
             fetchFileDetails(fileId) {
-                fetch(`{{ route("gallery.file.show", '') }}/${fileId}`, {
+                fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', fileId), {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -1797,7 +1804,7 @@
                 }).then(result => {
                     if (result.isConfirmed) {
                         this.showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
-                        fetch('{{ route("gallery.batch.delete") }}', {
+                        fetch('{{ route("gallery.delete") }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -1846,7 +1853,7 @@
                 }).then(result => {
                     if (result.isConfirmed) {
                         this.showProgress('Restoring Items');
-                        fetch('{{ route("gallery.batch.restore") }}', {
+                        fetch('{{ route("gallery.restore") }}', {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
@@ -2347,7 +2354,7 @@
                 if (!this.state.clipboard) return;
 
                 this.showProgress('Pasting Items');
-                fetch('{{ route("gallery.batch.paste") }}', {
+                fetch('{{ route("gallery.paste") }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2444,7 +2451,7 @@
                 if (this.state.selectedItems.size !== 1) return;
                 const [, id] = Array.from(this.state.selectedItems)[0].split(':');
 
-                const downloadUrl = `{{ route("gallery.file.download", '') }}/${id}`;
+                const downloadUrl = `{{ route("gallery.file.download", "0") }}`.replace('0', id);
                 const link = document.createElement('a');
                 link.href = downloadUrl;
                 link.download = '';

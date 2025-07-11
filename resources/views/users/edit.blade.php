@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @push('styles')
     <style>
         .swal2-container {
@@ -17,7 +17,7 @@
 
 @section('title', 'Edit User')
 
-@section('content')
+@section('admin_content')
     <section class="py-12 bg-gradient-to-b from-blue-50 to-white">
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->

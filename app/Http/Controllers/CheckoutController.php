@@ -12,7 +12,9 @@ class CheckoutController extends Controller
     public function index()
     {
         $cart = session()->get('cart', []);
-        return view('checkout.index', compact('cart'));
+        $coupon = session()->get('coupon');
+        $deliveryCharge = session()->get('delivery_charge', 0);
+        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge'));
     }
 
     public function placeOrder(Request $request)
@@ -43,7 +45,8 @@ class CheckoutController extends Controller
         $rewardDiscount = session('rewards.discount', 0);
         $rewardPointsUsed = session('rewards.points', 0);
 
-        $finalTotal = $subtotal - $couponDiscount - $rewardDiscount;
+        $deliveryCharge = session('delivery_charge', 0);
+        $finalTotal = $subtotal - $couponDiscount - $rewardDiscount + $deliveryCharge;
         if ($finalTotal < 0) {
             $finalTotal = 0;
         }
@@ -96,5 +99,47 @@ class CheckoutController extends Controller
         session()->forget(['cart', 'coupon', 'rewards']);
 
         return redirect()->route('home')->with('success', 'Order placed successfully!');
+    }
+
+    public function updateCart(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $cart = session()->get('cart');
+        if(isset($cart[$request->id])) {
+            $cart[$request->id]['quantity'] = $request->quantity;
+            session()->put('cart', $cart);
+            return redirect()->back()->with('success', 'Cart updated successfully!');
+        }
+        return redirect()->back()->withErrors(['cart' => 'Item not found in cart.']);
+    }
+
+    public function removeCartItem(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+        ]);
+
+        $cart = session()->get('cart');
+        if(isset($cart[$request->id])) {
+            unset($cart[$request->id]);
+            session()->put('cart', $cart);
+            return redirect()->back()->with('success', 'Product removed from cart successfully!');
+        }
+        return redirect()->back()->withErrors(['cart' => 'Item not found in cart.']);
+    }
+
+    public function updateDeliveryCharge(Request $request)
+    {
+        $request->validate([
+            'delivery_charge' => 'required|numeric|min:0',
+        ]);
+
+        session()->put('delivery_charge', $request->delivery_charge);
+
+        return response()->json(['message' => 'Delivery charge updated successfully!']);
     }
 }

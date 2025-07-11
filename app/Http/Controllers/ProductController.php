@@ -156,7 +156,6 @@ class ProductController extends Controller
             }
 
 
-
             if ($product->type === 'simple') {
                 $this->createInventoryItem($product, $validated);
             }
@@ -431,43 +430,153 @@ class ProductController extends Controller
         return view('products.show', compact('product', 'relatedProducts'));
     }
 
-    public function generateSku(Request $request)
+    public function quickView($id)
     {
-        Log::info('SKU generation request received.');
-        $categoryIds = $request->input('category_ids');
-        Log::info('Category IDs received: ' . json_encode($categoryIds));
+        $product = Product::with(['variants.attributeValues.attribute', 'media', 'brand'])
+            ->findOrFail($id);
 
-        $categoryAbbr = '';
-
-        if (!empty($categoryIds)) {
-            $categories = Category::whereIn('id', $categoryIds)->get();
-            if ($categories->isNotEmpty()) {
-                $categoryName = $categories->first()->name;
-                $words = explode(' ', $categoryName);
-                foreach ($words as $word) {
-                    $categoryAbbr .= Str::upper(Str::substr($word, 0, 1));
-                }
-                $categoryAbbr = Str::substr($categoryAbbr, 0, 3);
-            }
-        }
-
-        if (empty($categoryAbbr)) {
-            $categoryAbbr = 'GEN';
-        }
-
-        $uniqueId = Str::upper(Str::random(5));
-        $sku = $categoryAbbr . '-' . $uniqueId;
-
-        while (Product::where('sku', $sku)->exists()) {
-            $uniqueId = Str::upper(Str::random(5));
-            $sku = $categoryAbbr . '-' . $uniqueId;
-        }
-
-        Log::info('Generated SKU: ' . $sku);
-        return response()->json(['sku' => $sku]);
+        return response()->json($product);
     }
 
-    protected function validateProduct(Request $request, Product $product = null)
+    public function suggestions(Request $request)
+    {
+        // Placeholder for product suggestions logic
+        // This method should return a list of products based on categories, tags, or popularity
+        $query = Product::query();
+
+        if ($request->has('category_ids')) {
+            $categoryIds = $request->input('category_ids');
+            $query->whereHas('categories', function ($q) use ($categoryIds) {
+                $q->whereIn('categories.id', $categoryIds);
+            });
+        }
+
+        if ($request->has('tag_names')) {
+            $tagNames = $request->input('tag_names');
+            $query->whereHas('tags', function ($q) use ($tagNames) {
+                $q->whereIn('tags.name', $tagNames);
+            });
+        }
+
+        if ($request->has('exclude_id')) {
+            $query->where('id', '!=', $request->input('exclude_id'));
+        }
+
+        $products = $query->limit(10)->get(['id', 'name', 'sku', 'price', 'thumbnail']);
+
+        return response()->json($products->map(function($product) {
+            $product->thumbnail = $product->thumbnail_media ? $product->thumbnail_media->thumb_url : null;
+            $product->reason = 'Suggested'; // Add a reason for suggestion
+            return $product;
+        }));
+    }
+
+    public function search(Request $request)
+    {
+        // Placeholder for product search logic
+        $query = $request->input('q');
+        $excludeId = $request->input('exclude_id');
+
+        $products = Product::where(function($q) use ($query) {
+            $q->where('name', 'like', '%' . $query . '%')
+              ->orWhere('sku', 'like', '%' . $query . '%');
+        })
+        ->when($excludeId, function($q) use ($excludeId) {
+            $q->where('id', '!=', $excludeId);
+        })
+        ->limit(10)
+        ->get(['id', 'name', 'sku', 'price', 'thumbnail']);
+
+        return response()->json($products->map(function($product) {
+            $product->thumbnail = $product->thumbnail_media ? $product->thumbnail_media->thumb_url : null;
+            return $product;
+        }));
+    }
+
+    public function briefBatch(Request $request)
+    {
+        // Placeholder for fetching product brief data in batch
+        $ids = $request->input('ids');
+        $products = Product::whereIn('id', $ids)->get(['id', 'name', 'sku']);
+        return response()->json($products);
+    }
+
+    public function generateSku(Request $request)
+    {
+        Log::info('SKU generation request received.', $request->all());
+        try {
+            $categoryIds = $request->input('category_ids');
+            $brandId = $request->input('brand_id');
+            $productName = $request->input('product_name');
+
+            Log::info('SKU generation inputs:', [
+                'category_ids' => $categoryIds,
+                'brand_id' => $brandId,
+                'product_name' => $productName,
+            ]);
+
+            $categoryAbbr = 'CAT'; // Default
+            if (!empty($categoryIds)) {
+                $categories = Category::whereIn('id', (array)$categoryIds)->get();
+                if ($categories->isNotEmpty()) {
+                    $categoryName = $categories->first()->name;
+                    $words = explode(' ', $categoryName);
+                    $categoryAbbr = '';
+                    foreach ($words as $word) {
+                        $categoryAbbr .= Str::upper(Str::substr($word, 0, 1));
+                    }
+                    $categoryAbbr = Str::substr($categoryAbbr, 0, 3);
+                }
+            }
+
+            $brandAbbr = 'BRN'; // Default
+            if (!empty($brandId)) {
+                $brand = Brand::find($brandId);
+                if ($brand) {
+                    $brandName = $brand->name;
+                    $words = explode(' ', $brandName);
+                    $brandAbbr = '';
+                    foreach ($words as $word) {
+                        $brandAbbr .= Str::upper(Str::substr($word, 0, 1));
+                    }
+                    $brandAbbr = Str::substr($brandAbbr, 0, 3);
+                }
+            }
+
+            $productNameAbbr = 'PROD'; // Default
+            if (!empty($productName)) {
+                // Take first 4 characters of slugified product name, or first letters if short
+                $slugifiedName = Str::slug($productName);
+                if (Str::length($slugifiedName) >= 4) {
+                    $productNameAbbr = Str::upper(Str::substr($slugifiedName, 0, 4));
+                } else {
+                    $words = explode(' ', $productName);
+                    $productNameAbbr = '';
+                    foreach ($words as $word) {
+                        $productNameAbbr .= Str::upper(Str::substr($word, 0, 1));
+                    }
+                    $productNameAbbr = Str::substr($productNameAbbr, 0, 4);
+                }
+            }
+
+            $baseSku = "{$categoryAbbr}-{$brandAbbr}-{$productNameAbbr}";
+            $uniqueIdLength = 6; // Increased length for better uniqueness
+
+            $sku = '';
+            do {
+                $uniqueId = Str::upper(Str::random($uniqueIdLength));
+                $sku = "{$baseSku}-{$uniqueId}";
+            } while (Product::where('sku', $sku)->exists());
+
+            Log::info('Generated SKU: ' . $sku);
+            return response()->json(['sku' => $sku]);
+        } catch (\Exception $e) {
+            Log::error('SKU generation failed: ' . $e->getMessage(), ['exception' => $e]);
+            return response()->json(['error' => 'Failed to generate SKU.', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    protected function validateProduct(Request $request, ?Product $product = null)
     {
         $rules = [
             'name' => 'required|string|max:255',
@@ -479,8 +588,8 @@ class ProductController extends Controller
             'cost_price' => 'nullable|numeric|min:0',
             'sku' => 'nullable|string|max:50' . ($product ? ',sku,' . $product->id : '|unique:products'),
             'barcode' => 'nullable|string|max:255',
-            'stock_quantity' => 'required|integer|min:0',
-            'stock_status' => 'required|in:in_stock,out_of_stock,backorder',
+            'stock_quantity' => ['nullable', 'integer', 'min:0', Rule::requiredIf($request->input('type') === 'simple')],
+            'stock_status' => ['nullable', 'in:in_stock,out_of_stock,backorder', Rule::requiredIf($request->input('type') === 'simple')],
             'status' => 'required|in:draft,published,archived',
             'brand_id' => 'nullable|exists:brands,id',
             'category_ids' => 'nullable|array',
@@ -521,7 +630,13 @@ class ProductController extends Controller
             'type' => 'required|in:simple,variable',
         ];
 
-        $validatedData = $request->validate($rules);
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            throw new \Illuminate\Validation\ValidationException($validator);
+        }
+
+        $validatedData = $validator->validated();
 
         if (!$request->filled('slug')) {
             $validatedData['slug'] = Str::slug($validatedData['name']);
@@ -530,7 +645,7 @@ class ProductController extends Controller
         $originalSlug = $validatedData['slug'];
         $counter = 1;
         while (Product::where('slug', $validatedData['slug'])->where('id', '!=', $product?->id)->exists()) {
-            $validatedData['slug'] = $originalSlug . '-' . $counter++;
+            $validatedData['slug'] = $originalSlug . '_' . $counter++;
         }
 
         if (!$request->filled('sku')) {
@@ -579,14 +694,14 @@ class ProductController extends Controller
                 if ($file instanceof \Illuminate\Http\UploadedFile) {
                     try {
                         $fileName = $file->hashName(); // Generate a unique file name
-                        $path = $file->storeAs('products/' . $product->id, $fileName, 'public');
-                        $media = Media::create([ // Use Media::create directly, then associate
-                            'model_type' => Product::class, // Temporarily set, will be updated by sync
-                            'model_id' => $product->id, // Temporarily set, will be updated by sync
+                        $directory = 'products/' . $product->id;
+                        $path = Storage::disk('public')->putFileAs($directory, $file, $fileName);
+                        $media = $product->media()->create([ // Use the relationship to create media
                             'disk' => 'public',
                             'collection_name' => 'products',
                             'name' => $file->getClientOriginalName(),
                             'file_name' => $fileName, // Use the unique file name
+                            'directory' => $directory,
                             'mime_type' => $file->getMimeType(),
                             'size' => $file->getSize(),
                             'custom_properties' => [],
@@ -615,7 +730,7 @@ class ProductController extends Controller
 
         // Explicitly attach/re-attach all retained media to the product
         // This ensures correct order and association for both old and new images
-        $product->media()->sync($retainedMediaIds); // This is the correct way to sync morphMany relationships if you have a pivot table, but Media is MorphMany, so direct update is needed.
+        
 
         // Re-attaching logic for MorphMany
         if (!empty($retainedMediaIds)) {
@@ -645,12 +760,14 @@ class ProductController extends Controller
                 }
 
                 $fileName = $newFile->hashName();
-                $path = $newFile->storeAs('products/thumbnails/' . $product->id, $fileName, 'public');
+                $directory = 'products/thumbnails/' . $product->id;
+                $path = Storage::disk('public')->putFileAs($directory, $newFile, $fileName);
                 $media = $product->media()->create([
                     'disk' => 'public',
                     'collection_name' => 'thumbnails',
                     'name' => $newFile->getClientOriginalName(),
                     'file_name' => $fileName,
+                    'directory' => $directory,
                     'mime_type' => $newFile->getMimeType(),
                     'size' => $newFile->getSize(),
                     'custom_properties' => [],
@@ -928,4 +1045,33 @@ class ProductController extends Controller
         // Export only selected products
         return Excel::download(new ProductsExport($productIds), 'products.xlsx');
     }
+
+    public function checkSlug(Request $request)
+    {
+        Log::info('checkSlug method called.', $request->all());
+        $slug = $request->input('slug');
+        $productId = (int) $request->input('product_id', 0); // Cast to int, default to 0 if not present
+
+        $originalSlug = $slug;
+        $counter = 1;
+        $exists = false;
+        $suggestedSlug = $slug;
+
+        Log::info('Checking slug:', ['slug' => $slug, 'productId' => $productId]);
+        while (Product::where('slug', $suggestedSlug)
+            ->when($productId > 0, function ($query) use ($productId) {
+                return $query->where('id', '!=', $productId);
+            })
+            ->exists()) {
+            $exists = true;
+            $suggestedSlug = $originalSlug . '_' . $counter++;
+        }
+
+        return response()->json([
+            'exists' => $exists,
+            'suggested' => $suggestedSlug,
+        ]);
+    }
+
+
 }

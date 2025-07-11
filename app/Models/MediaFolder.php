@@ -104,4 +104,14 @@ class MediaFolder extends Model
     {
         return $this->hasMany(Media::class, 'directory', 'path');
     }
+
+    public function trashedChildren()
+    {
+        return $this->hasMany(__CLASS__, 'parent_id')->onlyTrashed();
+    }
+
+    public function trashedMedia()
+    {
+        return $this->hasMany(Media::class, 'directory', 'path')->onlyTrashed();
+    }
 }

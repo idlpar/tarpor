@@ -53,8 +53,17 @@ class RenameFolderJob implements ShouldQueue
                 throw new \Exception("Target folder already exists: {$this->newPath}");
             }
 
+            Log::info("Attempting disk move operation", [
+                'old_path' => $this->oldPath,
+                'new_path' => $this->newPath
+            ]);
             // Perform the actual rename
             $success = $disk->move($this->oldPath, $this->newPath);
+            Log::info("Disk move operation result", [
+                'success' => $success,
+                'old_path' => $this->oldPath,
+                'new_path' => $this->newPath
+            ]);
 
             if (!$success) {
                 throw new \Exception("Failed to rename folder from {$this->oldPath} to {$this->newPath}");

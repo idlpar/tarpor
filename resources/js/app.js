@@ -5,6 +5,8 @@ import '@fortawesome/fontawesome-free/js/all.js'; // Optional: Consider specific
 import Splide from '@splidejs/splide';
 import Swal from 'sweetalert2';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
+import tippy from 'tippy.js';
+import 'tippy.js/dist/tippy.css';
 
 window.ClassicEditor = ClassicEditor;
 const editors = {}; // Store CKEditor instances
@@ -28,5 +30,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 window.Alpine = Alpine;
 window.Swal = Swal;
+window.tippy = tippy;
 Alpine.plugin(Collapse);
 Alpine.start();

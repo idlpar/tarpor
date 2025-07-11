@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProductAttributeController;
+use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ProductController;
@@ -13,6 +14,11 @@ use App\Http\Controllers\SocialLoginController;
 use App\Http\Controllers\SvgController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\CouponController;
+use App\Http\Controllers\RewardController;
+
 use Illuminate\Support\Facades\Route;
 
 if (!Config::get('installer.installed')) {
@@ -20,6 +26,11 @@ if (!Config::get('installer.installed')) {
         return redirect()->route('install.index');
     });
 }
+
+// Test JSON route - TEMPORARY
+Route::get('/test-json', function () {
+    return response()->json(['message' => 'This is a test JSON response.']);
+});
 
 // Guest Routes
 Route::middleware('guest')->group(function () {
@@ -65,6 +76,12 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::put('/profile/avatar', [UserController::class, 'updateAvatar'])->name('profile.avatar.update');
         Route::delete('/profile/{user}/avatar', [UserController::class, 'deleteAvatar'])->name('profile.avatar.destroy');
         Route::put('/profile/address', [UserController::class, 'updateAddress'])->name('profile.address.update');
+
+        // Wishlist
+        Route::post('/wishlist/add', [WishlistController::class, 'add'])->name('wishlist.add');
+        Route::delete('/wishlist/remove', [WishlistController::class, 'remove'])->name('wishlist.remove');
+        Route::get('/wishlist/count', [WishlistController::class, 'count'])->name('wishlist.count');
+        Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     });
 
     // Admin and Staff Routes
@@ -85,24 +102,15 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::put('/products/{product}/variants/sync', [ProductController::class, 'syncVariants'])->name('products.variants.sync');
 
         // Product Attributes Management
-        Route::get('/product-attributes', [ProductAttributeController::class, 'index'])->name('product_attributes.index');
-        Route::get('/product-attributes/create', [ProductAttributeController::class, 'create'])->name('product_attributes.create');
-        Route::post('/product-attributes', [ProductAttributeController::class, 'store'])->name('product_attributes.store');
-        Route::get('/product-attributes/{product_attribute}/edit', [ProductAttributeController::class, 'edit'])->name('product_attributes.edit');
-        Route::put('/product-attributes/{product_attribute}', [ProductAttributeController::class, 'update'])->name('product_attributes.update');
-        Route::delete('/product-attributes/{product_attribute}', [ProductAttributeController::class, 'destroy'])->name('product_attributes.destroy');
+        Route::resource('product-attributes', ProductAttributeController::class)->names('product_attributes');
+        Route::prefix('product-attributes/{product_attribute}')->name('product_attributes.')->group(function () {
+            Route::post('values', [ProductAttributeController::class, 'storeValue'])->name('values.store');
+            Route::put('values/{value}', [ProductAttributeController::class, 'updateValue'])->name('values.update');
+            Route::delete('values/{value}', [ProductAttributeController::class, 'destroyValue'])->name('values.destroy');
+        });
 
-        // Product Attribute Values Management
-        Route::post('/product-attributes/{product_attribute}/values', [ProductAttributeController::class, 'storeValue'])->name('product_attributes.values.store');
-        Route::put('/product-attributes/{product_attribute}/values/{value}', [ProductAttributeController::class, 'updateValue'])->name('product_attributes.values.update');
-        Route::delete('/product-attributes/{product_attribute}/values/{value}', [ProductAttributeController::class, 'destroyValue'])->name('product_attributes.values.destroy');
-
-        // Explicitly define categories routes (except index, show)
-        Route::get('/categories/create', [CategoryController::class, 'create'])->name('categories.create');
-        Route::post('/categories', [CategoryController::class, 'store'])->name('categories.store');
-        Route::get('/categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-        Route::match(['put', 'patch'], '/categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
-        Route::delete('/categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        // Category Management
+        Route::resource('categories', CategoryController::class)->except(['index', 'show']); // index and show are defined in public routes
 
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
@@ -112,14 +120,33 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
             Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
             Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');
         });
-        Route::get('/product/slug/check', [ProductController::class, 'checkSlug'])->name('api.slug.check');
-        Route::get('/category/slug/check', [CategoryController::class, 'checkSlug'])->name('api.category.slug.check');
-        Route::post('/generate-sku', [ProductController::class, 'generateSku'])->name('api.sku.generate');
+
+        // Coupon Management
+        Route::resource('coupons', CouponController::class)->names('coupons');
+
+        // API Routes for Admin/Staff
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('product/slug/check', [ProductController::class, 'checkSlug'])->name('slug.check');
+            Route::get('category/slug/check', [CategoryController::class, 'checkSlug'])->name('category.slug.check');
+            Route::post('generate-sku', [ProductController::class, 'generateSku'])->name('sku.generate');
+            Route::get('products/{product}/quick-view', [ProductController::class, 'quickView'])->name('products.quickView');
+            Route::get('product/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');
+            Route::get('product/search', [ProductController::class, 'search'])->name('products.search');
+            Route::post('product/brief-batch', [ProductController::class, 'briefBatch'])->name('products.briefBatch');
+        });
     });
 
     // Admin-Only Routes
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->names('users');
+        // Newsletter Routes (Moved inside admin role middleware)
+        Route::get('/admin/newsletter/subscribers', function () {
+            $subscribers = App\Models\NewsletterSubscription::all(); // Get all to show status
+            return view('admin.newsletter.subscribers', compact('subscribers'));
+        })->name('admin.newsletter.subscribers');
+        Route::get('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'showSendForm'])->name('admin.newsletter.send');
+        Route::post('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'sendMail'])->name('admin.newsletter.send.post');
+
         Route::get('/setup/storage-link', fn() => \Artisan::call('storage:link') ? 'Storage link created successfully.' : 'Failed')->name('storage.link');
         Route::prefix('icons')->name('icons.')->group(function () {
             Route::get('/', [SvgController::class, 'index']);
@@ -128,61 +155,65 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         });
     });
 
-    // Gallery Routes (Admin and Staff)
+    // Gallery Routes (Admin and Staff) - Consolidated and Corrected
     Route::prefix('gallery')->name('gallery.')->middleware('role:admin,staff')->group(function () {
         Route::get('/', [GalleryController::class, 'index'])->name('index');
+        Route::get('/api/contents', [GalleryController::class, 'getContents'])->name('getContents');
         Route::get('/trash', [GalleryController::class, 'getTrashedItems'])->name('trash');
         Route::get('/search', [GalleryController::class, 'searchItems'])->name('search');
         Route::post('/upload', [GalleryController::class, 'upload'])->name('upload');
-        Route::get('/folder/{id?}', [GalleryController::class, 'showFolder'])->name('folder.show');
-        Route::put('/folder/{id}', [GalleryController::class, 'updateFolder'])->name('folder.update');
-        Route::get('/file/{id?}', [GalleryController::class, 'showFile'])->name('file.show');
-        Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
-        Route::post('/files/for-insertion', [GalleryController::class, 'getFilesForInsertion'])->name('files.for-insertion');
-        Route::put('/file/{id}/rename', [GalleryController::class, 'renameItem'])->name('file.rename');
-        Route::delete('/file/{id}', [GalleryController::class, 'deleteFile'])->name('file.delete');
-        Route::get('/file/{id?}/download', [GalleryController::class, 'downloadFile'])->name('file.download');
         Route::post('/folder', [GalleryController::class, 'createFolder'])->name('folder.create');
-        Route::get('/folder-info/{id}', [GalleryController::class, 'getFolderInfo'])->name('folder.info');
-        Route::put('/folder/{id}', [GalleryController::class, 'renameFolder'])->name('folder.rename');
-        Route::delete('/folder/{id}', [GalleryController::class, 'deleteFolder'])->name('folder.delete');
+        Route::post('/rename', [GalleryController::class, 'rename'])->name('rename');
+        Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
         Route::post('/copy', [GalleryController::class, 'copyItems'])->name('copy');
         Route::post('/cut', [GalleryController::class, 'cutItems'])->name('cut');
-        Route::post('/paste', [GalleryController::class, 'pasteItems'])->name('paste');
-        Route::post('/batch/paste', [GalleryController::class, 'batchPaste'])->name('batch.paste');
-        Route::post('/move', [GalleryController::class, 'moveItems'])->name('move');
-        Route::post('/batch-delete', [GalleryController::class, 'deleteItems'])->name('batch.delete');
-        Route::post('/batch-restore', [GalleryController::class, 'restoreItems'])->name('batch.restore');
+        Route::post('/paste', [GalleryController::class, 'batchPaste'])->name('paste');
+        Route::post('/delete', [GalleryController::class, 'deleteItems'])->name('delete');
+        Route::post('/restore', [GalleryController::class, 'restoreItems'])->name('restore');
         Route::post('/empty-trash', [GalleryController::class, 'emptyTrash'])->name('empty-trash');
+        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
+
+        // Item specific routes (for details, download, etc.)
+        Route::get('/file/{id}', [GalleryController::class, 'showFile'])->name('file.show');
+        Route::get('/file/{id}/for-insertion', [GalleryController::class, 'getFileForInsertion'])->name('file.for-insertion');
+        Route::post('/files/for-insertion', [GalleryController::class, 'getFilesForInsertion'])->name('files.for-insertion');
+        Route::get('/file/{id}/download', [GalleryController::class, 'downloadFile'])->name('file.download');
+        Route::get('/folder/{id}', [GalleryController::class, 'showFolder'])->name('folder.show');
+        Route::get('/folder-info/{id}', [GalleryController::class, 'getFolderInfo'])->name('folder.info');
+
+        // Utility routes
         Route::get('/properties/{type}/{id}', [GalleryController::class, 'getProperties'])->name('properties');
         Route::get('/generate-url/{id}', [GalleryController::class, 'generateUrl'])->name('generate-url');
-        Route::get('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
+        Route::post('/context-menu', [GalleryController::class, 'getContextMenuOptions'])->name('context-menu');
         Route::post('/navigate-up', [GalleryController::class, 'navigateUp'])->name('navigate-up');
         Route::post('/set-featured/{id}', [GalleryController::class, 'setFeatured'])->name('set-featured');
         Route::post('/remove-featured/{id}', [GalleryController::class, 'removeFeatured'])->name('remove-featured');
-        Route::delete('/force-delete/{id}', [GalleryController::class, 'forceDelete'])->name('force-delete');
-        Route::post('/rename', [GalleryController::class, 'rename'])->name('rename');
     });
 });
 
-use App\Http\Controllers\CartController;
-use App\Http\Controllers\CheckoutController;
-use App\Http\Controllers\CouponController;
-use App\Http\Controllers\RewardController;
 
 // Cart & Checkout
-    Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
-    Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
-    Route::put('/cart/update', [CartController::class, 'update'])->name('cart.update');
-    Route::delete('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
+Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
+Route::put('/cart/update', [CartController::class, 'update'])->name('cart.update');
+Route::delete('/cart/remove', [CartController::class, 'remove'])->name('cart.remove');
+Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
+Route::post('/checkout/update-delivery-charge', [CheckoutController::class, 'updateDeliveryCharge'])->name('checkout.updateDeliveryCharge');
+Route::put('/checkout/update-cart', [CheckoutController::class, 'updateCart'])->name('checkout.updateCart');
+Route::delete('/checkout/remove-cart-item', [CheckoutController::class, 'removeCartItem'])->name('checkout.removeCartItem');
 
 // Coupons
 Route::post('/coupons/apply', [CouponController::class, 'apply'])->name('coupons.apply');
+Route::delete('/coupons/remove', [CouponController::class, 'remove'])->name('coupons.remove');
 
 // Reward Points
 Route::post('/rewards/apply', [RewardController::class, 'apply'])->name('rewards.apply');
+
+// Newsletter Routes (Public/Guest access if needed, otherwise move inside auth middleware)
+Route::post('/newsletter/subscribe', [App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
+Route::get('/newsletter/unsubscribe', [App\Http\Controllers\NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 
 // Public Routes
 Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');

@@ -7,7 +7,7 @@
         <div class="container mx-auto flex items-center justify-between">
             <a href="/" class="flex items-center" aria-label="Tarpor Home">
                 @if (file_exists(public_path('logos/logo.svg')))
-                    <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-10 sm:h-12" width="48" height="48" loading="lazy">
+                    <img src="{{ asset('logos/logo.svg') }}" alt="Tarpor Logo" class="h-10 sm:h-12 md:h-14 w-auto" loading="lazy">
                 @else
                     <span class="font-brand text-xl sm:text-2xl text-white ml-2 hidden sm:inline">Tarpor</span>
                 @endif

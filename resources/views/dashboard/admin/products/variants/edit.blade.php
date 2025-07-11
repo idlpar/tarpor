@@ -1,8 +1,8 @@
-@extends('layouts.app') {{-- Adjust your layout as needed --}}
+@extends('layouts.admin')
 
 @section('title', 'Manage Variants for ' . $product->name . ' | ' . strtoupper(config('app.name')))
 
-@section('content')
+@section('admin_content')
     <div class="min-h-screen bg-gray-100 p-6 md:p-8">
         <!-- Display Success/Error Messages -->
         @if (session('success'))

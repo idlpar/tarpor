@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('layouts.admin')
 @push('styles')
     <style>
         @keyframes fadeIn {
@@ -32,7 +32,7 @@
         }
     </style>
 @endpush
-@section('content')
+@section('admin_content')
     <div class="max-w-full mx-auto bg-white px-6 rounded-lg shadow-lg">
         <div class="flex items-center justify-between mb-6 sticky top-10 bg-blue-300 z-10 shadow-md p-4">
             <!-- Title on the left -->

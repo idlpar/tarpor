@@ -70,6 +70,11 @@ class User extends Authenticatable
     {
         return $this->role === 'staff';
     }
+
+    public function hasRole($role)
+    {
+        return $this->role === $role;
+    }
     public function addresses()
     {
         return $this->hasMany(Address::class);
@@ -89,6 +94,11 @@ class User extends Authenticatable
     public function rewardPoints()
     {
         return $this->hasMany(RewardPoint::class);
+    }
+
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
     }
 
     public function getMediaDirectory(string $collectionName = ''): string
