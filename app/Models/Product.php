@@ -16,7 +16,8 @@ class Product extends Model
         'price', 'sale_price', 'cost_price', 'sku', 'barcode',
         'stock_quantity', 'stock_status', 'inventory_tracking', 'low_stock_threshold',
         'weight', 'length', 'width', 'height', 'brand_id',
-        'views', 'status', 'is_featured', 'is_hot', 'is_sale'
+        'views', 'status', 'is_featured', 'is_hot', 'is_sale',
+        'min_order_quantity', 'max_order_quantity', 'low_stock_threshold'
     ];
 
     protected $casts = [
@@ -80,11 +81,27 @@ class Product extends Model
         return $this->hasMany(ProductSpecialOffer::class);
     }
 
+    public function specifications()
+    {
+        return $this->hasMany(ProductSpecification::class);
+    }
+
     public function relatedProducts()
     {
         return $this->belongsToMany(Product::class, 'product_related', 'product_id', 'related_product_id')
             ->withPivot('relation_type', 'position')
             ->withTimestamps();
+    }
+
+    public function crossSellingProducts()
+    {
+        return $this->belongsToMany(Product::class, 'product_cross_selling', 'product_id', 'cross_selling_product_id')
+            ->withTimestamps();
+    }
+
+    public function faqs()
+    {
+        return $this->hasMany(ProductFaq::class);
     }
 
     public function collections()

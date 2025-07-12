@@ -35,10 +35,11 @@ return new class extends Migration
             $table->decimal('length', 8, 2)->nullable();
             $table->decimal('width', 8, 2)->nullable();
             $table->decimal('height', 8, 2)->nullable();
+            $table->integer('min_order_quantity')->default(0);
+            $table->integer('max_order_quantity')->default(0);
 
             // Organization
             $table->foreignId('brand_id')->nullable()->constrained()->nullOnDelete();
-            $table->string('thumbnail')->nullable();
             $table->unsignedBigInteger('views')->default(0);
 
             // Status

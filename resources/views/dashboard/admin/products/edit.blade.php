@@ -213,6 +213,7 @@
                             @error('attributes')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
+                            <input type="hidden" name="specifications" id="specifications-hidden-input" value="{{ old('specifications', $product->specifications->toJson()) }}">
                         </div>
 
                         <!-- Overview -->
@@ -252,6 +253,14 @@
                                     <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
                                     <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
                                     @error('stock_quantity')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Low Stock Threshold</label>
+                                    <input type="number" name="low_stock_threshold" value="{{ old('low_stock_threshold', $product->low_stock_threshold) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('low_stock_threshold') border-red-500 @enderror" placeholder="0" min="0">
+                                    <p class="text-sm text-gray-500 mt-2">Alert when stock falls below this quantity.</p>
+                                    @error('low_stock_threshold')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
@@ -379,7 +388,34 @@
 
                         <!-- Cross-Selling Products -->
                         <x-form.card label="Cross-Selling Products" class="bg-transparent">
-                            <input type="text" name="cross_selling_products" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cross_selling_products') border-red-500 @enderror" placeholder="Search products">
+                            <div class="relative">
+                                <input type="text" id="cross-selling-products-search" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cross_selling_products') border-red-500 @enderror" placeholder="Search products by name or SKU" autocomplete="off">
+                                <div id="cross-selling-products-loading" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                    <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                </div>
+                            </div>
+                            <div id="cross-selling-products-results" class="absolute z-10 w-full bg-white shadow-lg border border-gray-300 max-h-64 overflow-y-auto hidden"></div>
+                            <div id="selected-cross-selling-products" class="w-full bg-white border border-gray-300 border-t-0 rounded-b-lg space-y-2 p-2">
+                                @if(old('cross_selling_products', $product->crossSellingProducts->pluck('id')))
+                                    @foreach(json_decode(old('cross_selling_products', $product->crossSellingProducts->pluck('id'))) as $crossSellingId)
+                                        @php $crossSelling = App\Models\Product::find($crossSellingId); @endphp
+                                        @if($crossSelling)
+                                            <div class="flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item" data-id="{{ $crossSelling->id }}">
+                                                <span>{{ $crossSelling->name }} (SKU: {{ $crossSelling->sku }})</span>
+                                                <button type="button" class="text-red-500 remove-cross-selling-product">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        @endif
+                                    @endforeach
+                                @endif
+                            </div>
+                            <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', json_encode($product->crossSellingProducts->pluck('id'))) }}">
                             @error('cross_selling_products')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -387,8 +423,42 @@
 
                         <!-- Product FAQs -->
                         <x-form.card label="Product FAQs" class="bg-transparent">
-                            <input type="text" name="product_faqs" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_faqs') border-red-500 @enderror" placeholder="Search or select from existing FAQs">
+                            <div id="faqs-container">
+                                @if(old('product_faqs'))
+                                    @foreach(json_decode(old('product_faqs')) as $faq)
+                                        <div class="faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                            <div class="mb-2">
+                                                <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question ?? '' }}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                                                <textarea name="product_faqs[][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ $faq->answer ?? '' }}</textarea>
+                                            </div>
+                                            <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                                        </div>
+                                    @endforeach
+                                @elseif($product->faqs->isNotEmpty())
+                                    @foreach($product->faqs as $faq)
+                                        <div class="faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                            <div class="mb-2">
+                                                <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question }}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                                                <textarea name="product_faqs[][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ $faq->answer }}</textarea>
+                                            </div>
+                                            <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                                        </div>
+                                    @endforeach
+                                @endif
+                            </div>
+                            <button type="button" id="add-faq-item" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add FAQ</button>
                             @error('product_faqs')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                            @error('product_faqs.*')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </x-form.card>
@@ -402,42 +472,42 @@
                             <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
-                                <input type="text" name="meta_title" value="{{ old('meta_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
+                                <input type="text" name="meta_title" value="{{ old('meta_title', $product->seo->meta_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
                                 @error('meta_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
-                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description') }}</textarea>
+                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description', $product->seo->meta_description ?? '') }}</textarea>
                                 @error('meta_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Meta Keywords</label>
-                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
+                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->seo->meta_keywords ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
                                 @error('meta_keywords')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Canonical URL</label>
-                                <input type="url" name="canonical_url" value="{{ old('canonical_url') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
+                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $product->seo->canonical_url ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
                                 @error('canonical_url')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
-                                <input type="text" name="og_title" value="{{ old('og_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
+                                <input type="text" name="og_title" value="{{ old('og_title', $product->seo->og_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
                                 @error('og_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
-                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description') }}</textarea>
+                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description', $product->seo->og_description ?? '') }}</textarea>
                                 @error('og_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -451,28 +521,35 @@
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
-                                <input type="text" name="twitter_title" value="{{ old('twitter_title') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
+                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $product->seo->twitter_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
                                 @error('twitter_title')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
-                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description') }}</textarea>
+                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description', $product->seo->twitter_description ?? '') }}</textarea>
                                 @error('twitter_description')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
+                                <label class="block font-semibold text-gray-700 mb-2">Twitter Image</label>
+                                <input type="file" name="twitter_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_image') border-red-500 @enderror">
+                                @error('twitter_image')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Schema Markup</label>
-                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup') }}</textarea>
+                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup', $product->seo->schema_markup ?? '') }}</textarea>
                                 @error('schema_markup')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                             <div class="mt-4">
                                 <label class="block font-semibold text-gray-700 mb-2">Robots</label>
-                                <input type="text" name="robots" value="{{ old('robots', 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
+                                <input type="text" name="robots" value="{{ old('robots', $product->seo->robots ?? 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
                                 @error('robots')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -616,7 +693,7 @@
 
                     <!-- Product Collections Card -->
                     @php
-                        $collections = old('product_collections', $product->product_collections ?? []);
+                        $collections = old('product_collections', $product->collections->pluck('name')->toArray());
                     @endphp
                     <x-form.card label="Product Collections">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
@@ -641,7 +718,7 @@
 
                     <!-- Labels Card -->
                     @php
-                        $labels = old('labels', $product->labels ?? []);
+                        $labels = old('labels', collect($product->labels)->pluck('name')->toArray());
                     @endphp
                     <x-form.card label="Labels">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
@@ -685,7 +762,7 @@
                                 <input type="text" id="tag-input" class="flex-grow outline-none min-w-[100px]" placeholder="Add tags..." autocomplete="off">
                             </div>
                             <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
-                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', $product->tags->pluck('name')) }}">
+                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', optional($product->tags)->pluck('name')->toJson() ?? '[]') }}">
                             @error('tags')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -719,14 +796,20 @@
 
                 // Select specific inventory-related input fields
                 const stockQuantityInput = document.querySelector('input[name="stock_quantity"]');
+                const lowStockThresholdInput = document.querySelector('input[name="low_stock_threshold"]');
                 const barcodeInput = document.querySelector('input[name="barcode"]');
                 const stockStatusRadios = document.querySelectorAll('input[name="stock_status"]');
 
-                // Enable/disable stock quantity and barcode
+                // Enable/disable stock quantity, low stock threshold, and barcode
                 if (stockQuantityInput) {
                     stockQuantityInput.disabled = !isSimpleProduct;
                     stockQuantityInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
                     stockQuantityInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+                if (lowStockThresholdInput) {
+                    lowStockThresholdInput.disabled = !isSimpleProduct;
+                    lowStockThresholdInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    lowStockThresholdInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
                 }
                 if (barcodeInput) {
                     barcodeInput.disabled = !isSimpleProduct;
@@ -1122,38 +1205,73 @@
             const dropdown = document.getElementById('specificationDropdown');
             const specFields = document.getElementById('specificationFields');
             const specTableBody = document.getElementById('specTableBody');
+            const specificationsHiddenInput = document.getElementById('specifications-hidden-input');
 
-            dropdown.addEventListener('change', () => {
+            function renderSpecifications(specs) {
                 specTableBody.innerHTML = '';
-                if (dropdown.value === '') {
+                if (specs.length === 0) {
                     specFields.classList.add('hidden');
                     return;
                 }
-
                 specFields.classList.remove('hidden');
-                const specifications = {
-                    general: [
-                        { group: 'General', attribute: 'Brand' },
-                        { group: 'General', attribute: 'Model' }
-                    ],
-                    technical: [
-                        { group: 'Battery', attribute: 'Battery Life' },
-                        { group: 'Display', attribute: 'Screen Size' },
-                        { group: 'Display', attribute: 'Resolution', value: '1920×1080' }
-                    ]
-                };
-
-                specifications[dropdown.value].forEach(spec => {
+                specs.forEach(spec => {
                     const row = document.createElement('tr');
                     row.innerHTML = `
-                        <td class="border p-3">${spec.group}</td>
-                        <td class="border p-3">${spec.attribute}</td>
+                        <td class="border p-3">${spec.group_name}</td>
+                        <td class="border p-3">${spec.attribute_name}</td>
                         <td class="border p-3">
-                            <input type="text" class="w-full border rounded p-2" value="${spec.value || ''}">
+                            <input type="text" class="w-full border rounded p-2" value="${spec.attribute_value || ''}" data-group="${spec.group_name}" data-attribute="${spec.attribute_name}">
                         </td>
                     `;
                     specTableBody.appendChild(row);
                 });
+            }
+
+            // Initial render based on preloaded data
+            if (specificationsHiddenInput.value) {
+                try {
+                    const preloadedSpecs = JSON.parse(specificationsHiddenInput.value);
+                    renderSpecifications(preloadedSpecs);
+                } catch (e) {
+                    console.error('Error parsing preloaded specifications:', e);
+                }
+            }
+
+            dropdown.addEventListener('change', () => {
+                const selectedType = dropdown.value;
+                let specsToRender = [];
+
+                if (selectedType === 'general') {
+                    specsToRender = [
+                        { group_name: 'General', attribute_name: 'Brand', attribute_value: '' },
+                        { group_name: 'General', attribute_name: 'Model', attribute_value: '' }
+                    ];
+                } else if (selectedType === 'technical') {
+                    specsToRender = [
+                        { group_name: 'Battery', attribute_name: 'Battery Life', attribute_value: '' },
+                        { group_name: 'Display', attribute_name: 'Screen Size', attribute_value: '' },
+                        { group_name: 'Display', attribute_name: 'Resolution', attribute_value: '1920×1080' }
+                    ];
+                }
+                renderSpecifications(specsToRender);
+            });
+
+            // Update hidden input on input change in the table
+            specTableBody.addEventListener('input', (e) => {
+                if (e.target.tagName === 'INPUT') {
+                    const currentSpecs = [];
+                    document.querySelectorAll('#specTableBody tr').forEach(row => {
+                        const group = row.children[0].textContent.trim();
+                        const attribute = row.children[1].textContent.trim();
+                        const value = row.children[2].querySelector('input').value.trim();
+                        currentSpecs.push({
+                            group_name: group,
+                            attribute_name: attribute,
+                            attribute_value: value
+                        });
+                    });
+                    specificationsHiddenInput.value = JSON.stringify(currentSpecs);
+                }
             });
         });
     </script>
@@ -1438,7 +1556,7 @@
                                     <div class="font-medium text-gray-800">${product.name}</div>
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold">$${product.price}</div>
+                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
                             </div>
                         `).join('')
                         : '<div class="p-3 text-gray-500">No products found</div>';
@@ -1492,7 +1610,7 @@
                                         <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
                                         <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
                                     </div>
-                                    <div class="text-sm text-gray-700 font-semibold">$${suggestion.price}</div>
+                                    <div class="text-sm text-gray-700 font-semibold">${suggestion.price}</div>
                                 </div>
                             `).join('')}
                         `
@@ -1540,6 +1658,203 @@
         });
     </script>
 
+    <!-- Cross-Selling Products -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const searchInput = document.getElementById('cross-selling-products-search');
+            const resultsContainer = document.getElementById('cross-selling-products-results');
+            const selectedContainer = document.getElementById('selected-cross-selling-products');
+            const hiddenInput = document.getElementById('cross-selling-products-input');
+            const loadingIndicator = document.getElementById('cross-selling-products-loading');
+            let selectedProducts = JSON.parse(hiddenInput.value || '[]');
+            let searchController = null;
+
+            function updateSelectedProducts() {
+                selectedProducts = selectedProducts.filter(id => id && !isNaN(id));
+                hiddenInput.value = JSON.stringify(selectedProducts);
+                selectedContainer.innerHTML = '';
+                if (selectedProducts.length === 0) {
+                    selectedContainer.classList.add('hidden');
+                } else {
+                    selectedContainer.classList.remove('hidden');
+                    selectedProducts.forEach(async productId => {
+                        try {
+                            const response = await fetch(`/product/${productId}/brief`);
+                            const product = await response.json();
+                            const productEl = document.createElement('div');
+                            productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item';
+                            productEl.dataset.id = product.id;
+                            productEl.innerHTML = `
+                                <span>${product.name} (SKU: ${product.sku})</span>
+                                <button type="button" class="text-red-500 remove-cross-selling-product">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </button>
+                            </span>`;
+                            selectedContainer.appendChild(productEl);
+                        } catch (error) {
+                            console.error('Failed to fetch product:', error);
+                        }
+                    });
+                }
+            }
+
+            updateSelectedProducts();
+
+            searchInput.addEventListener('focus', () => {
+                searchInput.value = '';
+                // No smart suggestions for cross-selling for now, just show empty results
+                resultsContainer.classList.remove('hidden');
+            });
+
+            const searchProducts = debounce(async (term) => {
+                if (searchController) searchController.abort();
+                searchController = new AbortController();
+                if (!term || term.length < 2) {
+                    resultsContainer.classList.add('hidden');
+                    return;
+                }
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                try {
+                    const response = await fetch(`/api/product/search?q=${encodeURIComponent(term)}`, {
+                        signal: searchController.signal
+                    });
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const products = await response.json();
+                    resultsContainer.innerHTML = products.length > 0
+                        ? products.map(product => `
+                            <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result" data-id="${product.id}" data-name="${product.name}" data-sku="${product.sku}">
+                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-10 h-10 object-cover rounded-md">
+                                <div class="flex-1">
+                                    <div class="font-medium text-gray-800">${product.name}</div>
+                                    <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                                </div>
+                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
+                            </div>
+                        `).join('')
+                        : '<div class="p-3 text-gray-500">No products found</div>';
+                    resultsContainer.classList.remove('hidden');
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error('Search failed:', error);
+                        resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading results</div>';
+                        resultsContainer.classList.remove('hidden');
+                    }
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    searchController = null;
+                }
+            }, 300);
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.trim();
+                if (term.length > 1) searchProducts(term);
+                else resultsContainer.classList.add('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.classList.add('hidden');
+                }
+            });
+
+            resultsContainer.addEventListener('click', (e) => {
+                const resultItem = e.target.closest('.product-result');
+                if (!resultItem) return;
+                const productId = parseInt(resultItem.dataset.id);
+                if (!selectedProducts.includes(productId)) {
+                    selectedProducts.push(productId);
+                    updateSelectedProducts();
+                }
+                searchInput.value = '';
+                resultsContainer.classList.add('hidden');
+            });
+
+            selectedContainer.addEventListener('click', (e) => {
+                if (e.target.closest('.remove-cross-selling-product')) {
+                    const item = e.target.closest('[data-id]');
+                    const productId = parseInt(item.dataset.id);
+                    selectedProducts = selectedProducts.filter(id => id !== productId);
+                    updateSelectedProducts();
+                }
+            });
+        });
+    </script>
+
+    <!-- Product FAQs -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const faqsContainer = document.getElementById('faqs-container');
+            const addFaqButton = document.getElementById('add-faq-item');
+
+            function renderFaqs(faqs) {
+                faqsContainer.innerHTML = ''; // Clear existing FAQs
+                faqs.forEach((faq, index) => {
+                    const faqItem = document.createElement('div');
+                    faqItem.className = 'faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50';
+                    faqItem.innerHTML = `
+                        <div class="mb-2">
+                            <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                            <input type="text" name="product_faqs[${index}][question]" value="${faq.question || ''}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                            <textarea name="product_faqs[${index}][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">${faq.answer || ''}</textarea>
+                        </div>
+                        <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                    `;
+                    faqsContainer.appendChild(faqItem);
+                });
+                attachRemoveFaqListeners();
+            }
+
+            function addEmptyFaq() {
+                const index = faqsContainer.children.length;
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50';
+                faqItem.innerHTML = `
+                    <div class="mb-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                        <input type="text" name="product_faqs[${index}][question]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                        <textarea name="product_faqs[${index}][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                `;
+                faqsContainer.appendChild(faqItem);
+                attachRemoveFaqListeners();
+            }
+
+            function attachRemoveFaqListeners() {
+                document.querySelectorAll('.remove-faq-item').forEach(button => {
+                    button.onclick = (e) => {
+                        e.target.closest('.faq-item').remove();
+                        updateFaqInputNames();
+                    };
+                });
+            }
+
+            function updateFaqInputNames() {
+                document.querySelectorAll('.faq-item').forEach((item, index) => {
+                    item.querySelector('input[name*="[question]"]').name = `product_faqs[${index}][question]`;
+                    item.querySelector('textarea[name*="[answer]"]').name = `product_faqs[${index}][answer]`;
+                });
+            }
+
+            // Load existing FAQs
+            const preloadedFaqs = @json($product->faqs);
+            if (preloadedFaqs && preloadedFaqs.length > 0) {
+                renderFaqs(preloadedFaqs);
+            }
+
+            addFaqButton.addEventListener('click', addEmptyFaq);
+        });
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const productTypeSelect = document.getElementById('product_type');
@@ -1551,6 +1866,7 @@
 
                 // Select specific inventory-related input fields
                 const stockQuantityInput = document.querySelector('input[name="stock_quantity"]');
+                const lowStockThresholdInput = document.querySelector('input[name="low_stock_threshold"]');
                 const barcodeInput = document.querySelector('input[name="barcode"]');
                 const stockStatusRadios = document.querySelectorAll('input[name="stock_status"]');
 
@@ -1608,230 +1924,72 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const tagsContainer = document.getElementById('tags-container');
-            const tagsInputWrapper = document.getElementById('tags-input-wrapper');
-            const tagInput = document.getElementById('tag-input');
-            const tagSuggestions = document.getElementById('tag-suggestions');
-            const tagsHiddenInput = document.getElementById('tags-hidden-input');
-            const tagSuggestRoute = "{{ route('tag.suggest') }}";
+            const faqsContainer = document.getElementById('faqs-container');
+            const addFaqButton = document.getElementById('add-faq-item');
 
-            let tags = [];
-            let suggestions = [];
-            let hoveredIndex = -1;
-            let lastSearch = '';
-            let tagDebounceTimer;
-            let spacePressTimer;
-
-            if (tagsHiddenInput.value) {
-                try {
-                    tags = JSON.parse(tagsHiddenInput.value).map(tag => ({
-                        name: tag,
-                        normalized: tag.toLowerCase()
-                    }));
-                    renderTags();
-                } catch (e) {
-                    console.error('Error parsing preloaded tags:', e);
-                }
-            }
-
-            tagInput.addEventListener('input', handleTagInput);
-            tagInput.addEventListener('keydown', handleTagKeyDown);
-            tagInput.addEventListener('blur', handleTagBlur);
-
-            function renderTags() {
-                const existingTags = tagsInputWrapper.querySelectorAll('.tag-pill');
-                existingTags.forEach(tag => tag.remove());
-
-                tags = tags.filter(tag => tag && tag.name); // Filter out any null/undefined tags
-                tags.forEach((tag, index) => {
-                    const tagElement = document.createElement('div');
-                    tagElement.className = 'flex items-center gap-1 bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm tag-pill transition duration-200 hover:bg-blue-200';
-                    tagElement.innerHTML = `
-                        <span class="capitalize">${tag.name}</span>
-                        <button type="button" class="text-blue-500 hover:text-red-600 remove-tag" data-index="${index}">
-                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-                            </svg>
-                        </button>
+            function renderFaqs(faqs) {
+                faqsContainer.innerHTML = ''; // Clear existing FAQs
+                faqs.forEach((faq, index) => {
+                    const faqItem = document.createElement('div');
+                    faqItem.className = 'faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50';
+                    faqItem.innerHTML = `
+                        <div class="mb-2">
+                            <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                            <input type="text" name="product_faqs[${index}][question]" value="${faq.question || ''}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="mb-2">
+                            <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                            <textarea name="product_faqs[${index}][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">${faq.answer || ''}</textarea>
+                        </div>
+                        <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
                     `;
-                    tagsInputWrapper.insertBefore(tagElement, tagInput);
+                    faqsContainer.appendChild(faqItem);
                 });
-
-                document.querySelectorAll('.remove-tag').forEach(button => {
-                    button.addEventListener('click', (e) => {
-                        const index = parseInt(e.currentTarget.getAttribute('data-index'));
-                        tags.splice(index, 1);
-                        renderTags();
-                        updateHiddenInput();
-                    });
-                });
-
-                updateHiddenInput();
+                attachRemoveFaqListeners();
             }
 
-            function updateHiddenInput() {
-                tagsHiddenInput.value = JSON.stringify(tags.map(tag => tag.name));
+            function addEmptyFaq() {
+                const index = faqsContainer.children.length;
+                const faqItem = document.createElement('div');
+                faqItem.className = 'faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50';
+                faqItem.innerHTML = `
+                    <div class="mb-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Question</label>
+                        <input type="text" name="product_faqs[${index}][question]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div class="mb-2">
+                        <label class="block font-semibold text-gray-700 mb-1">Answer</label>
+                        <textarea name="product_faqs[${index}][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+                    <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                `;
+                faqsContainer.appendChild(faqItem);
+                attachRemoveFaqListeners();
             }
 
-            function handleTagInput() {
-                const query = tagInput.value.trim();
-                clearTimeout(tagDebounceTimer);
-
-                if (query.length > 0) {
-                    lastSearch = query;
-                    tagDebounceTimer = setTimeout(async () => {
-                        suggestions = await fetchTagSuggestions(query);
-                        showSuggestions();
-                    }, 300);
-                } else {
-                    hideSuggestions();
-                }
-                clearTimeout(spacePressTimer); // Clear space press timer on any input
-            }
-
-            function handleTagKeyDown(e) {
-                switch (e.key) {
-                    case ' ':
-                        // Only add tag on space if it's a new, non-empty tag
-                        if (tagInput.value.trim() !== '' && !tags.some(tag => tag.normalized === tagInput.value.trim().toLowerCase())) {
-                            clearTimeout(tagDebounceTimer);
-                            clearTimeout(spacePressTimer);
-                            addTag(tagInput.value.trim());
-                            e.preventDefault(); // Prevent space from being typed
-                        }
-                        break;
-
-                    case 'Tab':
-                    case 'Enter':
-                        if (suggestions.length > 0 && hoveredIndex >= 0) {
-                            selectSuggestion(suggestions[hoveredIndex]);
-                            e.preventDefault();
-                        }
-                        else {
-                            const currentTag = tagInput.value.trim();
-                            if (currentTag !== '') {
-                                addTag(currentTag);
-                                e.preventDefault();
-                            }
-                        }
-                        break;
-
-                    case 'Backspace':
-                        if (tagInput.value === '' && tags.length > 0) {
-                            tags.pop();
-                            renderTags();
-                        }
-                        break;
-
-                    case 'ArrowUp':
-                        if (suggestions.length > 0) {
-                            hoveredIndex = Math.max(hoveredIndex - 1, 0);
-                            highlightSuggestion();
-                            e.preventDefault();
-                        }
-                        break;
-
-                    case 'ArrowDown':
-                        if (suggestions.length > 0) {
-                            hoveredIndex = Math.min(hoveredIndex + 1, suggestions.length - 1);
-                            highlightSuggestion();
-                            e.preventDefault();
-                        }
-                        break;
-
-                    case ',':
-                        const tagName = tagInput.value.trim().replace(/,/g, '');
-                        if (tagName !== '') {
-                            addTag(tagName);
-                            e.preventDefault();
-                        }
-                        break;
-                }
-            }
-
-            function handleTagBlur() {
-                clearTimeout(tagDebounceTimer);
-                clearTimeout(spacePressTimer);
-                // Do not add tag on blur. Only add on Enter, Tab, or comma.
-                hideSuggestions();
-            }
-
-            async function fetchTagSuggestions(query) {
-                try {
-                    const response = await fetch(`${tagSuggestRoute}?query=${encodeURIComponent(query)}`);
-                    if (!response.ok) throw new Error('Network response error');
-                    return await response.json();
-                } catch (error) {
-                    console.error('Error fetching tag suggestions:', error);
-                    return [];
-                }
-            }
-
-            function addTag(tagName) {
-                if (tagName === '') return;
-
-                clearTimeout(tagDebounceTimer);
-                clearTimeout(spacePressTimer);
-                tagInput.value = '';
-                lastSearch = '';
-
-                const normalizedTagName = tagName.toLowerCase();
-
-                if (!tags.some(tag => tag.normalized === normalizedTagName)) {
-                    tags.push({
-                        name: tagName,
-                        normalized: normalizedTagName
-                    });
-                    renderTags();
-                }
-
-                hideSuggestions();
-            }
-
-            function showSuggestions() {
-                if (suggestions.length === 0) {
-                    hideSuggestions();
-                    return;
-                }
-
-                tagSuggestions.innerHTML = '';
-                suggestions.forEach((suggestion, index) => {
-                    const suggestionElement = document.createElement('div');
-                    suggestionElement.className = 'px-4 py-2 cursor-pointer hover:bg-blue-50 suggestion-item';
-                    suggestionElement.textContent = suggestion.name;
-                    suggestionElement.dataset.index = index;
-
-                    suggestionElement.addEventListener('mouseenter', () => {
-                        hoveredIndex = index;
-                        highlightSuggestion();
-                    });
-
-                    suggestionElement.addEventListener('click', () => {
-                        selectSuggestion(suggestion);
-                    });
-
-                    tagSuggestions.appendChild(suggestionElement);
-                });
-
-                tagSuggestions.classList.remove('hidden');
-                hoveredIndex = 0;
-                highlightSuggestion();
-            }
-
-            function hideSuggestions() {
-                tagSuggestions.classList.add('hidden');
-                hoveredIndex = -1;
-            }
-
-            function highlightSuggestion() {
-                document.querySelectorAll('.suggestion-item').forEach((item, index) => {
-                    item.classList.toggle('bg-blue-50', index === hoveredIndex);
+            function attachRemoveFaqListeners() {
+                document.querySelectorAll('.remove-faq-item').forEach(button => {
+                    button.onclick = (e) => {
+                        e.target.closest('.faq-item').remove();
+                        updateFaqInputNames();
+                    };
                 });
             }
 
-            function selectSuggestion(suggestion) {
-                addTag(suggestion.name);
+            function updateFaqInputNames() {
+                document.querySelectorAll('.faq-item').forEach((item, index) => {
+                    item.querySelector('input[name*="[question]"]').name = `product_faqs[${index}][question]`;
+                    item.querySelector('textarea[name*="[answer]"]').name = `product_faqs[${index}][answer]`;
+                });
             }
+
+            // Load existing FAQs
+            const preloadedFaqs = @json($product->faqs);
+            if (preloadedFaqs && preloadedFaqs.length > 0) {
+                renderFaqs(preloadedFaqs);
+            }
+
+            addFaqButton.addEventListener('click', addEmptyFaq);
         });
     </script>
     @endpush

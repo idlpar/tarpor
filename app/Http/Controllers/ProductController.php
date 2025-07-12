@@ -147,8 +147,13 @@ class ProductController extends Controller
             // Handle thumbnail
             $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
-            if (!empty($validated['category_ids'])) {
-                $product->categories()->sync($validated['category_ids']);
+            // Handle categories
+            if (!empty($validated['category_ids'])) { // Changed from category_ids
+                $categoryIds = (array) $validated['category_ids'];
+                $categoryIds = array_map('intval', $categoryIds);
+                // In the store method, before syncing:
+                \Log::info('Category IDs received:', ['category_ids' => $request->input('category_ids')]);
+                $product->categories()->sync($categoryIds);
             }
 
             if (!empty($validated['tags'])) {
@@ -172,16 +177,31 @@ class ProductController extends Controller
             }
 
             if (!empty($validated['cross_selling_products'])) {
-                $crossSellingProducts = is_array($validated['cross_selling_products']) ? $validated['cross_selling_products'] : json_decode($validated['cross_selling_products'], true);
+                $crossSellingProducts = is_string($validated['cross_selling_products']) ? json_decode($validated['cross_selling_products'], true) : ($validated['cross_selling_products'] ?? []);
                 if (is_array($crossSellingProducts)) {
                     $product->crossSellingProducts()->sync($crossSellingProducts);
                 }
             }
 
             if (!empty($validated['product_faqs'])) {
-                $productFaqs = is_array($validated['product_faqs']) ? $validated['product_faqs'] : json_decode($validated['product_faqs'], true);
+                $productFaqs = is_string($validated['product_faqs']) ? json_decode($validated['product_faqs'], true) : ($validated['product_faqs'] ?? []);
                 if (is_array($productFaqs)) {
-                    $product->faqs()->sync($productFaqs);
+                    // Assuming product_faqs is an array of {question: string, answer: string}
+                    // Clear existing FAQs and then create new ones
+                    $product->faqs()->delete();
+                    foreach ($productFaqs as $faq) {
+                        $product->faqs()->create($faq);
+                    }
+                }
+            }
+
+            if (!empty($validated['specifications'])) {
+                $specifications = is_string($validated['specifications']) ? json_decode($validated['specifications'], true) : ($validated['specifications'] ?? []);
+                if (is_array($specifications)) {
+                    $product->specifications()->delete();
+                    foreach ($specifications as $spec) {
+                        $product->specifications()->create($spec);
+                    }
                 }
             }
 
@@ -295,12 +315,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
-        Log::info('Product update method hit.');
-        Log::info('Product update request received:', $request->all());
-        Log::info('Type of tags input: ' . gettype($request->input('tags')) . ' Value: ' . print_r($request->input('tags'), true));
-        Log::info('Type of related_products input: ' . gettype($request->input('related_products')) . ' Value: ' . print_r($request->input('related_products'), true));
-        Log::info('Type of cross_selling_products input: ' . gettype($request->input('cross_selling_products')) . ' Value: ' . print_r($request->input('cross_selling_products'), true));
-        Log::info('Type of product_faqs input: ' . gettype($request->input('product_faqs')) . ' Value: ' . print_r($request->input('product_faqs'), true));
+
         $validated = $this->validateProduct($request, $product);
 
         DB::transaction(function () use ($product, $validated, $request) {
@@ -313,7 +328,7 @@ class ProductController extends Controller
             $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
             // Handle categories
-            $product->categories()->sync($validated['category_ids'] ?? []);
+            $product->categories()->sync($validated['categories'] ?? []);
 
             // Handle tags
             $tagsToSync = is_string($validated['tags']) ? json_decode($validated['tags'], true) : ($validated['tags'] ?? []);
@@ -329,6 +344,36 @@ class ProductController extends Controller
 
             // Handle pricing tiers
             $this->updatePricingTiers($product, $validated['pricing_tiers'] ?? []);
+
+            // Handle related products
+            $relatedProductsToSync = is_string($validated['related_products']) ? json_decode($validated['related_products'], true) : ($validated['related_products'] ?? []);
+            if (is_array($relatedProductsToSync)) {
+                $product->relatedProducts()->sync($relatedProductsToSync);
+            }
+
+            // Handle cross-selling products
+            $crossSellingProducts = is_string($validated['cross_selling_products']) ? json_decode($validated['cross_selling_products'], true) : ($validated['cross_selling_products'] ?? []);
+            if (is_array($crossSellingProducts)) {
+                $product->crossSellingProducts()->sync($crossSellingProducts);
+            }
+
+            // Handle product FAQs
+            $productFaqs = is_string($validated['product_faqs']) ? json_decode($validated['product_faqs'], true) : ($validated['product_faqs'] ?? []);
+            if (is_array($productFaqs)) {
+                $product->faqs()->delete(); // Clear existing FAQs
+                foreach ($productFaqs as $faq) {
+                    $product->faqs()->create($faq);
+                }
+            }
+
+            // Handle product specifications
+            $specifications = is_string($validated['specifications']) ? json_decode($validated['specifications'], true) : ($validated['specifications'] ?? []);
+            if (is_array($specifications)) {
+                $product->specifications()->delete(); // Clear existing specifications
+                foreach ($specifications as $spec) {
+                    $product->specifications()->create($spec);
+                }
+            }
 
             // Handle SEO
             $product->seo()->updateOrCreate(
@@ -589,8 +634,6 @@ class ProductController extends Controller
         $rules = [
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255' . ($product ? ',slug,' . $product->id : '|unique:products'),
-            'description' => 'nullable|string',
-            'short_description' => 'nullable|string',
             'description' => 'nullable|string|max:65535',
             'short_description' => 'nullable|string|max:65535',
             'price' => 'required|numeric|min:0',
@@ -623,8 +666,9 @@ class ProductController extends Controller
             'min_order_quantity' => 'nullable|integer|min:0',
             'max_order_quantity' => 'nullable|integer|min:0',
             'related_products' => 'nullable|json',
-            'cross_selling_products' => 'nullable|string',
-            'product_faqs' => 'nullable|string',
+            'cross_selling_products' => 'nullable|json',
+            'product_faqs' => 'nullable|json',
+            'specifications' => 'nullable|json',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string',

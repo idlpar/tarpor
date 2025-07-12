@@ -216,6 +216,7 @@
                             @error('attributes')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
+                            <input type="hidden" name="specifications" id="specifications-hidden-input" value="{{ old('specifications', '[]') }}">
                         </div>
 
                         <!-- Overview -->
@@ -256,6 +257,14 @@
                                     <input type="number" name="stock_quantity" value="{{ old('stock_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
                                     <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
                                     @error('stock_quantity')
+                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Low Stock Threshold</label>
+                                    <input type="number" name="low_stock_threshold" value="{{ old('low_stock_threshold', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('low_stock_threshold') border-red-500 @enderror" placeholder="0" min="0">
+                                    <p class="text-sm text-gray-500 mt-2">Alert when stock falls below this quantity.</p>
+                                    @error('low_stock_threshold')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
@@ -333,16 +342,7 @@
                             <p class="text-sm text-gray-500 mt-2">Adding new attributes helps the product to have many options, such as size or color.</p>
                         </div>
 
-                        <!-- Product Options -->
-                        <x-form.card label="Product Options" class="bg-transparent">
-                            <select name="product_options" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_options') border-red-500 @enderror">
-                                <option value="">Select Global Option</option>
-                                <!-- Add options dynamically if needed -->
-                            </select>
-                            @error('product_options')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                        </x-form.card>
+                        
 
                         <!-- Related Products -->
                         <x-form.card label="Related Products" class="bg-transparent">
@@ -528,16 +528,7 @@
                         @enderror
                     </x-form.card>
 
-                    <!-- Store Card -->
-                    <x-form.card label="Store">
-                        <select name="store" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('store') border-red-500 @enderror">
-                            <option value="">Select a store...</option>
-                            <!-- Add store options dynamically if needed -->
-                        </select>
-                        @error('store')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                        @enderror
-                    </x-form.card>
+                    
 
                     <!-- Is Featured? Card -->
                     <x-form.card label="Is Featured?">
@@ -730,14 +721,20 @@
 
                 // Select specific inventory-related input fields
                 const stockQuantityInput = document.querySelector('input[name="stock_quantity"]');
+                const lowStockThresholdInput = document.querySelector('input[name="low_stock_threshold"]');
                 const barcodeInput = document.querySelector('input[name="barcode"]');
                 const stockStatusRadios = document.querySelectorAll('input[name="stock_status"]');
 
-                // Enable/disable stock quantity and barcode
+                // Enable/disable stock quantity, low stock threshold, and barcode
                 if (stockQuantityInput) {
                     stockQuantityInput.disabled = !isSimpleProduct;
                     stockQuantityInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
                     stockQuantityInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
+                }
+                if (lowStockThresholdInput) {
+                    lowStockThresholdInput.disabled = !isSimpleProduct;
+                    lowStockThresholdInput.closest('div').style.opacity = isSimpleProduct ? '1' : '0.5';
+                    lowStockThresholdInput.closest('div').style.pointerEvents = isSimpleProduct ? 'auto' : 'none';
                 }
                 if (barcodeInput) {
                     barcodeInput.disabled = !isSimpleProduct;
@@ -980,6 +977,21 @@
                     }
                 });
 
+                // Collect specifications data
+                const specifications = [];
+                const specTableRows = document.querySelectorAll('#specTableBody tr');
+                specTableRows.forEach(row => {
+                    const group = row.children[0].textContent.trim();
+                    const attribute = row.children[1].textContent.trim();
+                    const value = row.children[2].querySelector('input').value.trim();
+                    specifications.push({
+                        group_name: group,
+                        attribute_name: attribute,
+                        attribute_value: value
+                    });
+                });
+                document.getElementById('specifications-hidden-input').value = JSON.stringify(specifications);
+
                 // Clear previous errors
                 document.querySelectorAll('.text-red-500.text-sm.mt-1').forEach(el => el.remove());
                 document.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
@@ -1005,11 +1017,13 @@
                 }
 
                 // Log all formData entries for debugging
-                console.log('--- FormData Contents ---');
+                console.log('--- FormData Contents (before send) ---');
                 for (let [key, value] of formData.entries()) {
                     console.log(`${key}: ${value}`);
                 }
                 console.log('-------------------------');
+
+                
 
                 saveButton.disabled = true;
                 saveExitButton.disabled = true;
