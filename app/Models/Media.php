@@ -56,6 +56,11 @@ class Media extends Model
         return $this->morphTo();
     }
 
+    public function products()
+    {
+        return $this->belongsToMany(Product::class, 'product_media')->withPivot('type', 'order');
+    }
+
     /**
      * Get the full URL to the original file.
      */

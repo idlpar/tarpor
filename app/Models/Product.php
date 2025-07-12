@@ -12,10 +12,10 @@ class Product extends Model
     use HasFactory, SoftDeletes;
 
     protected $fillable = [
-        'name', 'slug', 'description', 'short_description', 'type', 'type',
+        'name', 'slug', 'description', 'short_description', 'type',
         'price', 'sale_price', 'cost_price', 'sku', 'barcode',
         'stock_quantity', 'stock_status', 'inventory_tracking', 'low_stock_threshold',
-        'weight', 'length', 'width', 'height', 'brand_id', 'thumbnail',
+        'weight', 'length', 'width', 'height', 'brand_id',
         'views', 'status', 'is_featured', 'is_hot', 'is_sale'
     ];
 
@@ -52,7 +52,7 @@ class Product extends Model
 
     public function media()
     {
-        return $this->morphMany(Media::class, 'model');
+        return $this->belongsToMany(Media::class, 'product_media')->withPivot('type', 'order')->withTimestamps()->orderBy('pivot_order');
     }
 
     public function variants()
@@ -112,20 +112,25 @@ class Product extends Model
 
     public function getThumbnailMediaAttribute()
     {
-        return $this->media->where('id', $this->thumbnail)->first();
+        $featuredMedia = $this->media->where('pivot.type', 'featured')->first();
+        \Log::info('Product ID: ' . $this->id . ' - getThumbnailMediaAttribute called. Featured Media: ' . ($featuredMedia ? $featuredMedia->id : 'None'));
+        return $featuredMedia;
     }
 
     public function getThumbnailUrlAttribute()
     {
         if ($this->thumbnail_media) {
-            return $this->thumbnail_media->url;
+            $url = $this->thumbnail_media->url;
+            \Log::info('Product ID: ' . $this->id . ' - getThumbnailUrlAttribute called. URL: ' . $url);
+            return $url;
         }
+        \Log::info('Product ID: ' . $this->id . ' - getThumbnailUrlAttribute called. No thumbnail media, returning default.');
         return asset('images/default-product.jpg');
     }
 
     public function getGalleryMediaAttribute()
     {
-        return $this->media()->where('id', '!=', $this->thumbnail)->get();
+        return $this->media->where('pivot.type', 'gallery')->sortBy('pivot.order');
     }
 
     public function getGalleryImagesAttribute()

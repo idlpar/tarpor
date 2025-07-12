@@ -29,7 +29,8 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with(['brand', 'categories'])
+        Log::info('ProductController index method hit.');
+        $products = Product::with(['brand', 'categories', 'media'])
             ->withCount('variants')
             ->when($request->has('type') && $request->input('type') !== '', function ($query) use ($request) {
                 $query->where('type', $request->input('type'));
@@ -132,6 +133,7 @@ class ProductController extends Controller
 
     public function store(Request $request)
     {
+
         $validated = $this->validateProduct($request);
 
         DB::transaction(function () use ($validated, $request) {
@@ -143,9 +145,7 @@ class ProductController extends Controller
             $this->handleProductImages($product, $request->file('images_new'), $request->input('images_existing'));
 
             // Handle thumbnail
-            $thumbnailId = $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
-            $product->thumbnail = $thumbnailId;
-            $product->save(); // Save product again to update images and thumbnail
+            $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
             if (!empty($validated['category_ids'])) {
                 $product->categories()->sync($validated['category_ids']);
@@ -225,7 +225,7 @@ class ProductController extends Controller
         return redirect()->route('products.index')->with('success', 'Product created successfully.');
     }
 
-    public function show(Product $product)
+    public function show(Request $request, Product $product)
     {
         $product->load([
             'brand',
@@ -239,6 +239,10 @@ class ProductController extends Controller
             'media',
             'seo'
         ]);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json($product);
+        }
 
         $breadcrumbs = [
             'Products' => route('products.index'),
@@ -291,6 +295,7 @@ class ProductController extends Controller
 
     public function update(Request $request, Product $product)
     {
+        Log::info('Product update method hit.');
         Log::info('Product update request received:', $request->all());
         Log::info('Type of tags input: ' . gettype($request->input('tags')) . ' Value: ' . print_r($request->input('tags'), true));
         Log::info('Type of related_products input: ' . gettype($request->input('related_products')) . ' Value: ' . print_r($request->input('related_products'), true));
@@ -302,13 +307,10 @@ class ProductController extends Controller
             $product->fill($validated);
 
             // Handle product images
-            $existingImages = $request->input('images_existing', []);
-            $this->handleProductImages($product, $request->file('images_new'), $existingImages);
+            $this->handleProductImages($product, $request->file('images_new'), $request->input('images_existing', []));
 
             // Handle thumbnail
-            $thumbnailId = $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
-            $product->thumbnail = $thumbnailId;
-            $product->save(); // Save product again to update images and thumbnail
+            $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
             // Handle categories
             $product->categories()->sync($validated['category_ids'] ?? []);
@@ -578,6 +580,12 @@ class ProductController extends Controller
 
     protected function validateProduct(Request $request, ?Product $product = null)
     {
+        if ($request->has('images_existing') && is_string($request->images_existing)) {
+            $request->merge([
+                'images_existing' => json_decode($request->images_existing, true)
+            ]);
+        }
+
         $rules = [
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255' . ($product ? ',slug,' . $product->id : '|unique:products'),
@@ -670,6 +678,9 @@ class ProductController extends Controller
 
     protected function handleProductImages(Product $product, $newFiles = [], $existingIds = [])
     {
+        Log::info('handleProductImages: Method Entry - newFiles:', ['newFiles' => $newFiles]);
+        Log::info('handleProductImages: Method Entry - existingIds:', ['existingIds' => $existingIds]);
+
         $newFiles = $newFiles ?? [];
         $existingIds = $existingIds ?? [];
 
@@ -687,6 +698,14 @@ class ProductController extends Controller
             }
         }
         Log::info('handleProductImages: Retained media IDs after processing existingIds', ['retainedMediaIds_after_existing' => $retainedMediaIds]);
+
+        // Log the type and content of $existingIds before processing
+        Log::info('handleProductImages: Type of existingIds: ' . gettype($existingIds));
+        Log::info('handleProductImages: Content of existingIds: ' . print_r($existingIds, true));
+
+        // Log the type and content of $newFiles before processing
+        Log::info('handleProductImages: Type of newFiles: ' . gettype($newFiles));
+        Log::info('handleProductImages: Content of newFiles: ' . print_r($newFiles, true));
 
         // Process new files (uploaded via file input)
         if (is_array($newFiles)) {
@@ -721,48 +740,43 @@ class ProductController extends Controller
         // Detach media that are no longer retained (i.e., removed from the frontend)
         $mediaToDetach = array_diff($currentMediaIds, $retainedMediaIds);
         if (!empty($mediaToDetach)) {
-            Media::whereIn('id', $mediaToDetach)->update([
-                'model_id' => null,
-                'model_type' => null,
-            ]);
-            Log::info('handleProductImages: Detached media IDs', ['detachedMediaIds' => $mediaToDetach]);
+            $product->media()->detach($mediaToDetach);
+            Log::info('handleProductImages: Detached media IDs from pivot table', ['detachedMediaIds' => $mediaToDetach]);
         }
 
-        // Explicitly attach/re-attach all retained media to the product
-        // This ensures correct order and association for both old and new images
-        
-
-        // Re-attaching logic for MorphMany
-        if (!empty($retainedMediaIds)) {
-            Media::whereIn('id', $retainedMediaIds)->update([
-                'model_id' => $product->id,
-                'model_type' => Product::class,
-            ]);
-            Log::info('handleProductImages: Re-attached/attached media IDs', ['attachedMediaIds' => $retainedMediaIds]);
+        // Sync all retained media to the product with pivot data
+        $syncData = [];
+        $order = 0;
+        foreach ($retainedMediaIds as $mediaId) {
+            Log::info('handleProductImages: Processing mediaId for sync', ['mediaId' => $mediaId, 'type' => 'gallery', 'order' => $order]);
+            $syncData[$mediaId] = ['type' => 'gallery', 'order' => $order++];
         }
+
+        Log::info('handleProductImages: Final syncData array before sync', ['syncData' => $syncData]);
+        $product->media()->sync($syncData);
+        Log::info('handleProductImages: Synced media IDs to pivot table', ['syncedMediaIds' => array_keys($syncData)]);
 
         return $retainedMediaIds;
     }
 
     protected function handleThumbnail(Product $product, $newFile = null, $existingId = null)
     {
-        $currentThumbnailId = $product->thumbnail;
+        $currentFeaturedMedia = $product->media()->wherePivot('type', 'featured')->first();
+        $featuredMediaId = null;
 
         // If a new file is uploaded, process it
         if ($newFile instanceof \Illuminate\Http\UploadedFile) {
             try {
-                // Delete old thumbnail if it exists
-                if ($currentThumbnailId) {
-                    Media::where('id', $currentThumbnailId)->update([
-                        'model_id' => null,
-                        'model_type' => null,
-                    ]);
+                // Detach current featured media if it exists
+                if ($currentFeaturedMedia) {
+                    $product->media()->detach($currentFeaturedMedia->id);
                 }
 
                 $fileName = $newFile->hashName();
                 $directory = 'products/thumbnails/' . $product->id;
                 $path = Storage::disk('public')->putFileAs($directory, $newFile, $fileName);
-                $media = $product->media()->create([
+
+                $media = Media::create([
                     'disk' => 'public',
                     'collection_name' => 'thumbnails',
                     'name' => $newFile->getClientOriginalName(),
@@ -773,27 +787,30 @@ class ProductController extends Controller
                     'custom_properties' => [],
                     'responsive_images' => [],
                 ]);
-                return $media->id;
+                $featuredMediaId = $media->id;
             } catch (\Exception $e) {
-                \Log::error("Error handling product thumbnail: " . $e->getMessage());
-                return $currentThumbnailId;
+                \Log::error("Error handling new product thumbnail: " . $e->getMessage());
+            }
+        } elseif ($existingId) {
+            // If an existing ID is provided, and no new file, use it
+            $featuredMediaId = (int)$existingId;
+        }
+
+        // Sync the featured image to the product_media pivot table
+        if ($featuredMediaId) {
+            // Detach any existing featured image before attaching the new one
+            if ($currentFeaturedMedia && $currentFeaturedMedia->id !== $featuredMediaId) {
+                $product->media()->detach($currentFeaturedMedia->id);
+            }
+            $product->media()->syncWithoutDetaching([$featuredMediaId => ['type' => 'featured', 'order' => 0]]);
+        } else {
+            // If no new or existing featured image, detach the current one
+            if ($currentFeaturedMedia) {
+                $product->media()->detach($currentFeaturedMedia->id);
             }
         }
 
-        // If an existing ID is provided, and no new file, retain it
-        if ($existingId) {
-            return (int)$existingId;
-        }
-
-        // No new file and no existing ID provided, so detach the current thumbnail
-        if ($currentThumbnailId) {
-            Media::where('id', $currentThumbnailId)->update([
-                'model_id' => null,
-                'model_type' => null,
-            ]);
-        }
-
-        return null;
+        return $featuredMediaId;
     }
 
     protected function createVariants(Product $product, array $variantsData)

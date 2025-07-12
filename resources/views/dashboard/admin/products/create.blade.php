@@ -177,7 +177,8 @@
                                     <button type="button" id="resetImages" class="px-5 py-2.5 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-all">Reset</button>
                                 </div>
                             </div>
-                            <input type="hidden" name="images" id="productImagesInput" value="{{ old('images', '[]') }}">
+                            <input type="hidden" name="images_existing" id="productImagesInput" value="{{ Js::from(old('images_existing', [])) }}">
+{{--                            <input type="hidden" name="images" id="productImagesInput" value="{{ Js::from(old('images_existing', [])) }}">--}}
                             @error('images')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -616,8 +617,8 @@
                                 </button>
                             </div>
                         </div>
-                        <input type="hidden" name="thumbnail" id="featuredImageInput" value="{{ old('thumbnail') }}">
-                        @error('featured_image')
+                        <input type="hidden" name="thumbnail_existing" id="featuredImageInput" value="{{ old('thumbnail_existing') }}">
+                        @error('thumbnail_existing')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
@@ -796,11 +797,16 @@
                 featuredImageFile: null, // Stores the actual File object for the featured image
 
                 addImage(file) {
+                    console.log('addImage called with:', file);
                     // Ensure we store the actual File object if available, or fetch it later if only ID is known
                     if (!file) return;
-                    if (this.productImages.some(img => img.id === file.id)) return; // Prevent duplicates
+                    if (this.productImages.some(img => img.id === file.id)) {
+                        console.log('Duplicate image detected, skipping:', file.id);
+                        return; // Prevent duplicates
+                    }
 
                     this.productImages.push(file);
+                    console.log('Current productImages array:', this.productImages);
                     this.renderImages();
                     this.updateVisibility();
                 },
@@ -825,12 +831,14 @@
                     this.selectedImagesPreview.innerHTML = '';
                     if (this.productImages.length === 0) {
                         this.selectedImagesPreview.classList.add('hidden');
-                        this.productImagesInput.value = '[]';
+                        // this.productImagesInput.value = '[]';
+                        this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id || null));
                         this.updateVisibility();
                         return;
                     }
 
                     this.productImages = this.productImages.filter(img => img && (img.id || img.file)); // Filter invalid images
+                    console.log('renderImages: Filtered productImages before rendering:', this.productImages); // ADDED LOG
                     this.productImages.forEach((image) => {
                         const imageWrapper = document.createElement('div');
                         imageWrapper.className = 'relative w-24 h-24 rounded-lg overflow-hidden border border-gray-200 sortable-image';
@@ -860,7 +868,7 @@
                     });
 
                     // Update hidden input with IDs of existing media, or mark as new for files
-                    this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id || null));
+
                     this.updateVisibility();
                 },
 
@@ -884,67 +892,9 @@
                 },
 
                 initPreloadedImages() {
-                    const currentImageIds = JSON.parse(this.productImagesInput.value || '[]');
-                    if (currentImageIds.length === 0) {
-                        this.updateVisibility();
-                        return;
-                    }
-
-                    this.selectedImagesPreview.innerHTML = '';
-                    this.productImages = [];
-
-                    const fetchPromises = currentImageIds.map(id =>
-                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', id), {
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            }
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success && data.file) {
-                                    // Store the fetched file object, including its ID and URL
-                                    return { id: data.file.id, url: data.file.url, thumb_url: data.file.thumb_url, name: data.file.name, file: null };
-                                }
-                                throw new Error(`Failed to fetch image ID: ${id}`);
-                            })
-                            .catch(error => {
-                                console.error(error);
-                                return null;
-                            })
-                    );
-
-                    Promise.all(fetchPromises).then(files => {
-                        files.forEach(file => {
-                            if (file) this.productImages.push(file);
-                        });
-                        this.renderImages();
-                        this.updateVisibility();
-                    });
-
-                    // For featured image, if preloaded
-                    const featuredImageId = this.featuredImageInput.value;
-                    if (featuredImageId) {
-                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', featuredImageId), {
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            }
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success && data.file) {
-                                    this.setFeaturedImage(data.file);
-                                } else {
-                                    console.error(`Failed to fetch featured image ID: ${featuredImageId}`);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching featured image:', error);
-                            });
-                    }
+                    // For a new product, there are no preloaded images.
+                    // Just ensure visibility is correctly set based on initial state (empty).
+                    this.updateVisibility();
                 },
 
                 init() {
@@ -1040,18 +990,26 @@
                 galleryManager.productImages.forEach((image) => {
                     if (image.file) {
                         formData.append('images_new[]', image.file); // New file upload
+                        console.log('Appending new image file:', image.file.name);
                     } else if (image.id) {
                         formData.append('images_existing[]', image.id); // Existing media ID
+                        console.log('Appending existing image ID:', image.id);
                     }
                 });
 
                 // Append featured image (new file or existing ID)
-                formData.delete('thumbnail'); // Remove the hidden input value
+                // The thumbnail_existing input is already handled by the form, no need to delete and re-append
                 if (galleryManager.featuredImageFile) {
                     formData.append('thumbnail_new', galleryManager.featuredImageFile); // New file upload
-                } else if (galleryManager.featuredImageInput.value) {
-                    formData.append('thumbnail_existing', galleryManager.featuredImageInput.value); // Existing media ID
+                    console.log('Appending new thumbnail file:', galleryManager.featuredImageFile.name);
                 }
+
+                // Log all formData entries for debugging
+                console.log('--- FormData Contents ---');
+                for (let [key, value] of formData.entries()) {
+                    console.log(`${key}: ${value}`);
+                }
+                console.log('-------------------------');
 
                 saveButton.disabled = true;
                 saveExitButton.disabled = true;

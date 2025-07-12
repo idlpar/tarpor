@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Product | ' . strtoupper(config('app.name')))
+@section('title', 'Edit Product | ' . strtoupper(config('app.name')))
 
 @push('styles')
     <style>
@@ -106,25 +106,26 @@
         @include('components.breadcrumbs', [
             'links' => [
                 'Products' => route('products.index'),
-                'Create Product' => null
+                'Edit Product' => null
             ]
         ])
 
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
-            <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
+            <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
+                @method('PUT')
                 @csrf
                 <!-- Left Column -->
                 <div class="w-full lg:w-9/12">
                     <!-- Product Details -->
                     <div class="bg-white p-8 rounded-lg shadow-lg">
-                        <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
+                        <h2 class="text-3xl font-bold mb-6 text-gray-800">Edit Product</h2>
 
 
 
                         <!-- Name -->
                         <div class="mb-6">
                             <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
-                            <input type="text" id="name" name="name" value="{{ old('name') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Product Name">
+                            <input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Product Name">
                             @error('name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -134,21 +135,21 @@
                         <div class="mb-6">
                             <label for="slug" class="block font-semibold text-gray-700 mb-2">Permalink *</label>
                             <div class="relative">
-                                <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
+                                <input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
                             </div>
                             @error('slug')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
                             <p class="text-sm text-gray-500 mt-2">
-                                Preview: <span class="text-gray-500">{{ url('/product') . '/' }}</span><a href="#" class="text-blue-500 hover:underline" id="permalink-preview">{{ old('slug', 'your-slug') }}</a>
+                                Preview: <span class="text-gray-500">{{ url('/product') . '/' }}</span><a href="#" class="text-blue-500 hover:underline" id="permalink-preview">{{ old('slug', $product->slug) }}</a>
                             </p>
                         </div>
 
                         <!-- Description -->
-                        <x-forms.ckeditor id="description" name="description" value="{{ old('description') }}">Description</x-forms.ckeditor>
+                        <x-forms.ckeditor id="description" name="description" value="{{ old('description', $product->description) }}">Description</x-forms.ckeditor>
 
                         <!-- Content (short_description) -->
-                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description') }}">Content</x-forms.ckeditor>
+                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description', $product->short_description) }}">Content</x-forms.ckeditor>
 
                         <!-- Images -->
                         <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg">
@@ -174,7 +175,7 @@
                                     <button type="button" id="resetImages" class="px-5 py-2.5 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-all">Reset</button>
                                 </div>
                             </div>
-                            <input type="hidden" name="images" id="productImagesInput" value="{{ Js::from(old('images', [])) }}">
+{{--                            <input type="hidden" name="images" id="productImagesInput" value="{{ Js::from(old('images', [])) }}">--}}
                             @error('images')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -218,22 +219,21 @@
                         <x-form.card label="Overview" class="bg-transparent">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">SKU</label>
-                                    <input type="text" name="sku" value="{{ old('sku') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sku') border-red-500 @enderror" placeholder="SKU-CZA-PZ-997">
+                                    <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sku') border-red-500 @enderror" placeholder="SKU-CZA-PZ-997">
                                     @error('sku')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Price</label>
-                                    <input type="number" name="price" value="{{ old('price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     @error('price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
-                                    <input type="number" name="sale_price" value="{{ old('sale_price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
                                     @error('sale_price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -241,7 +241,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Cost per Item</label>
-                                    <input type="number" name="cost_price" value="{{ old('cost_price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cost_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cost_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Customers won't see this price.</p>
                                     @error('cost_price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -249,7 +249,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Stock Quantity</label>
-                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
+                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
                                     <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
                                     @error('stock_quantity')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -257,7 +257,7 @@
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
-                                    <input type="text" name="barcode" value="{{ old('barcode') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('barcode') border-red-500 @enderror" placeholder="Enter barcode">
+                                    <input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('barcode') border-red-500 @enderror" placeholder="Enter barcode">
                                     @error('barcode')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
@@ -269,15 +269,15 @@
                         <x-form.card label="Stock Status" class="bg-transparent">
                             <div class="flex items-center space-x-6">
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', 'in_stock') == 'in_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', $product->stock_status) == 'in_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">In Stock</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status') == 'out_of_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status', $product->stock_status) == 'out_of_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">Out of Stock</span>
                                 </label>
                                 <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status') == 'backorder' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
+                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status', $product->stock_status) == 'backorder' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
                                     <span class="text-gray-700">Backorder</span>
                                 </label>
                             </div>
@@ -291,28 +291,28 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Weight (g)</label>
-                                    <input type="number" name="weight" value="{{ old('weight') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('weight') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('weight') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('weight')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Length (cm)</label>
-                                    <input type="number" name="length" value="{{ old('length') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('length') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="length" value="{{ old('length', $product->length) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('length') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('length')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Width (cm)</label>
-                                    <input type="number" name="width" value="{{ old('width') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('width') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="width" value="{{ old('width', $product->width) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('width') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('width')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-sm text-gray-700 mb-2">Height (cm)</label>
-                                    <input type="number" name="height" value="{{ old('height') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('height') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <input type="number" name="height" value="{{ old('height', $product->height) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('height') border-red-500 @enderror" placeholder="0" step="0.01">
                                     @error('height')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
@@ -370,7 +370,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', '[]') }}">
+                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', json_encode($product->relatedProducts->pluck('id'))) }}">
                                 @error('related_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -497,8 +497,8 @@
                     <!-- Product Type -->
                     <x-form.card label="Product Type" required="true">
                         <select name="type" id="product_type" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('type') border-red-500 @enderror">
-                            <option value="simple" {{ old('type') == 'simple' ? 'selected' : '' }}>Simple Product</option>
-                            <option value="variable" {{ old('type') == 'variable' ? 'selected' : '' }}>Variable Product</option>
+                            <option value="simple" {{ old('type', $product->type) == 'simple' ? 'selected' : '' }}>Simple Product</option>
+                            <option value="variable" {{ old('type', $product->type) == 'variable' ? 'selected' : '' }}>Variable Product</option>
                         </select>
                         @error('type')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -508,9 +508,9 @@
                     <!-- Status Card -->
                     <x-form.card label="Status" required="true">
                         <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
-                            <option value="published" {{ old('status', 'published') == 'published' ? 'selected' : '' }}>Published</option>
-                            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
+                            <option value="published" {{ old('status', $product->status) == 'published' ? 'selected' : '' }}>Published</option>
+                            <option value="draft" {{ old('status', $product->status) == 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="archived" {{ old('status', $product->status) == 'archived' ? 'selected' : '' }}>Archived</option>
                         </select>
                         @error('status')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -531,7 +531,7 @@
                     <!-- Is Featured? Card -->
                     <x-form.card label="Is Featured?">
                         <label class="relative inline-flex items-center cursor-pointer ml-2">
-                            <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle" {{ old('is_featured') ? 'checked' : '' }}>
+                            <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}>
                             <div class="w-11 h-6 bg-gray-100 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                         @error('is_featured')
@@ -553,7 +553,7 @@
                         </div>
                         <div class="max-h-[200px] overflow-auto">
                             <ul id="category-tree" class="mt-2 space-y-1">
-                                @include('partials.category-checkboxes', ['categories' => $categories])
+                                @include('partials.category-checkboxes', ['categories' => $categories, 'selected' => old('category_ids', $product->categories->pluck('id')->toArray())])
                             </ul>
                         </div>
                         @error('category_ids')
@@ -567,7 +567,7 @@
                     <!-- Brand Card -->
                     <x-form.card label="Brand">
                         <div class="relative">
-                            <input type="text" id="brand-search" value="{{ old('brand_id') ? App\Models\Brand::find(old('brand_id'))->name : '' }}" class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm @error('brand_id') border-red-500 @enderror" placeholder="Search brands...">
+                            <input type="text" id="brand-search" value="{{ old('brand_id', $product->brand_id) ? App\Models\Brand::find(old('brand_id', $product->brand_id))->name : '' }}" class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm @error('brand_id') border-red-500 @enderror" placeholder="Search brands...">
                             <div id="brand-dropdown" class="absolute z-20 bg-white mt-1 w-full border border-gray-200 rounded-md shadow-md hidden max-h-64 overflow-y-auto">
                                 <ul id="brand-list" class="divide-y divide-gray-100 text-sm text-gray-700">
                                     @foreach($brands as $brand)
@@ -575,7 +575,7 @@
                                     @endforeach
                                 </ul>
                             </div>
-                            <input type="hidden" name="brand_id" id="selected-brand-id" value="{{ old('brand_id') }}">
+                            <input type="hidden" name="brand_id" id="selected-brand-id" value="{{ old('brand_id', $product->brand_id) }}">
                             @error('brand_id')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -606,8 +606,8 @@
                                 </button>
                             </div>
                         </div>
-                        <input type="hidden" name="thumbnail" id="featuredImageInput" value="{{ old('thumbnail') }}">
-                        @error('featured_image')
+                        <input type="hidden" name="thumbnail_existing" id="featuredImageInput" value="{{ old('thumbnail_existing', $product->thumbnail_media->id ?? '') }}">
+                        @error('thumbnail_existing')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
@@ -616,7 +616,7 @@
 
                     <!-- Product Collections Card -->
                     @php
-                        $collections = old('product_collections', []);
+                        $collections = old('product_collections', $product->product_collections ?? []);
                     @endphp
                     <x-form.card label="Product Collections">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
@@ -641,7 +641,7 @@
 
                     <!-- Labels Card -->
                     @php
-                        $labels = old('labels', []);
+                        $labels = old('labels', $product->labels ?? []);
                     @endphp
                     <x-form.card label="Labels">
                         <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
@@ -662,7 +662,7 @@
 
                     <!-- Minimum Order Quantity Card -->
                     <x-form.card label="Minimum Order Quantity" required="true">
-                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('min_order_quantity') border-red-500 @enderror" placeholder="0">
+                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', $product->min_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('min_order_quantity') border-red-500 @enderror" placeholder="0">
                         <p class="text-sm text-gray-500 mt-2">Minimum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('min_order_quantity')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -671,7 +671,7 @@
 
                     <!-- Maximum Order Quantity Card -->
                     <x-form.card label="Maximum Order Quantity" required="true">
-                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', 0) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('max_order_quantity') border-red-500 @enderror" placeholder="0">
+                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', $product->max_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('max_order_quantity') border-red-500 @enderror" placeholder="0">
                         <p class="text-sm text-gray-500 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('max_order_quantity')
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -685,7 +685,7 @@
                                 <input type="text" id="tag-input" class="flex-grow outline-none min-w-[100px]" placeholder="Add tags..." autocomplete="off">
                             </div>
                             <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
-                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', '[]') }}">
+                            <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', $product->tags->pluck('name')) }}">
                             @error('tags')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -850,8 +850,7 @@
                     });
 
                     // Update hidden input with IDs of existing media, or mark as new for files
-                    this.productImagesInput.value = JSON.stringify(this.productImages.map(img => img.id || null));
-                    this.updateVisibility();
+                    
                 },
 
                 updateVisibility() {
@@ -874,66 +873,27 @@
                 },
 
                 initPreloadedImages() {
-                    const currentImageIds = JSON.parse(this.productImagesInput.value || '[]');
-                    if (currentImageIds.length === 0) {
-                        this.updateVisibility();
-                        return;
-                    }
+                    const productMedia = @json($product->media);
+                    if (productMedia && productMedia.length > 0) {
+                        this.productImages = [];
+                        let featuredImageFound = false;
 
-                    this.selectedImagesPreview.innerHTML = '';
-                    this.productImages = [];
-
-                    const fetchPromises = currentImageIds.map(id =>
-                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', id), {
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                        productMedia.forEach(mediaItem => {
+                            if (mediaItem.pivot.type === 'featured') {
+                                this.setFeaturedImage(mediaItem);
+                                featuredImageFound = true;
+                            } else if (mediaItem.pivot.type === 'gallery') {
+                                this.productImages.push(mediaItem);
                             }
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success && data.file) {
-                                    // Store the fetched file object, including its ID and URL
-                                    return { id: data.file.id, url: data.file.url, thumb_url: data.file.thumb_url, name: data.file.name, file: null };
-                                }
-                                throw new Error(`Failed to fetch image ID: ${id}`);
-                            })
-                            .catch(error => {
-                                console.error(error);
-                                return null;
-                            })
-                    );
-
-                    Promise.all(fetchPromises).then(files => {
-                        files.forEach(file => {
-                            if (file) this.productImages.push(file);
                         });
+
+                        if (!featuredImageFound && this.productImages.length > 0) {
+                            this.setFeaturedImage(this.productImages[0]);
+                            this.productImages.shift();
+                        }
+
                         this.renderImages();
                         this.updateVisibility();
-                    });
-
-                    // For featured image, if preloaded
-                    const featuredImageId = this.featuredImageInput.value;
-                    if (featuredImageId) {
-                        fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', featuredImageId), {
-                            headers: {
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            }
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success && data.file) {
-                                    this.setFeaturedImage(data.file);
-                                } else {
-                                    console.error(`Failed to fetch featured image ID: ${featuredImageId}`);
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error fetching featured image:', error);
-                            });
                     }
                 },
 
@@ -1062,11 +1022,8 @@
                 });
 
                 // Append featured image (new file or existing ID)
-                formData.delete('thumbnail'); // Remove the hidden input value
                 if (galleryManager.featuredImageFile) {
                     formData.append('thumbnail_new', galleryManager.featuredImageFile); // New file upload
-                } else if (galleryManager.featuredImageInput.value) {
-                    formData.append('thumbnail_existing', galleryManager.featuredImageInput.value); // Existing media ID
                 }
 
                 saveButton.disabled = true;
