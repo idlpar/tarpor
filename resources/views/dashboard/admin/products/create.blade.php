@@ -80,9 +80,9 @@
         }
 
         /* Hidden class for visibility toggling */
-        /*.hidden {
+        .d-none {
             display: none !important;
-        }*/
+        }
     </style>
 @endpush
 
@@ -333,16 +333,16 @@
                             </div>
                         </x-form.card>
 
-                        <!-- Attributes -->
-                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
-                            <div class="flex justify-between items-center border-b border-gray-200 mb-4">
-                                <label class="block text-xl font-bold text-gray-800">Attributes</label>
-                                <button type="button" class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-blue-500 hover:bg-blue-600 transition-all">Add Attribute</button>
-                            </div>
-                            <p class="text-sm text-gray-500 mt-2">Adding new attributes helps the product to have many options, such as size or color.</p>
-                        </div>
-
-                        
+                        <!-- Product Options -->
+                        <x-form.card label="Product Options" class="bg-transparent">
+                            <select name="product_options" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_options') border-red-500 @enderror">
+                                <option value="">Select Global Option</option>
+                                <!-- Add options dynamically if needed -->
+                            </select>
+                            @error('product_options')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </x-form.card>
 
                         <!-- Related Products -->
                         <x-form.card label="Related Products" class="bg-transparent">
@@ -516,6 +516,24 @@
                         @enderror
                     </x-form.card>
 
+                    <!-- Product Attributes Selection -->
+                    <div id="product_attributes_wrapper" class="d-none">
+                        <x-form.card label="Product Attributes" id="product_attributes_card">
+                            <div class="flex flex-col space-y-2">
+                                @foreach($attributes as $attribute)
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="product_attribute_ids[]" value="{{ $attribute->id }}"
+                                               class="form-checkbox h-5 w-5 text-blue-600">
+                                        <span class="ml-2 text-gray-700">{{ $attribute->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('product_attribute_ids')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </x-form.card>
+                    </div>
+
                     <!-- Status Card -->
                     <x-form.card label="Status" required="true">
                         <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
@@ -528,7 +546,7 @@
                         @enderror
                     </x-form.card>
 
-                    
+
 
                     <!-- Is Featured? Card -->
                     <x-form.card label="Is Featured?">
@@ -769,6 +787,19 @@
 
             productTypeSelect.addEventListener('change', toggleInventoryFields);
             toggleInventoryFields(); // Initial call on page load
+
+            const productAttributesWrapper = document.getElementById('product_attributes_wrapper');
+
+            function toggleProductAttributes() {
+                if (productTypeSelect.value === 'variable') {
+                    productAttributesWrapper.classList.remove('d-none');
+                } else {
+                    productAttributesWrapper.classList.add('d-none');
+                }
+            }
+
+            productTypeSelect.addEventListener('change', toggleProductAttributes);
+            toggleProductAttributes(); // Initial call on page load
         });
     </script>
 
@@ -1023,7 +1054,7 @@
                 }
                 console.log('-------------------------');
 
-                
+
 
                 saveButton.disabled = true;
                 saveExitButton.disabled = true;

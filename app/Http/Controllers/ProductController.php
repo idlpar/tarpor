@@ -126,7 +126,7 @@ class ProductController extends Controller
     {
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
-        $attributes = ProductAttribute::with('values')->orderBy('position')->get();
+        $attributes = ProductAttribute::orderBy('name')->get();
 
         return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes'));
     }
@@ -148,11 +148,9 @@ class ProductController extends Controller
             $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
             // Handle categories
-            if (!empty($validated['category_ids'])) { // Changed from category_ids
+            if (!empty($validated['category_ids'])) {
                 $categoryIds = (array) $validated['category_ids'];
                 $categoryIds = array_map('intval', $categoryIds);
-                // In the store method, before syncing:
-                \Log::info('Category IDs received:', ['category_ids' => $request->input('category_ids')]);
                 $product->categories()->sync($categoryIds);
             }
 
@@ -213,6 +211,11 @@ class ProductController extends Controller
             if (!empty($validated['labels'])) {
                 $labelIds = Label::whereIn('name', $validated['labels'])->pluck('id');
                 $product->labels()->sync($labelIds);
+            }
+
+            // Handle product attributes
+            if (!empty($validated['product_attribute_ids'])) {
+                $product->productAttributes()->sync($validated['product_attribute_ids']);
             }
 
             // Handle SEO
@@ -301,9 +304,9 @@ class ProductController extends Controller
     {
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
-        $attributes = ProductAttribute::with('values')->orderBy('position')->get();
+        $attributes = ProductAttribute::orderBy('name')->get();
 
-        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo']);
+        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes']);
 
         return view('dashboard.admin.products.edit', compact(
             'product',
@@ -373,6 +376,13 @@ class ProductController extends Controller
                 foreach ($specifications as $spec) {
                     $product->specifications()->create($spec);
                 }
+            }
+
+            // Handle product attributes
+            if (!empty($validated['product_attribute_ids'])) {
+                $product->productAttributes()->sync($validated['product_attribute_ids']);
+            } else {
+                $product->productAttributes()->detach(); // Detach all if none selected
             }
 
             // Handle SEO
@@ -625,6 +635,7 @@ class ProductController extends Controller
 
     protected function validateProduct(Request $request, ?Product $product = null)
     {
+        Log::info('Request data in validateProduct:', $request->all());
         if ($request->has('images_existing') && is_string($request->images_existing)) {
             $request->merge([
                 'images_existing' => json_decode($request->images_existing, true)
@@ -647,7 +658,8 @@ class ProductController extends Controller
             'brand_id' => 'nullable|exists:brands,id',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'exists:categories,id',
-            'tags' => 'nullable|json',
+            'product_attribute_ids' => 'nullable|array',
+            'product_attribute_ids.*' => 'exists:product_attributes,id',
             'images_new' => 'nullable|array',
             'images_new.*' => 'image|max:2048',
             'images_existing' => 'nullable|array',
@@ -1000,8 +1012,8 @@ class ProductController extends Controller
                 ->with('error', 'Variants can only be managed for variable products.');
         }
 
-        $product->load('variants.attributeValues.attribute');
-        $attributes = ProductAttribute::with('values')->orderBy('position')->get();
+        $product->load('variants.attributeValues.attribute', 'productAttributes');
+        $attributes = $product->productAttributes; // Only load attributes associated with this product
 
         return view('dashboard.admin.products.variants.edit', compact('product', 'attributes'));
     }

@@ -338,6 +338,23 @@
                             <p class="text-sm text-gray-500 mt-2">Adding new attributes helps the product to have many options, such as size or color.</p>
                         </div>
 
+                        <!-- Product Attributes Selection -->
+                        <x-form.card label="Product Attributes">
+                            <div class="flex flex-col space-y-2">
+                                @foreach($attributes as $attribute)
+                                    <label class="inline-flex items-center">
+                                        <input type="checkbox" name="product_attribute_ids[]" value="{{ $attribute->id }}"
+                                               class="form-checkbox h-5 w-5 text-blue-600"
+                                               {{ in_array($attribute->id, old('product_attribute_ids', $product->productAttributes->pluck('id')->toArray())) ? 'checked' : '' }}>
+                                        <span class="ml-2 text-gray-700">{{ $attribute->name }}</span>
+                                    </label>
+                                @endforeach
+                            </div>
+                            @error('product_attribute_ids')
+                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            @enderror
+                        </x-form.card>
+
                         <!-- Product Options -->
                         <x-form.card label="Product Options" class="bg-transparent">
                             <select name="product_options" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_options') border-red-500 @enderror">

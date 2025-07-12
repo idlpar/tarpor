@@ -46,6 +46,11 @@ class Product extends Model
         return $this->belongsToMany(Category::class);
     }
 
+    public function productAttributes()
+    {
+        return $this->belongsToMany(ProductAttribute::class, 'product_product_attribute')->withTimestamps();
+    }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class);
