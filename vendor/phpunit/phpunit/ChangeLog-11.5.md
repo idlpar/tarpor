@@ -2,6 +2,56 @@
 
 All notable changes of the PHPUnit 11.5 release series are documented in this file using the [Keep a CHANGELOG](https://keepachangelog.com/) principles.
 
+## [11.5.27] - 2025-07-11
+
+### Fixed
+
+* [#6254](https://github.com/sebastianbergmann/phpunit/issues/6254): `defects,random`configuration is supported by implementation, but it is not allowed by the XML configuration file schema
+* [#6259](https://github.com/sebastianbergmann/phpunit/issues/6259): Order of tests which use data from data providers is not affected by test sorting
+* [#6266](https://github.com/sebastianbergmann/phpunit/issues/6266): Superfluous whitespace in TestDox output when test method name has a number after the `test` prefix
+
+## [11.5.26] - 2025-07-04
+
+### Fixed
+
+* [#6104](https://github.com/sebastianbergmann/phpunit/issues/6104): Test with dependencies and data provider fails
+* [#6163](https://github.com/sebastianbergmann/phpunit/issues/6163): `@no-named-arguments` leads to static analysis errors for variadic arguments
+
+## [11.5.25] - 2025-06-27
+
+### Fixed
+
+* [#6249](https://github.com/sebastianbergmann/phpunit/issues/6249): No meaningful error when `<testsuite>` element is missing required `name` attribute
+
+## [11.5.24] - 2025-06-20
+
+### Added
+
+* [#6236](https://github.com/sebastianbergmann/phpunit/issues/6236): `failOnPhpunitWarning` attribute on the `<phpunit>` element of the XML configuration file and `--fail-on-phpunit-warning` CLI option for controlling whether PHPUnit should fail on PHPUnit warnings (default: `true`)
+* [#6239](https://github.com/sebastianbergmann/phpunit/issues/6239): `--do-not-fail-on-deprecation`, `--do-not-fail-on-phpunit-warning`, `--do-not-fail-on-phpunit-deprecation`, `--do-not-fail-on-empty-test-suite`, `--do-not-fail-on-incomplete`, `--do-not-fail-on-notice`, `--do-not-fail-on-risky`, `--do-not-fail-on-skipped`, and `--do-not-fail-on-warning` CLI options
+* `--do-not-report-useless-tests` CLI option as a replacement for `--dont-report-useless-tests`
+
+### Deprecated
+
+* `--dont-report-useless-tests` CLI option (use `--do-not-report-useless-tests` instead)
+
+### Fixed
+
+* [#6243](https://github.com/sebastianbergmann/phpunit/issues/6243): Constraints cannot be implemented without using internal class `ExpectationFailedException`
+
+## [11.5.23] - 2025-06-13
+
+### Fixed
+
+* [#6222](https://github.com/sebastianbergmann/phpunit/issues/6222): Data Provider seems to mess up Test Dependencies
+* `shortenArraysForExportThreshold` XML configuration setting has no effect on all arrays exported for event-related value objects
+
+## [11.5.22] - 2025-06-06
+
+### Changed
+
+* Do not treat warnings differently than other issues in summary section of default output
+
 ## [11.5.21] - 2025-05-21
 
 ### Changed
@@ -201,6 +251,12 @@ All notable changes of the PHPUnit 11.5 release series are documented in this fi
 * [#6055](https://github.com/sebastianbergmann/phpunit/issues/6055): `assertNotContainsOnly()` (use `assertContainsNotOnlyArray()`, `assertContainsNotOnlyBool()`, `assertContainsNotOnlyCallable()`, `assertContainsNotOnlyFloat()`, `assertContainsNotOnlyInt()`, `assertContainsNotOnlyIterable()`, `assertContainsNotOnlyNumeric()`, `assertContainsNotOnlyObject()`, `assertContainsNotOnlyResource()`, `assertContainsNotOnlyClosedResource()`, `assertContainsNotOnlyScalar()`, or `assertContainsNotOnlyString()` instead)
 * [#6059](https://github.com/sebastianbergmann/phpunit/issues/6059): `containsOnly()` (use `containsOnlyArray()`, `containsOnlyBool()`, `containsOnlyCallable()`, `containsOnlyFloat()`, `containsOnlyInt()`, `containsOnlyIterable()`, `containsOnlyNumeric()`, `containsOnlyObject()`, `containsOnlyResource()`, `containsOnlyClosedResource()`, `containsOnlyScalar()`, or `containsOnlyString()` instead)
 
+[11.5.27]: https://github.com/sebastianbergmann/phpunit/compare/11.5.26...11.5.27
+[11.5.26]: https://github.com/sebastianbergmann/phpunit/compare/11.5.25...11.5.26
+[11.5.25]: https://github.com/sebastianbergmann/phpunit/compare/11.5.24...11.5.25
+[11.5.24]: https://github.com/sebastianbergmann/phpunit/compare/11.5.23...11.5.24
+[11.5.23]: https://github.com/sebastianbergmann/phpunit/compare/11.5.22...11.5.23
+[11.5.22]: https://github.com/sebastianbergmann/phpunit/compare/11.5.21...11.5.22
 [11.5.21]: https://github.com/sebastianbergmann/phpunit/compare/11.5.20...11.5.21
 [11.5.20]: https://github.com/sebastianbergmann/phpunit/compare/11.5.19...11.5.20
 [11.5.19]: https://github.com/sebastianbergmann/phpunit/compare/11.5.18...11.5.19
