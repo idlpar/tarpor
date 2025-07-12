@@ -314,7 +314,7 @@
                     <!-- Description Tab -->
                     <div id="description-tab" class="tab-content active">
                         <div class="prose max-w-none text-gray-700">
-                            {!! $product->description !!}
+                            {{ $product->description }}
                         </div>
                     </div>
 

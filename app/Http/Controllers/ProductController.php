@@ -591,6 +591,8 @@ class ProductController extends Controller
             'slug' => 'required|string|max:255' . ($product ? ',slug,' . $product->id : '|unique:products'),
             'description' => 'nullable|string',
             'short_description' => 'nullable|string',
+            'description' => 'nullable|string|max:65535',
+            'short_description' => 'nullable|string|max:65535',
             'price' => 'required|numeric|min:0',
             'sale_price' => 'nullable|numeric|min:0',
             'cost_price' => 'nullable|numeric|min:0',
@@ -645,6 +647,14 @@ class ProductController extends Controller
         }
 
         $validatedData = $validator->validated();
+
+        // Sanitize description and short_description to prevent XSS
+        if (isset($validatedData['description'])) {
+            $validatedData['description'] = strip_tags($validatedData['description']);
+        }
+        if (isset($validatedData['short_description'])) {
+            $validatedData['short_description'] = strip_tags($validatedData['short_description']);
+        }
 
         if (!$request->filled('slug')) {
             $validatedData['slug'] = Str::slug($validatedData['name']);

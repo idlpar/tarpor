@@ -37,12 +37,12 @@ Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
     Route::post('/login', [AuthController::class, 'login'])->name('login.submit');
     Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-    Route::post('/register', [AuthController::class, 'register'])->name('register.submit');
+    Route::post('/register', [AuthController::class, 'register'])->name('register.submit')->middleware('throttle:5,1');
     Route::get('/forgot-password', [AuthController::class, 'showForgotPasswordForm'])->name('password.request');
-    Route::post('/forgot-password', [AuthController::class, 'sendPasswordResetOtp'])->name('password.email');
+    Route::post('/forgot-password', [AuthController::class, 'sendPasswordResetOtp'])->name('password.email')->middleware('throttle:5,1');
     Route::get('/reset-password', [AuthController::class, 'showResetPasswordForm'])->name('password.reset');
     Route::post('/reset-password', [AuthController::class, 'resetPassword'])->name('password.update');
-    Route::post('/resend-password-reset-otp', [AuthController::class, 'resendPasswordResetOtp'])->name('password.resend');
+    Route::post('/resend-password-reset-otp', [AuthController::class, 'resendPasswordResetOtp'])->name('password.resend')->middleware('throttle:5,1');
     Route::get('/login/google', [SocialLoginController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('/login/google/callback', [SocialLoginController::class, 'handleGoogleCallback']);
     Route::get('/login/facebook', [SocialLoginController::class, 'redirectToFacebook'])->name('login.facebook');
@@ -52,8 +52,8 @@ Route::middleware('guest')->group(function () {
 // OTP Verification
 Route::middleware('auth')->group(function () {
     Route::get('/verify-otp', [AuthController::class, 'showVerifyOtpForm'])->name('verify.otp.form');
-    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp');
-    Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp');
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp'])->name('verify.otp')->middleware('throttle:5,1');
+    Route::post('/resend-otp', [AuthController::class, 'resendOtp'])->name('resend.otp')->middleware('throttle:5,1');
 });
 
 // Protected Routes
