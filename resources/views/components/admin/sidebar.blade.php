@@ -21,6 +21,8 @@
                 <a href="{{ route('products.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New Product</a>
                 <a href="{{ route('products.variants.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.variants.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Variants</a>
                 <a href="{{ route('product_attributes.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('product_attributes.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Attributes</a>
+                <a href="{{ route('collections.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('collections.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Collections</a>
+                <a href="{{ route('labels.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('labels.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Labels</a>
             </div>
         </div>
 

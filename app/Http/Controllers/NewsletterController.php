@@ -25,7 +25,7 @@ class NewsletterController extends Controller
                     'token' => Str::random(32),
                     'is_subscribed' => true,
                 ]);
-                return back()->with('success', 'You have successfully re-subscribed to our newsletter!');
+                return back()->with('newsletter_success', 'You have successfully re-subscribed to our newsletter!');
             }
         } else {
             // New subscription
@@ -34,7 +34,7 @@ class NewsletterController extends Controller
                 'token' => Str::random(32),
                 'is_subscribed' => true,
             ]);
-            return back()->with('success', 'You have successfully subscribed to our newsletter!');
+            return back()->with('newsletter_success', 'You have successfully subscribed to our newsletter!');
         }
     }
 
@@ -55,7 +55,7 @@ class NewsletterController extends Controller
 
         $subscription->update(['is_subscribed' => false]);
 
-        return back()->with('success', 'You have successfully unsubscribed from our newsletter.');
+        return back()->with('newsletter_success', 'You have successfully unsubscribed from our newsletter.');
     }
 
     public function showSendForm()
@@ -72,8 +72,8 @@ class NewsletterController extends Controller
             'specific_emails' => 'nullable|string',
         ]);
 
-        $subject = $request->subject;
-        $content = $request->content;
+        $subject = $request->input('subject');
+        $content = $request->input('content');
         $sendToAll = $request->boolean('send_to_all');
         $specificEmails = [];
 
@@ -111,9 +111,9 @@ class NewsletterController extends Controller
         }
 
         if (empty($failedEmails)) {
-            return back()->with('success', sprintf('Newsletter sent to %d subscribers successfully!', $sentCount));
+            return back()->with('newsletter_success', sprintf('Newsletter sent to %d subscribers successfully!', $sentCount));
         } else {
-            return back()->withErrors(['message' => sprintf('Newsletter sent to %d subscribers, but failed for: %s', $sentCount, implode(', ', $failedEmails))]);
+            return back()->withErrors(['newsletter_error' => sprintf('Newsletter sent to %d subscribers, but failed for: %s', $sentCount, implode(', ', $failedEmails))]);
         }
     }
 }

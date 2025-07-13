@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\CollectionController;
+use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProductAttributeController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Config;
@@ -112,6 +114,12 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Category Management
         Route::resource('categories', CategoryController::class)->except(['index', 'show']); // index and show are defined in public routes
 
+        // Collection Management
+        Route::resource('collections', CollectionController::class)->names('collections');
+
+        // Label Management
+        Route::resource('labels', LabelController::class)->names('labels');
+
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
             ->name('admin.orders.update-status')
@@ -128,6 +136,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::prefix('api')->name('api.')->group(function () {
             Route::get('product/slug/check', [ProductController::class, 'checkSlug'])->name('slug.check');
             Route::get('category/slug/check', [CategoryController::class, 'checkSlug'])->name('category.slug.check');
+            Route::get('collection/slug/check', [CollectionController::class, 'checkSlug'])->name('collection.slug.check');
+            Route::get('label/slug/check', [LabelController::class, 'checkSlug'])->name('label.slug.check');
             Route::post('generate-sku', [ProductController::class, 'generateSku'])->name('sku.generate');
             Route::get('products/{product}/quick-view', [ProductController::class, 'quickView'])->name('products.quickView');
             Route::get('product/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');

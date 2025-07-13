@@ -127,8 +127,10 @@ class ProductController extends Controller
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
         $attributes = ProductAttribute::orderBy('name')->get();
+        $collections = Collection::orderBy('name')->get();
+        $labels = Label::orderBy('name')->get();
 
-        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes'));
+        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes', 'collections', 'labels'));
     }
 
     public function store(Request $request)
@@ -204,13 +206,11 @@ class ProductController extends Controller
             }
 
             if (!empty($validated['product_collections'])) {
-                $collectionIds = Collection::whereIn('name', $validated['product_collections'])->pluck('id');
-                $product->collections()->sync($collectionIds);
+                $product->collections()->sync($validated['product_collections']);
             }
 
             if (!empty($validated['labels'])) {
-                $labelIds = Label::whereIn('name', $validated['labels'])->pluck('id');
-                $product->labels()->sync($labelIds);
+                $product->labels()->sync($validated['labels']);
             }
 
             // Handle product attributes
@@ -305,14 +305,18 @@ class ProductController extends Controller
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();
         $attributes = ProductAttribute::orderBy('name')->get();
+        $collections = Collection::orderBy('name')->get();
+        $labels = Label::orderBy('name')->get();
 
-        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes']);
+        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes', 'collections', 'labels']);
 
         return view('dashboard.admin.products.edit', compact(
             'product',
             'brands',
             'categories',
-            'attributes'
+            'attributes',
+            'collections',
+            'labels'
         ));
     }
 
@@ -376,6 +380,20 @@ class ProductController extends Controller
                 foreach ($specifications as $spec) {
                     $product->specifications()->create($spec);
                 }
+            }
+
+            // Handle product collections
+            if (!empty($validated['product_collections'])) {
+                $product->collections()->sync($validated['product_collections']);
+            } else {
+                $product->collections()->detach();
+            }
+
+            // Handle product labels
+            if (!empty($validated['labels'])) {
+                $product->labels()->sync($validated['labels']);
+            } else {
+                $product->labels()->detach();
             }
 
             // Handle product attributes
@@ -672,9 +690,9 @@ class ProductController extends Controller
             'width' => 'nullable|numeric|min:0',
             'height' => 'nullable|numeric|min:0',
             'product_collections' => 'nullable|array',
-            'product_collections.*' => 'string|in:new_arrival,best_sellers,special_offer',
+            'product_collections.*' => 'exists:collections,id',
             'labels' => 'nullable|array',
-            'labels.*' => 'string|in:hot,new,sale',
+            'labels.*' => 'exists:labels,id',
             'min_order_quantity' => 'nullable|integer|min:0',
             'max_order_quantity' => 'nullable|integer|min:0',
             'related_products' => 'nullable|json',

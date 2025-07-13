@@ -709,19 +709,14 @@
                     <x-gallery />
 
                     <!-- Product Collections Card -->
-                    @php
-                        $collections = old('product_collections', $product->collections->pluck('name')->toArray());
-                    @endphp
                     <x-form.card label="Product Collections">
-                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
-                            @foreach ([
-                                'new_arrival' => ['New Arrival', 'text-indigo-600'],
-                                'best_sellers' => ['Best Sellers', 'text-emerald-600'],
-                                'special_offer' => ['Special Offer', 'text-amber-600'],
-                            ] as $value => [$label, $activeClass])
-                                <label class="flex items-center space-x-3" x-data="{ checked: {{ in_array($value, $collections) ? 'true' : 'false' }} }">
-                                    <input type="checkbox" name="product_collections[]" value="{{ $value }}" @change="checked = $event.target.checked" {{ in_array($value, $collections) ? 'checked' : '' }} class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                    <span :class="checked ? '{{ $activeClass }} font-semibold' : 'text-gray-700 font-medium'">{{ $label }}</span>
+                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4">
+                            @foreach ($collections as $collection)
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" name="product_collections[]" value="{{ $collection->id }}"
+                                           {{ in_array($collection->id, old('product_collections', $product->collections->pluck('id')->toArray())) ? 'checked' : '' }}
+                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700 font-medium">{{ $collection->name }}</span>
                                 </label>
                             @endforeach
                         </div>
@@ -734,15 +729,14 @@
                     </x-form.card>
 
                     <!-- Labels Card -->
-                    @php
-                        $labels = old('labels', collect($product->labels)->pluck('name')->toArray());
-                    @endphp
                     <x-form.card label="Labels">
-                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg">
-                            @foreach (['hot' => ['🔥', 'red'], 'new' => ['🆕', 'green'], 'sale' => ['💸', 'blue']] as $value => [$emoji, $color])
-                                <label x-data="{ checked: {{ in_array($value, $labels) ? 'true' : 'false' }} }" class="flex items-center space-x-3" :class="{ 'text-{{ $color }}-600': checked }">
-                                    <input type="checkbox" name="labels[]" value="{{ $value }}" x-model="checked" class="w-5 h-5 border-gray-300 rounded focus:ring-{{ $color }}-500">
-                                    <span class="font-medium">{{ ucfirst($value) }} {{ $emoji }}</span>
+                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4">
+                            @foreach ($labels as $label)
+                                <label class="flex items-center space-x-3">
+                                    <input type="checkbox" name="labels[]" value="{{ $label->id }}"
+                                           {{ in_array($label->id, old('labels', $product->labels->pluck('id')->toArray())) ? 'checked' : '' }}
+                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                    <span class="text-gray-700 font-medium">{{ $label->name }}</span>
                                 </label>
                             @endforeach
                         </div>

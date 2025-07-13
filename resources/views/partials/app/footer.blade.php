@@ -83,11 +83,11 @@
                     @error('email')
                         <p class="text-red-400 text-xs mt-1 text-left">{{ $message }}</p>
                     @enderror
-                    @if(session('success'))
-                        <p class="text-green-400 text-xs mt-1 text-left">{{ session('success') }}</p>
+                    @if(session('newsletter_success'))
+                        <p class="text-green-400 text-xs mt-1 text-left">{{ session('newsletter_success') }}</p>
                     @endif
-                    @if(session('error'))
-                        <p class="text-red-400 text-xs mt-1 text-left">{{ session('error') }}</p>
+                    @if(session('newsletter_error'))
+                        <p class="text-red-400 text-xs mt-1 text-left">{{ session('newsletter_error') }}</p>
                     @endif
                 </form>
                 <p class="text-gray-400 text-xs mt-3 font-light">
