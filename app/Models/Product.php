@@ -32,8 +32,6 @@ class Product extends Model
         'is_featured' => 'boolean',
         'is_hot' => 'boolean',
         'is_sale' => 'boolean',
-        'product_collections' => 'array',
-        'labels' => 'array',
     ];
 
     public function brand()

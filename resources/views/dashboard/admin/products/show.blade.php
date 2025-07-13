@@ -32,7 +32,7 @@
             <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
                 <div>
                     <h1 class="text-3xl font-bold text-gray-900">{{ $product->name }}</h1>
-                    <div class="flex items-center mt-2 space-x-4">
+                    <div class="flex flex-wrap gap-2 items-center mt-2">
                         <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium
                             {{ $product->trashed() ? 'bg-red-100 text-red-800' :
                                ($product->status === 'published' ? 'bg-green-100 text-green-800' :
@@ -43,6 +43,20 @@
                             <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
                                 Featured
                             </span>
+                        @endif
+                        @if($product->collections->isNotEmpty())
+                            @foreach($product->collections as $collection)
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
+                                    {{ $collection->name }}
+                                </span>
+                            @endforeach
+                        @endif
+                        @if($product->labels->isNotEmpty())
+                            @foreach($product->labels as $label)
+                                <span class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-indigo-100 text-indigo-800">
+                                    {{ $label->name }}
+                                </span>
+                            @endforeach
                         @endif
                     </div>
                 </div>
@@ -202,7 +216,23 @@
                                     {{ $product->cost_price ? format_taka($product->cost_price) : 'N/A' }}
                                 </dd>
                             </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Min Order Quantity</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $product->min_order_quantity ?? 'N/A' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Max Order Quantity</dt>
+                                <dd class="mt-1 text-sm text-gray-900">{{ $product->max_order_quantity ?? 'N/A' }}</dd>
+                            </div>
                         </div>
+
+                        <!-- Short Description -->
+                        @if($product->short_description)
+                            <div class="mt-6">
+                                <h3 class="text-sm font-medium text-gray-500">Short Description</h3>
+                                <p class="mt-1 text-sm text-gray-900">{{ $product->short_description }}</p>
+                            </div>
+                        @endif
 
                         <!-- Categories & Tags -->
                         <div>
@@ -297,6 +327,18 @@
                         <button type="button" data-tab="description" class="tab-button active py-4 px-6 text-center border-b-2 font-medium text-sm border-blue-500 text-blue-600">
                             Description
                         </button>
+                        <button type="button" data-tab="pricing-tiers" class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Pricing Tiers
+                        </button>
+                        <button type="button" data-tab="related-products" class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Related Products
+                        </button>
+                        <button type="button" data-tab="cross-selling-products" class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            Cross-Selling Products
+                        </button>
+                        <button type="button" data-tab="faqs" class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                            FAQs
+                        </button>
                         <button type="button" data-tab="specifications" class="tab-button py-4 px-6 text-center border-b-2 font-medium text-sm border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
                             Specifications
                         </button>
@@ -316,6 +358,114 @@
                         <div class="prose max-w-none text-gray-700">
                             {{ $product->description }}
                         </div>
+                    </div>
+
+                    <!-- Pricing Tiers Tab -->
+                    <div id="pricing-tiers-tab" class="tab-content hidden">
+                        @if($product->pricingTiers->isNotEmpty())
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Min Quantity
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Price
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                    @foreach($product->pricingTiers as $tier)
+                                        <tr>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                                {{ $tier->min_quantity }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ format_taka($tier->price) }}
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="bg-white rounded-lg shadow p-6 text-center">
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No pricing tiers found</h3>
+                                <p class="mt-1 text-sm text-gray-500">This product does not have tiered pricing.</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Related Products Tab -->
+                    <div id="related-products-tab" class="tab-content hidden">
+                        @if($product->relatedProducts->isNotEmpty())
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                @foreach($product->relatedProducts as $relatedProduct)
+                                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                                        <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
+                                            <div class="bg-gray-50 h-48 flex items-center justify-center p-4">
+                                                <img src="{{ asset($relatedProduct->thumbnail_url ?? 'images/default-product.jpg') }}" alt="{{ $relatedProduct->name }}" class="max-h-full max-w-full object-contain">
+                                            </div>
+                                            <div class="p-4">
+                                                <h3 class="text-sm font-medium text-gray-900 truncate">{{ $relatedProduct->name }}</h3>
+                                                <p class="mt-1 text-sm text-gray-500">{{ format_taka($relatedProduct->price) }}</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="bg-white rounded-lg shadow p-6 text-center">
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No related products found</h3>
+                                <p class="mt-1 text-sm text-gray-500">No related products have been assigned to this product.</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- Cross-Selling Products Tab -->
+                    <div id="cross-selling-products-tab" class="tab-content hidden">
+                        @if($product->crossSellingProducts->isNotEmpty())
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                @foreach($product->crossSellingProducts as $crossSellingProduct)
+                                    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                                        <a href="{{ route('products.show', $crossSellingProduct->id) }}" class="block">
+                                            <div class="bg-gray-50 h-48 flex items-center justify-center p-4">
+                                                <img src="{{ asset($crossSellingProduct->thumbnail_url ?? 'images/default-product.jpg') }}" alt="{{ $crossSellingProduct->name }}" class="max-h-full max-w-full object-contain">
+                                            </div>
+                                            <div class="p-4">
+                                                <h3 class="text-sm font-medium text-gray-900 truncate">{{ $crossSellingProduct->name }}</h3>
+                                                <p class="mt-1 text-sm text-gray-500">{{ format_taka($crossSellingProduct->price) }}</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="bg-white rounded-lg shadow p-6 text-center">
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No cross-selling products found</h3>
+                                <p class="mt-1 text-sm text-gray-500">No cross-selling products have been assigned to this product.</p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <!-- FAQs Tab -->
+                    <div id="faqs-tab" class="tab-content hidden">
+                        @if($product->faqs->isNotEmpty())
+                            <div class="space-y-4">
+                                @foreach($product->faqs as $faq)
+                                    <div class="bg-white rounded-lg shadow p-4">
+                                        <h4 class="font-semibold text-gray-900">{{ $faq->question }}</h4>
+                                        <p class="text-gray-700 mt-1">{{ $faq->answer }}</p>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <div class="bg-white rounded-lg shadow p-6 text-center">
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No FAQs found</h3>
+                                <p class="mt-1 text-sm text-gray-500">No frequently asked questions have been added for this product.</p>
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Specifications Tab -->
@@ -344,12 +494,18 @@
                             </div>
                             <div>
                                 <h3 class="text-sm font-semibold text-gray-900 mb-2">Attributes</h3>
-                                @if ($product->attributes && is_array($product->attributes) && count($product->attributes) > 0)
+                                @if ($product->productAttributes->isNotEmpty())
                                     <dl class="grid grid-cols-2 gap-x-4 gap-y-2">
-                                        @foreach ($product->attributes as $key => $value)
+                                        @foreach ($product->productAttributes as $attribute)
                                             <div class="border-b border-gray-100 pb-1">
-                                                <dt class="text-xs text-gray-500">{{ ucfirst(str_replace('_', ' ', $key)) }}</dt>
-                                                <dd class="text-sm text-gray-900">{{ $value }}</dd>
+                                                <dt class="text-xs text-gray-500">{{ $attribute->name }}</dt>
+                                                <dd class="text-sm text-gray-900">
+                                                    @if($attribute->values->isNotEmpty())
+                                                        {{ $attribute->values->pluck('value')->implode(', ') }}
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </dd>
                                             </div>
                                         @endforeach
                                     </dl>
@@ -359,37 +515,7 @@
                                     </div>
                                 @endif
                             </div>
-                            <div>
-                                <h3 class="text-sm font-semibold text-gray-900 mb-2">Collections</h3>
-                                <div class="flex flex-wrap gap-1">
-                                    @php
-                                        $productCollections = collect($product->product_collections ?? []);
-                                    @endphp
-                                    @if ($productCollections->isNotEmpty())
-                                        @foreach($productCollections as $collection)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-                                                {{ ucfirst(str_replace('_', ' ', $collection)) }}
-                                            </span>
-                                        @endforeach
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
-                            <div>
-                                <h3 class="text-sm font-semibold text-gray-900 mb-2">Labels</h3>
-                                <div class="flex flex-wrap gap-1">
-                                    @if(collect($product->labels)->isNotEmpty())
-                                        @foreach($product->labels as $label)
-                                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
-                                                {{ ucfirst($label->name) }}
-                                            </span>
-                                        @endforeach
-                                    @else
-                                        N/A
-                                    @endif
-                                </div>
-                            </div>
+                            
                         </div>
                     </div>
 

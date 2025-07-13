@@ -260,7 +260,14 @@ class ProductController extends Controller
             'specialOffers',
             'reviews.user',
             'media',
-            'seo'
+            'seo',
+            'relatedProducts',
+            'crossSellingProducts',
+            'faqs',
+            'specifications',
+            'collections',
+            'labels',
+            'productAttributes.values'
         ]);
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -754,7 +761,16 @@ class ProductController extends Controller
     {
         $tagIds = [];
         foreach ($tags as $tagName) {
-            $tag = Tag::firstOrCreate(['name' => Str::slug($tagName), 'slug' => Str::slug($tagName)]);
+            $originalSlug = Str::slug($tagName);
+            $slug = $originalSlug;
+            $count = 1;
+
+            // Check for slug uniqueness, similar to product/category slug generation
+            while (Tag::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '_' . $count++;
+            }
+
+            $tag = Tag::firstOrCreate(['name' => $tagName], ['slug' => $slug]);
             $tagIds[] = $tag->id;
         }
         $product->tags()->sync($tagIds);
