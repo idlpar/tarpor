@@ -10,22 +10,24 @@ class TagController extends Controller
 {
     public function suggest(Request $request)
     {
-        $this->authorize('viewAny', Tag::class);
         $query = trim($request->input('query', ''));
 
         if (strlen($query) < 2) {
             return response()->json([]);
         }
 
-        $tags = Tag::whereRaw('LOWER(name) LIKE ?', [Str::lower($query) . '%'])
-            ->orWhereRaw('LOWER(name) LIKE ?', ['% ' . Str::lower($query) . '%'])
+        $tags = Tag::where(function ($q) use ($query) {
+                $q->where('name', 'like', $query . '%')
+                  ->orWhere('name', 'like', '% ' . $query . '%');
+            })
             ->distinct('name')
-            ->limit(10)
-            ->get(['id', 'name'])
+            ->limit(5) // Limit to 5 suggestions
+            ->get(['id', 'name', 'slug'])
             ->map(function ($tag) {
                 return [
                     'id' => $tag->id,
-                    'name' => ucfirst($tag->name), // Capitalize for display
+                    'name' => ucfirst((string) $tag->name), // Cast to string for ucfirst
+                    'slug' => $tag->slug,
                 ];
             });
 
@@ -34,7 +36,6 @@ class TagController extends Controller
 
     public function storeMultiple(Request $request)
     {
-        $this->authorize('create', Tag::class);
         $validated = $request->validate([
             'tags' => 'required|array',
             'tags.*' => 'string|max:255',
@@ -45,20 +46,16 @@ class TagController extends Controller
             $baseName = Str::lower(trim($tagName));
             if (empty($baseName)) continue;
 
-            $existingTag = Tag::where('name', $baseName)->first();
-            if ($existingTag) {
-                $storedTags[] = $existingTag;
-                continue;
+            $originalSlug = Str::slug($baseName);
+            $slug = $originalSlug;
+            $counter = 1;
+
+            // Check for slug uniqueness, similar to product/category slug generation
+            while (Tag::where('slug', $slug)->exists()) {
+                $slug = $originalSlug . '-' . $counter++;
             }
 
-            $similarCount = Tag::where('name', 'like', $baseName . '%')->count();
-            $finalTagName = $similarCount > 0 ? $baseName . '-' . ($similarCount + 1) : $baseName;
-
-            $tag = Tag::create([
-                'name' => $finalTagName,
-                'slug' => Str::slug($finalTagName),
-                'product_count' => 0
-            ]);
+            $tag = Tag::firstOrCreate(['slug' => $slug], ['name' => $baseName]);
 
             $storedTags[] = $tag;
         }

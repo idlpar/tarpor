@@ -142,6 +142,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
             Route::get('products/{product}/quick-view', [ProductController::class, 'quickView'])->name('products.quickView');
             Route::get('product/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');
             Route::get('product/search', [ProductController::class, 'search'])->name('products.search');
+            Route::get('product/{product}/brief', [ProductController::class, 'brief'])->name('products.brief');
             Route::post('product/brief-batch', [ProductController::class, 'briefBatch'])->name('products.briefBatch');
         });
     });

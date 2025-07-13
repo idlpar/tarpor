@@ -51,7 +51,7 @@ class Product extends Model
 
     public function tags()
     {
-        return $this->belongsToMany(Tag::class);
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 
     public function media()
@@ -109,12 +109,12 @@ class Product extends Model
 
     public function collections()
     {
-        return $this->belongsToMany(Collection::class);
+        return $this->belongsToMany(Collection::class)->withTimestamps();
     }
 
     public function labels()
     {
-        return $this->belongsToMany(Label::class);
+        return $this->belongsToMany(Label::class)->withTimestamps();
     }
 
     public function seo()
@@ -130,21 +130,12 @@ class Product extends Model
         return $this->price;
     }
 
-    public function getThumbnailMediaAttribute()
-    {
-        $featuredMedia = $this->media->where('pivot.type', 'featured')->first();
-        \Log::info('Product ID: ' . $this->id . ' - getThumbnailMediaAttribute called. Featured Media: ' . ($featuredMedia ? $featuredMedia->id : 'None'));
-        return $featuredMedia;
-    }
-
     public function getThumbnailUrlAttribute()
     {
-        if ($this->thumbnail_media) {
-            $url = $this->thumbnail_media->url;
-            \Log::info('Product ID: ' . $this->id . ' - getThumbnailUrlAttribute called. URL: ' . $url);
-            return $url;
+        $featuredMedia = $this->media->where('pivot.type', 'featured')->first();
+        if ($featuredMedia) {
+            return $featuredMedia->url;
         }
-        \Log::info('Product ID: ' . $this->id . ' - getThumbnailUrlAttribute called. No thumbnail media, returning default.');
         return asset('images/default-product.jpg');
     }
 

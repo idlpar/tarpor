@@ -383,10 +383,45 @@
 
                         <!-- Cross-Selling Products -->
                         <x-form.card label="Cross-Selling Products" class="bg-transparent">
-                            <input type="text" name="cross_selling_products" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cross_selling_products') border-red-500 @enderror" placeholder="Search products">
-                            @error('cross_selling_products')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                            <div class="relative">
+                                <div class="relative">
+                                    <input type="text" id="cross-selling-products-search" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cross_selling_products') border-red-500 @enderror" placeholder="Search products by name or SKU" autocomplete="off">
+                                    <div id="cross-selling-products-loading" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
+                                        <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div id="cross-selling-products-results" class="absolute z-10 w-full bg-white shadow-lg border border-gray-300 max-h-64 overflow-y-auto hidden"></div>
+                                <div id="selected-cross-selling-products" class="w-full bg-white border border-gray-300 border-t-0 rounded-b-lg space-y-2 p-2">
+                                    @if(old('cross_selling_products'))
+                                        @foreach(json_decode(old('cross_selling_products')) as $crossSellingId)
+                                            @php $crossSelling = App\Models\Product::find($crossSellingId); @endphp
+                                            @if($crossSelling)
+                                                <div class="flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item" data-id="{{ $crossSelling->id }}">
+                                                    <img src="{{ $crossSelling->thumbnail_media ? $crossSelling->thumbnail_media->thumb_url : '/placeholder-product.jpg' }}" class="w-10 h-10 object-cover rounded-md">
+                                                    <div class="flex-1 ml-2">
+                                                        <div class="font-medium text-gray-800">{{ $crossSelling->name }}</div>
+                                                        <div class="text-sm text-gray-500">SKU: {{ $crossSelling->sku }}</div>
+                                                        <div class="text-xs text-gray-400">Category: {{ $crossSelling->categories->isNotEmpty() ? $crossSelling->categories->first()->name : 'N/A' }}</div>
+                                                    </div>
+                                                    <div class="text-sm text-gray-700 font-semibold">{{ $crossSelling->price }}</div>
+                                                    <button type="button" class="text-red-500 remove-cross-selling-product">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            @endif
+                                        @endforeach
+                                    @endif
+                                </div>
+                                <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', '[]') }}">
+                                @error('cross_selling_products')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
                         </x-form.card>
 
                         <!-- Product FAQs -->
@@ -1403,14 +1438,262 @@
         });
     </script>
 
-    <!-- Related Products -->
+    <script>
+        function setupProductSelector(options) {
+            const {
+                searchInputId,
+                resultsContainerId,
+                selectedContainerId,
+                hiddenInputId,
+                loadingIndicatorId,
+                removeButtonClass,
+                fetchBriefUrl,
+                fetchSearchUrl,
+                fetchSuggestionsUrl,
+                consoleErrorPrefix
+            } = options;
+
+            const searchInput = document.getElementById(searchInputId);
+            const resultsContainer = document.getElementById(resultsContainerId);
+            const selectedContainer = document.getElementById(selectedContainerId);
+            const hiddenInput = document.getElementById(hiddenInputId);
+            const loadingIndicator = document.getElementById(loadingIndicatorId);
+            const categoryCheckboxes = document.querySelectorAll('input[name="categories[]"]');
+            const tagInputs = document.querySelectorAll('input[name="tags[]"]'); // Assuming tags are handled by a separate script and their values are in a hidden input
+
+            let selectedProducts = JSON.parse(hiddenInput.value || '[]');
+            let searchController = null;
+
+            async function fetchProductBrief(productId) {
+                try {
+                    const response = await fetch(`${fetchBriefUrl.replace('{productId}', productId)}`);
+                    if (!response.ok) throw new Error(`Network response was not ok for product brief ${productId}`);
+                    return await response.json();
+                } catch (error) {
+                    console.error(`${consoleErrorPrefix} Failed to fetch product brief:`, error);
+                    return null;
+                }
+            }
+
+            async function updateSelectedProductsDisplay() {
+                selectedProducts = selectedProducts.filter(id => id && !isNaN(id));
+                hiddenInput.value = JSON.stringify(selectedProducts);
+                selectedContainer.innerHTML = '';
+                if (selectedProducts.length === 0) {
+                    selectedContainer.classList.add('hidden');
+                } else {
+                    selectedContainer.classList.remove('hidden');
+                    for (const productId of selectedProducts) {
+                        const product = await fetchProductBrief(productId);
+                        if (product) {
+                            const productEl = document.createElement('div');
+                            productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item';
+                            productEl.dataset.id = product.id;
+                            productEl.innerHTML = `
+                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-10 h-10 object-cover rounded-md">
+                                <div class="flex-1 ml-2">
+                                    <div class="font-medium text-gray-800">${product.name}</div>
+                                    <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                                    <div class="text-xs text-gray-400">Category: ${product.category_name || 'N/A'}</div>
+                                </div>
+                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
+                                <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded-full p-1 transition-all duration-200 ${removeButtonClass}">
+                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                                </button>
+                            `;
+                            selectedContainer.appendChild(productEl);
+                        }
+                    }
+                }
+            }
+
+            updateSelectedProductsDisplay();
+
+            searchInput.addEventListener('focus', () => {
+                searchInput.value = '';
+                loadSmartSuggestions();
+                resultsContainer.classList.remove('hidden');
+            });
+
+            const searchProducts = debounce(async (term) => {
+                if (searchController) searchController.abort();
+                searchController = new AbortController();
+                if (!term || term.length < 2) {
+                    resultsContainer.classList.add('hidden');
+                    return;
+                }
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.classList.add('hidden');
+                try {
+                    const response = await fetch(`${fetchSearchUrl}?q=${encodeURIComponent(term)}`, {
+                        signal: searchController.signal
+                    });
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const products = await response.json();
+                    resultsContainer.innerHTML = products.length > 0
+                        ? products.map(product => `
+                            <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result transition-colors duration-150" data-id="${product.id}" data-name="${product.name}" data-sku="${product.sku}">
+                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-12 h-12 object-cover rounded-md shadow-sm">
+                                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                    <div class="font-medium text-gray-800 text-base truncate">${product.name}</div>
+                                    <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                                    <div class="text-xs text-gray-400 sm:col-span-2">Category: ${product.category_name || 'N/A'}</div>
+                                </div>
+                                <div class="text-sm text-gray-700 font-semibold text-right">${product.price}</div>
+                            </div>
+                        `).join('')
+                        : '<div class="p-3 text-gray-500">No products found</div>';
+                    resultsContainer.classList.remove('hidden');
+                } catch (error) {
+                    if (error.name !== 'AbortError') {
+                        console.error(`${consoleErrorPrefix} Search failed:`, error);
+                        resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading results</div>';
+                        resultsContainer.classList.remove('hidden');
+                    }
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                    searchController = null;
+                }
+            }, 300);
+
+            searchInput.addEventListener('input', () => {
+                const term = searchInput.value.trim();
+                if (term.length > 1) searchProducts(term);
+                else resultsContainer.classList.add('hidden');
+            });
+
+            document.addEventListener('click', (e) => {
+                if (!searchInput.contains(e.target) && !resultsContainer.contains(e.target)) {
+                    resultsContainer.classList.add('hidden');
+                }
+            });
+
+            async function loadSmartSuggestions() {
+                const selectedCategories = Array.from(categoryCheckboxes).filter(el => el.checked).map(el => el.value);
+                const tagsHiddenInput = document.getElementById('tags-hidden-input');
+                const selectedTags = tagsHiddenInput && tagsHiddenInput.value ? JSON.parse(tagsHiddenInput.value) : [];
+                const currentSelectedProductIds = selectedProducts; // Use the selectedProducts array from the closure
+
+                loadingIndicator.classList.remove('hidden');
+                resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Loading suggestions...</div>';
+                resultsContainer.classList.remove('hidden');
+                try {
+                    const params = new URLSearchParams();
+                    selectedCategories.forEach(id => params.append('category_ids[]', id));
+                    selectedTags.forEach(tag => params.append('tag_names[]', tag));
+                    currentSelectedProductIds.forEach(id => params.append('exclude_ids[]', id)); // Pass selected IDs to exclude
+
+                    const response = await fetch(`${fetchSuggestionsUrl}?${params.toString()}`);
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    const suggestions = await response.json();
+                    resultsContainer.innerHTML = suggestions.length > 0
+                        ? `
+                            <div class="p-2 text-xs font-semibold text-gray-500 border-b">
+                                ${selectedCategories.length || selectedTags.length ? 'RELEVANT PRODUCTS' : 'POPULAR PRODUCTS'}
+                            </div>
+                            ${suggestions.map(suggestion => `
+                                <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result" data-id="${suggestion.id}" data-name="${suggestion.name}" data-sku="${suggestion.sku}">
+                                    <img src="${suggestion.thumbnail || '/placeholder-product.jpg'}" class="w-10 h-10 object-cover rounded-md">
+                                    <div class="flex-1">
+                                        <div class="font-medium text-gray-800">${suggestion.name}</div>
+                                        <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
+                                        <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
+                                    </div>
+                                    <div class="text-sm text-gray-700 font-semibold">${suggestion.price}</div>
+                                </div>
+                            `).join('')}
+                        `
+                        : '<div class="p-3 text-gray-500">No suggestions available</div>';
+                } catch (error) {
+                    console.error(`${consoleErrorPrefix} Failed to load suggestions:`, error);
+                    resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading suggestions</div>';
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            }
+
+            categoryCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    if (searchInput === document.activeElement) loadSmartSuggestions();
+                });
+            });
+
+            // Assuming tags are managed by a separate script and update a hidden input
+            // You might need to listen to changes on the hidden tags input if it's not directly a checkbox/select
+            const tagsHiddenInput = document.getElementById('tags-hidden-input');
+            if (tagsHiddenInput) {
+                // A simple way to detect changes if the input value is updated programmatically
+                // This might require a custom event or MutationObserver for more robust detection
+                tagsHiddenInput.addEventListener('change', () => {
+                    if (searchInput === document.activeElement) loadSmartSuggestions();
+                });
+            }
+
+
+            resultsContainer.addEventListener('click', (e) => {
+                const resultItem = e.target.closest('.product-result');
+                if (!resultItem) return;
+                const productId = parseInt(resultItem.dataset.id);
+                if (!selectedProducts.includes(productId)) {
+                    selectedProducts.push(productId);
+                    updateSelectedProductsDisplay();
+                }
+                searchInput.value = '';
+                resultsContainer.classList.add('hidden');
+            });
+
+            selectedContainer.addEventListener('click', (e) => {
+                if (e.target.closest(`.${removeButtonClass}`)) {
+                    const item = e.target.closest('[data-id]');
+                    const productId = parseInt(item.dataset.id);
+                    selectedProducts = selectedProducts.filter(id => id !== productId);
+                    updateSelectedProductsDisplay();
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup for Related Products
+            setupProductSelector({
+                searchInputId: 'related-products-search',
+                resultsContainerId: 'related-products-results',
+                selectedContainerId: 'selected-related-products',
+                hiddenInputId: 'related-products-input',
+                loadingIndicatorId: 'related-products-loading',
+                removeButtonClass: 'remove-related-product',
+                fetchBriefUrl: '/api/product/{productId}/brief',
+                fetchSearchUrl: '/api/product/search',
+                fetchSuggestionsUrl: '/api/product/suggestions',
+                consoleErrorPrefix: 'Related Products:'
+            });
+
+            // Setup for Cross-Selling Products
+            setupProductSelector({
+                searchInputId: 'cross-selling-products-search',
+                resultsContainerId: 'cross-selling-products-results',
+                selectedContainerId: 'selected-cross-selling-products',
+                hiddenInputId: 'cross-selling-products-input',
+                loadingIndicatorId: 'cross-selling-products-loading',
+                removeButtonClass: 'remove-cross-selling-product',
+                fetchBriefUrl: '/api/product/{productId}/brief',
+                fetchSearchUrl: '/api/product/search',
+                fetchSuggestionsUrl: '/api/product/suggestions',
+                consoleErrorPrefix: 'Cross-Selling Products:'
+            });
+        });
+    </script>
+
+    <!-- Tags -->
+
+
+    <!-- Cross-Selling Products -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const searchInput = document.getElementById('related-products-search');
-            const resultsContainer = document.getElementById('related-products-results');
-            const selectedContainer = document.getElementById('selected-related-products');
-            const hiddenInput = document.getElementById('related-products-input');
-            const loadingIndicator = document.getElementById('related-products-loading');
+            const searchInput = document.getElementById('cross-selling-products-search');
+            const resultsContainer = document.getElementById('cross-selling-products-results');
+            const selectedContainer = document.getElementById('selected-cross-selling-products');
+            const hiddenInput = document.getElementById('cross-selling-products-input');
+            const loadingIndicator = document.getElementById('cross-selling-products-loading');
             const categorySelects = document.querySelectorAll('input[name="categories[]"]');
             const tagSelects = document.querySelectorAll('input[name="tags[]"]');
             let selectedProducts = JSON.parse(hiddenInput.value || '[]');
@@ -1432,16 +1715,22 @@
                             productEl.className = 'flex items-center justify-between bg-gray-50 p-2 rounded selected-product-item';
                             productEl.dataset.id = product.id;
                             productEl.innerHTML = `
-                                <span>${product.name} (SKU: ${product.sku})</span>
-                                <button type="button" class="text-red-500 remove-related-product">
+                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-10 h-10 object-cover rounded-md">
+                                <div class="flex-1 ml-2">
+                                    <div class="font-medium text-gray-800">${product.name}</div>
+                                    <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                                    <div class="text-xs text-gray-400">Category: ${product.category_name || 'N/A'}</div>
+                                </div>
+                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
+                                <button type="button" class="text-red-500 remove-cross-selling-product">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </button>
-                            </span>`;
+                            `;
                             selectedContainer.appendChild(productEl);
                         } catch (error) {
-                            console.error('Failed to fetch product:', error);
+                            console.error('Failed to fetch product brief for cross-selling:', error);
                         }
                     });
                 }
@@ -1472,20 +1761,21 @@
                     const products = await response.json();
                     resultsContainer.innerHTML = products.length > 0
                         ? products.map(product => `
-                            <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result" data-id="${product.id}" data-name="${product.name}" data-sku="${product.sku}">
-                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-10 h-10 object-cover rounded-md">
-                                <div class="flex-1">
-                                    <div class="font-medium text-gray-800">${product.name}</div>
+                            <div class="p-3 hover:bg-gray-100 cursor-pointer flex items-center gap-4 border-b border-gray-200 product-result transition-colors duration-150" data-id="${product.id}" data-name="${product.name}" data-sku="${product.sku}">
+                                <img src="${product.thumbnail || '/placeholder-product.jpg'}" class="w-12 h-12 object-cover rounded-md shadow-sm">
+                                <div class="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-x-4">
+                                    <div class="font-medium text-gray-800 text-base truncate">${product.name}</div>
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
+                                    <div class="text-xs text-gray-400 sm:col-span-2">Category: ${product.category_name || 'N/A'}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold">$${product.price}</div>
+                                <div class="text-sm text-gray-700 font-semibold text-right">${product.price}</div>
                             </div>
                         `).join('')
                         : '<div class="p-3 text-gray-500">No products found</div>';
                     resultsContainer.classList.remove('hidden');
                 } catch (error) {
                     if (error.name !== 'AbortError') {
-                        console.error('Search failed:', error);
+                        console.error('Cross-selling search failed:', error);
                         resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading results</div>';
                         resultsContainer.classList.remove('hidden');
                     }
@@ -1533,13 +1823,13 @@
                                         <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
                                         <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
                                     </div>
-                                    <div class="text-sm text-gray-700 font-semibold">$${suggestion.price}</div>
+                                    <div class="text-sm text-gray-700 font-semibold">${suggestion.price}</div>
                                 </div>
                             `).join('')}
                         `
                         : '<div class="p-3 text-gray-500">No suggestions available</div>';
                 } catch (error) {
-                    console.error('Failed to load suggestions:', error);
+                    console.error('Failed to load cross-selling suggestions:', error);
                     resultsContainer.innerHTML = '<div class="p-3 text-gray-500">Error loading suggestions</div>';
                 } finally {
                     loadingIndicator.classList.add('hidden');
@@ -1571,7 +1861,7 @@
             });
 
             selectedContainer.addEventListener('click', (e) => {
-                if (e.target.closest('.remove-related-product')) {
+                if (e.target.closest('.remove-cross-selling-product')) {
                     const item = e.target.closest('[data-id]');
                     const productId = parseInt(item.dataset.id);
                     selectedProducts = selectedProducts.filter(id => id !== productId);
@@ -1598,15 +1888,16 @@
             let tagDebounceTimer;
             let spacePressTimer;
 
+            // Initial loading of tags (for edit page or old input)
             if (tagsHiddenInput.value) {
                 try {
-                    tags = JSON.parse(tagsHiddenInput.value).map(tag => ({
-                        name: tag,
-                        normalized: tag.toLowerCase()
-                    }));
+                    const initialTags = JSON.parse(tagsHiddenInput.value);
+                    // Assuming initialTags are just names, we need to convert them to objects
+                    // For a create page, this will likely be empty unless old() input is present
+                    tags = initialTags.map(name => ({ name: name, normalized: name.toLowerCase() }));
                     renderTags();
                 } catch (e) {
-                    console.error('Error parsing tags:', e);
+                    console.error('Error parsing initial tags:', e);
                 }
             }
 
@@ -1659,6 +1950,10 @@
                 }
 
                 lastSearch = query;
+                tagDebounceTimer = setTimeout(async () => {
+                    suggestions = await fetchTagSuggestions(query);
+                    showSuggestions();
+                }, 300); // Debounce for fetching suggestions
                 clearTimeout(spacePressTimer);
             }
 
@@ -1672,7 +1967,7 @@
                             if (currentTag !== '') {
                                 addTag(currentTag);
                             }
-                        }, 10000);
+                        }, 4000); // 4-second debounce for adding tag on space
                         break;
 
                     case 'Tab':
@@ -1729,7 +2024,7 @@
                 if (lastSearch !== '') {
                     spacePressTimer = setTimeout(() => {
                         addTag(lastSearch);
-                    }, 10000);
+                    }, 4000); // 4-second debounce for adding tag on blur
                 } else {
                     hideSuggestions();
                 }
@@ -1756,15 +2051,29 @@
 
                 const normalizedTagName = tagName.toLowerCase();
 
-
-                if (!tags.some(tag => tag.normalized === normalizedTagName)) {
-                    tags.push({
-                        name: tagName,
-                        normalized: normalizedTagName
-                    });
-                    renderTags();
+                // Check if tag already exists in the current list
+                if (tags.some(tag => tag.normalized === normalizedTagName)) {
+                    // If it exists, do not add again, but clear input
+                    hideSuggestions();
+                    return;
                 }
 
+                // Check if the tag exists in suggestions (meaning it's an existing tag in DB)
+                const existingSuggestion = suggestions.find(s => s.name.toLowerCase() === normalizedTagName);
+
+                if (existingSuggestion) {
+                    tags.push({ name: existingSuggestion.name, normalized: existingSuggestion.name.toLowerCase() });
+                } else {
+                    // It's a new tag, check for similar names to suggest a unique one
+                    let finalTagName = tagName;
+                    let counter = 1;
+                    while (tags.some(tag => tag.normalized === finalTagName.toLowerCase()) || suggestions.some(s => s.name.toLowerCase() === finalTagName.toLowerCase())) {
+                        finalTagName = `${tagName}-${counter++}`;
+                    }
+                    tags.push({ name: finalTagName, normalized: finalTagName.toLowerCase() });
+                }
+
+                renderTags();
                 hideSuggestions();
             }
 

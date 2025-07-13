@@ -157,7 +157,17 @@ class ProductController extends Controller
             }
 
             if (!empty($validated['tags'])) {
-                $this->syncTags($product, json_decode($validated['tags'], true));
+                $tagController = new TagController();
+                $tagRequest = Request::create('/api/tag/store-multiple', 'POST', ['tags' => json_decode($validated['tags'], true)]);
+                $tagResponse = $tagController->storeMultiple($tagRequest);
+                $tagData = $tagResponse->getData(true);
+
+                if (isset($tagData['success']) && $tagData['success']) {
+                    $tagIds = collect($tagData['tags'])->pluck('id')->toArray();
+                    $product->tags()->sync($tagIds);
+                } else {
+                    Log::error('Failed to store tags from TagController: ' . json_encode($tagData));
+                }
             }
 
 
@@ -346,7 +356,21 @@ class ProductController extends Controller
 
             // Handle tags
             $tagsToSync = is_string($validated['tags']) ? json_decode($validated['tags'], true) : ($validated['tags'] ?? []);
-            $this->syncTags($product, $tagsToSync);
+            if (!empty($tagsToSync)) {
+                $tagController = new TagController();
+                $tagRequest = Request::create('/api/tag/store-multiple', 'POST', ['tags' => $tagsToSync]);
+                $tagResponse = $tagController->storeMultiple($tagRequest);
+                $tagData = $tagResponse->getData(true);
+
+                if (isset($tagData['success']) && $tagData['success']) {
+                    $tagIds = collect($tagData['tags'])->pluck('id')->toArray();
+                    $product->tags()->sync($tagIds);
+                } else {
+                    Log::error('Failed to store tags from TagController during update: ' . json_encode($tagData));
+                }
+            } else {
+                $product->tags()->detach(); // Detach all tags if none are provided
+            }
 
             // Handle variants
 
@@ -524,7 +548,7 @@ class ProductController extends Controller
     {
         // Placeholder for product suggestions logic
         // This method should return a list of products based on categories, tags, or popularity
-        $query = Product::query();
+        $query = Product::latest();
 
         if ($request->has('category_ids')) {
             $categoryIds = $request->input('category_ids');
@@ -540,15 +564,17 @@ class ProductController extends Controller
             });
         }
 
-        if ($request->has('exclude_id')) {
-            $query->where('id', '!=', $request->input('exclude_id'));
+        if ($request->has('exclude_ids')) {
+            $excludeIds = is_array($request->input('exclude_ids')) ? $request->input('exclude_ids') : [$request->input('exclude_ids')];
+            $query->whereNotIn('id', $excludeIds);
         }
 
-        $products = $query->limit(10)->get(['id', 'name', 'sku', 'price', 'thumbnail']);
+        $products = $query->limit(10)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price']);
 
         return response()->json($products->map(function($product) {
-            $product->thumbnail = $product->thumbnail_media ? $product->thumbnail_media->thumb_url : null;
+            $product->thumbnail = $product->thumbnail_url;
             $product->reason = 'Suggested'; // Add a reason for suggestion
+            $product->category_name = $product->categories->isNotEmpty() ? $product->categories->first()->name : 'N/A';
             return $product;
         }));
     }
@@ -566,21 +592,40 @@ class ProductController extends Controller
         ->when($excludeId, function($q) use ($excludeId) {
             $q->where('id', '!=', $excludeId);
         })
-        ->limit(10)
-        ->get(['id', 'name', 'sku', 'price', 'thumbnail']);
+        ->limit(5)
+        ->with(['categories', 'media'])
+        ->get(['id', 'name', 'sku', 'price']);
 
         return response()->json($products->map(function($product) {
-            $product->thumbnail = $product->thumbnail_media ? $product->thumbnail_media->thumb_url : null;
+            $product->thumbnail = $product->thumbnail_url;
+            $product->category_name = $product->categories->isNotEmpty() ? $product->categories->first()->name : 'N/A';
             return $product;
         }));
     }
 
+    public function brief(Product $product)
+    {
+        $product->load('categories', 'media');
+        return response()->json([
+            'id' => $product->id,
+            'name' => $product->name,
+            'sku' => $product->sku,
+            'price' => $product->price,
+            'thumbnail' => $product->thumbnail_url,
+            'category_name' => $product->categories->isNotEmpty() ? $product->categories->first()->name : 'N/A',
+        ]);
+    }
+
     public function briefBatch(Request $request)
     {
-        // Placeholder for fetching product brief data in batch
         $ids = $request->input('ids');
-        $products = Product::whereIn('id', $ids)->get(['id', 'name', 'sku']);
-        return response()->json($products);
+        $products = Product::whereIn('id', $ids)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price']);
+
+        return response()->json($products->map(function($product) {
+            $product->thumbnail = $product->thumbnail_url;
+            $product->category_name = $product->categories->isNotEmpty() ? $product->categories->first()->name : 'N/A';
+            return $product;
+        }));
     }
 
     public function generateSku(Request $request)
