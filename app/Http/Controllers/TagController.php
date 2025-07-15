@@ -46,16 +46,7 @@ class TagController extends Controller
             $baseName = Str::lower(trim($tagName));
             if (empty($baseName)) continue;
 
-            $originalSlug = Str::slug($baseName);
-            $slug = $originalSlug;
-            $counter = 1;
-
-            // Check for slug uniqueness, similar to product/category slug generation
-            while (Tag::where('slug', $slug)->exists()) {
-                $slug = $originalSlug . '-' . $counter++;
-            }
-
-            $tag = Tag::firstOrCreate(['slug' => $slug], ['name' => $baseName]);
+            $tag = Tag::firstOrCreate(['name' => $baseName], ['slug' => Str::slug($baseName)]);
 
             $storedTags[] = $tag;
         }

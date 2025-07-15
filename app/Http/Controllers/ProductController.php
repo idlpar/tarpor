@@ -157,16 +157,10 @@ class ProductController extends Controller
             }
 
             if (!empty($validated['tags'])) {
-                $tagController = new TagController();
-                $tagRequest = Request::create('/api/tag/store-multiple', 'POST', ['tags' => json_decode($validated['tags'], true)]);
-                $tagResponse = $tagController->storeMultiple($tagRequest);
-                $tagData = $tagResponse->getData(true);
-
-                if (isset($tagData['success']) && $tagData['success']) {
-                    $tagIds = collect($tagData['tags'])->pluck('id')->toArray();
-                    $product->tags()->sync($tagIds);
-                } else {
-                    Log::error('Failed to store tags from TagController: ' . json_encode($tagData));
+                $tags = is_string($validated['tags']) ? json_decode($validated['tags'], true) : $validated['tags'];
+                if (is_array($tags)) {
+                    
+                    $this->syncTags($product, $tags);
                 }
             }
 
@@ -354,20 +348,9 @@ class ProductController extends Controller
             // Handle categories
             $product->categories()->sync($validated['categories'] ?? []);
 
-            // Handle tags
             $tagsToSync = is_string($validated['tags']) ? json_decode($validated['tags'], true) : ($validated['tags'] ?? []);
             if (!empty($tagsToSync)) {
-                $tagController = new TagController();
-                $tagRequest = Request::create('/api/tag/store-multiple', 'POST', ['tags' => $tagsToSync]);
-                $tagResponse = $tagController->storeMultiple($tagRequest);
-                $tagData = $tagResponse->getData(true);
-
-                if (isset($tagData['success']) && $tagData['success']) {
-                    $tagIds = collect($tagData['tags'])->pluck('id')->toArray();
-                    $product->tags()->sync($tagIds);
-                } else {
-                    Log::error('Failed to store tags from TagController during update: ' . json_encode($tagData));
-                }
+                $this->syncTags($product, $tagsToSync);
             } else {
                 $product->tags()->detach(); // Detach all tags if none are provided
             }
@@ -566,6 +549,10 @@ class ProductController extends Controller
 
         if ($request->has('exclude_ids')) {
             $excludeIds = is_array($request->input('exclude_ids')) ? $request->input('exclude_ids') : [$request->input('exclude_ids')];
+            // Ensure the current product being edited/created is also excluded if its ID is available
+            if ($request->has('current_product_id')) {
+                $excludeIds[] = $request->input('current_product_id');
+            }
             $query->whereNotIn('id', $excludeIds);
         }
 
@@ -583,14 +570,17 @@ class ProductController extends Controller
     {
         // Placeholder for product search logic
         $query = $request->input('q');
-        $excludeId = $request->input('exclude_id');
+        $excludeIds = $request->input('exclude_ids', []);
+        if (!is_array($excludeIds)) {
+            $excludeIds = [$excludeIds];
+        }
 
         $products = Product::where(function($q) use ($query) {
             $q->where('name', 'like', '%' . $query . '%')
               ->orWhere('sku', 'like', '%' . $query . '%');
         })
-        ->when($excludeId, function($q) use ($excludeId) {
-            $q->where('id', '!=', $excludeId);
+        ->when(!empty($excludeIds), function($q) use ($excludeIds) {
+            $q->whereNotIn('id', $excludeIds);
         })
         ->limit(5)
         ->with(['categories', 'media'])
@@ -712,6 +702,13 @@ class ProductController extends Controller
             ]);
         }
 
+        if ($request->has('tags') && is_string($request->tags)) {
+            $request->merge([
+                'tags' => json_decode($request->tags, true)
+            ]);
+        }
+        Log::info('Request data after tags JSON decode and merge:', $request->all());
+
         $rules = [
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255' . ($product ? ',slug,' . $product->id : '|unique:products'),
@@ -764,6 +761,8 @@ class ProductController extends Controller
             'schema_markup' => 'nullable|string',
             'robots' => 'nullable|string',
             'type' => 'required|in:simple,variable',
+            'tags' => 'nullable|array',
+            'tags.*' => 'string',
         ];
 
         $validator = Validator::make($request->all(), $rules);
@@ -773,6 +772,7 @@ class ProductController extends Controller
         }
 
         $validatedData = $validator->validated();
+        Log::info('Validated data in validateProduct:', ['tags_data' => $validatedData['tags'] ?? 'not set']);
 
         // Sanitize description and short_description to prevent XSS
         if (isset($validatedData['description'])) {
@@ -804,6 +804,7 @@ class ProductController extends Controller
 
     protected function syncTags(Product $product, array $tags)
     {
+        Log::info('syncTags method called.', ['product_id' => $product->id, 'tags' => $tags]);
         $tagIds = [];
         foreach ($tags as $tagName) {
             $originalSlug = Str::slug($tagName);
@@ -819,6 +820,7 @@ class ProductController extends Controller
             $tagIds[] = $tag->id;
         }
         $product->tags()->sync($tagIds);
+        Log::info('syncTags method finished.', ['product_id' => $product->id, 'tagIds' => $tagIds]);
     }
 
     protected function handleProductImages(Product $product, $newFiles = [], $existingIds = [])
