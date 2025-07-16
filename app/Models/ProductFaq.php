@@ -11,6 +11,7 @@ class ProductFaq extends Model
 
     protected $fillable = [
         'product_id',
+        'faq_id',
         'question',
         'answer',
     ];
@@ -18,5 +19,10 @@ class ProductFaq extends Model
     public function product()
     {
         return $this->belongsTo(Product::class);
+    }
+
+    public function faq()
+    {
+        return $this->belongsTo(Faq::class);
     }
 }

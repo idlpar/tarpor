@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\FaqController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProductAttributeController;
@@ -119,6 +120,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
 
         // Label Management
         Route::resource('labels', LabelController::class)->names('labels');
+
+        Route::resource('faqs', FaqController::class)->names('faqs');
 
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])

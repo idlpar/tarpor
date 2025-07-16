@@ -104,7 +104,12 @@ class Product extends Model
 
     public function faqs()
     {
-        return $this->hasMany(ProductFaq::class);
+        return $this->belongsToMany(Faq::class, 'product_faqs')->withTimestamps();
+    }
+
+    public function customFaqs()
+    {
+        return $this->hasMany(ProductFaq::class)->whereNull('faq_id');
     }
 
     public function collections()

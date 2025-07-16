@@ -27,6 +27,17 @@
         </div>
 
         <div class="relative">
+            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('faqsDropdown')">
+                FAQs
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div id="faqsDropdown" class="hidden pl-6 mt-1 space-y-2">
+                <a href="{{ route('faqs.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.index') ? 'bg-gray-700 text-blue-400' : '' }}">All FAQs</a>
+                <a href="{{ route('faqs.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New</a>
+            </div>
+        </div>
+
+        <div class="relative">
             <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('ordersDropdown')">
                 Orders
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>

@@ -10,6 +10,7 @@
         {{-- You might want a separate admin navbar here if needed --}}
 
         <main class="flex-1 overflow-x-hidden bg-gray-100 p-4">
+            @includeIf('components.admin.breadcrumb')
             @yield('admin_content')
         </main>
     </div>
