@@ -13,6 +13,18 @@
         overflow: hidden;
     }
 
+    .gallery-container.full-screen {
+        height: 100vh;
+        max-height: 100vh;
+        width: 100vw;
+        max-width: 100vw;
+        border-radius: 0;
+    }
+
+    .gallery-modal.full-screen {
+        padding: 0;
+    }
+
     /* Header */
     .gallery-header {
         background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
@@ -2150,6 +2162,7 @@
                 const item = e.target.closest('.gallery-item');
                 if (!item) {
                     this.clearSelections();
+                    this.closeContextMenu(); // Close any open context menu
                     return;
                 }
 
@@ -2288,6 +2301,7 @@
             executeMenuAction(action) {
                 switch (action) {
                     case 'openItem':
+                        if (this.state.selectedItems.size === 0) return;
                         const folderItem = document.querySelector(`.gallery-item[data-id="${Array.from(this.state.selectedItems)[0].split(':')[1]}"]`);
                         if (folderItem) this.navigateToFolder(folderItem);
                         break;
@@ -2514,7 +2528,9 @@
                 if (!date) return '';
                 // Input: '23-04-2025' (d-m-Y)
                 // Split by '-' to get [day, month, year]
-                const [day, month, year] = date.split('-');
+                const parts = date.split('-');
+                if (parts.length !== 3) return date; // Return original if format is unexpected
+                const [day, month, year] = parts;
                 // Ensure two-digit day and month, take last two digits of year
                 const formattedDay = day.padStart(2, '0'); // e.g., '23'
                 const formattedMonth = month.padStart(2, '0'); // e.g., '04'

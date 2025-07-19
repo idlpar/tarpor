@@ -15,7 +15,7 @@ class BrandController extends Controller
      */
     public function index()
     {
-        $brands = Brand::withTrashed()->get(); // Fetch all brands, including soft deleted ones
+        $brands = Brand::latest()->paginate(10); // Fetch all brands, including soft deleted ones
         return view('dashboard.admin.brands.index', compact('brands'));
     }
 
