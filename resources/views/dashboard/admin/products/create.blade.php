@@ -426,7 +426,45 @@
 
                         <!-- Product FAQs -->
                         <x-form.card label="Product FAQs" class="bg-transparent">
-                            <input type="text" name="product_faqs" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_faqs') border-red-500 @enderror" placeholder="Search or select from existing FAQs">
+                            <div id="newFaqContainer" class="space-y-4 mb-4"></div>
+
+                            <div class="flex items-center mb-4">
+                                <button type="button" id="addNewFaqBtn" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">Add New FAQ</button>
+                                <span class="mx-2 text-gray-500">or</span>
+                                <a href="#" id="existingFaqLink" class="text-blue-500 hover:underline">Select Existing FAQ</a>
+                            </div>
+
+                            <template id="newFaqTemplate">
+                                <div class="new-faq-item p-4 border border-gray-300 rounded-lg bg-gray-50 relative">
+                                    <button type="button" class="remove-faq-item absolute top-2 right-2 text-red-500 hover:text-red-700">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10L4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                    <h4 class="font-semibold text-gray-700 mb-3">New FAQ</h4>
+                                    <div class="mb-4">
+                                        <label class="block font-semibold text-gray-700 mb-2">Question</label>
+                                        <input type="text" name="new_faqs[][question]" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter new FAQ question">
+                                    </div>
+                                    <div>
+                                        <label class="block font-semibold text-gray-700 mb-2">Answer</label>
+                                        <textarea name="new_faqs[][answer]" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" rows="4" placeholder="Enter new FAQ answer"></textarea>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <div id="existingFaqChecklist" class="hidden mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50 max-h-60 overflow-y-auto">
+                                <h4 class="font-semibold text-gray-700 mb-3">Existing FAQs</h4>
+                                <div class="mb-3">
+                                    <input type="text" id="faqSearchInput" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Search FAQs...">
+                                </div>
+                                <div id="faqList" class="space-y-2">
+                                    <!-- FAQs will be loaded here -->
+                                    <p class="text-gray-500">Loading FAQs...</p>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="selected_faqs[]" id="selectedFaqsInput" value="{{ old('selected_faqs', '[]') }}">
                             @error('product_faqs')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -608,7 +646,7 @@
                         </div>
                         <div class="max-h-48 overflow-y-auto">
                             <ul id="category-tree" class="mt-2 space-y-1">
-                                @include('partials.category-checkboxes', ['categories' => $categories])
+                                @include('partials.category-checkboxes', ['categories' => $categories, 'selected' => old('category_ids', [])])
                             </ul>
                         </div>
                         @error('category_ids')
@@ -1075,6 +1113,16 @@
                     console.log('Appending new thumbnail file:', galleryManager.featuredImageFile.name);
                 }
 
+                // Collect new FAQs data
+                const newFaqs = [];
+                document.querySelectorAll('#newFaqContainer .new-faq-item').forEach(item => {
+                    const question = item.querySelector('input[name^="new_faqs["]').value;
+                    const answer = item.querySelector('textarea[name^="new_faqs["]').value;
+                    newFaqs.push({ question, answer });
+                });
+                formData.append('new_faqs_data', JSON.stringify(newFaqs));
+                formData.append('selected_faqs_data', selectedFaqsInput.value);
+
                 // Log all formData entries for debugging
                 console.log('--- FormData Contents (before send) ---');
                 for (let [key, value] of formData.entries()) {
@@ -1082,6 +1130,8 @@
                 }
                 console.log('Product Collections in FormData:', formData.getAll('product_collections[]'));
                 console.log('Labels in FormData:', formData.getAll('labels[]'));
+                console.log('Selected FAQs in FormData:', formData.getAll('selected_faqs[]'));
+                console.log('New FAQs Data in FormData:', formData.get('new_faqs_data'));
                 console.log('-------------------------');
 
 
@@ -1804,7 +1854,7 @@
                         break;
 
                     case 'Backspace':
-                        if (tagInput.value === '' && tags.length > 0) {
+                        if (tagInput.value === ''' and tags.length > 0) {
                             tags.pop();
                             renderTags();
                         }
@@ -1939,6 +1989,137 @@
 
             function selectSuggestion(suggestion) {
                 addTag(suggestion.name);
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addNewFaqBtn = document.getElementById('addNewFaqBtn');
+            const existingFaqLink = document.getElementById('existingFaqLink');
+            const newFaqContainer = document.getElementById('newFaqContainer');
+            const newFaqTemplate = document.getElementById('newFaqTemplate');
+            const existingFaqChecklist = document.getElementById('existingFaqChecklist');
+            const faqList = document.getElementById('faqList');
+            const selectedFaqsInput = document.getElementById('selectedFaqsInput');
+            const faqSearchInput = document.getElementById('faqSearchInput');
+
+            let selectedFaqs = JSON.parse(selectedFaqsInput.value || '[]');
+            let newFaqCounter = 0; // To ensure unique names for new FAQ inputs
+            let allFaqs = []; // Store all fetched FAQs for searching
+
+            // Function to add a new FAQ input block
+            function addNewFaqBlock() {
+                const clone = newFaqTemplate.content.cloneNode(true);
+                const questionInput = clone.querySelector('input[name="new_faqs[][question]"]');
+                const answerTextarea = clone.querySelector('textarea[name="new_faqs[][answer]"]');
+                const removeButton = clone.querySelector('.remove-faq-item');
+
+                // Update names to ensure they are unique for submission
+                questionInput.name = `new_faqs[${newFaqCounter}][question]`;
+                answerTextarea.name = `new_faqs[${newFaqCounter}][answer]`;
+                newFaqCounter++;
+
+                removeButton.addEventListener('click', (e) => {
+                    e.target.closest('.new-faq-item').remove();
+                    // If all new FAQ fields are removed, hide the container
+                    if (newFaqContainer.children.length === 0) {
+                        newFaqContainer.classList.add('hidden');
+                    }
+                });
+
+                newFaqContainer.appendChild(clone);
+                newFaqContainer.classList.remove('hidden');
+            }
+
+            // Function to render existing FAQs
+            async function renderExistingFaqs(searchTerm = '') {
+                faqList.innerHTML = '<p class="text-gray-500">Loading FAQs...</p>';
+                if (allFaqs.length === 0) { // Only fetch if not already fetched
+                    try {
+                        const response = await fetch('/api/faqs', {
+                            headers: {
+                                'Accept': 'application/json',
+                            },
+                        });
+                        if (!response.ok) {
+                            throw new Error('Failed to fetch FAQs');
+                        }
+                        allFaqs = await response.json();
+                    } catch (error) {
+                        console.error('Error fetching FAQs:', error);
+                        faqList.innerHTML = '<p class="text-red-500">Error loading FAQs. Please try again.</p>';
+                        return;
+                    }
+                }
+
+                if (allFaqs.length === 0) {
+                    faqList.innerHTML = '<p class="text-gray-500">No existing FAQs found.</p>';
+                    return;
+                }
+
+                faqList.innerHTML = ''; // Clear loading message
+                const filteredFaqs = allFaqs.filter(faq => 
+                    faq.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    faq.answer.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+
+                if (filteredFaqs.length === 0) {
+                    faqList.innerHTML = '<p class="text-gray-500">No matching FAQs found.</p>';
+                    return;
+                }
+
+                filteredFaqs.forEach(faq => {
+                    const isChecked = selectedFaqs.includes(faq.id);
+                    const faqItem = document.createElement('div');
+                    faqItem.className = 'flex items-start space-x-2 p-2 hover:bg-gray-100 rounded-md';
+                    faqItem.innerHTML = `
+                        <input type="checkbox" id="faq_${faq.id}" value="${faq.id}" class="mt-1 form-checkbox h-4 w-4 text-blue-600" ${isChecked ? 'checked' : ''}>
+                        <label for="faq_${faq.id}" class="flex-1 cursor-pointer">
+                            <p class="font-medium text-gray-800">${faq.question}</p>
+                        </label>
+                    `;
+                    faqList.appendChild(faqItem);
+
+                    faqItem.querySelector('input[type="checkbox"]').addEventListener('change', (e) => {
+                        if (e.target.checked) {
+                            if (!selectedFaqs.includes(faq.id)) {
+                                selectedFaqs.push(faq.id);
+                            }
+                        } else {
+                            selectedFaqs = selectedFaqs.filter(id => id !== faq.id);
+                        }
+                        selectedFaqsInput.value = JSON.stringify(selectedFaqs);
+                    });
+                });
+            }
+
+            addNewFaqBtn.addEventListener('click', () => {
+                addNewFaqBlock();
+                // existingFaqChecklist.classList.remove('hidden'); // Removed: Keep existing FAQs visible
+                // renderExistingFaqs(); // Removed: Ensure existing FAQs are loaded
+            });
+
+            existingFaqLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                existingFaqChecklist.classList.toggle('hidden'); // Toggle visibility
+                if (!existingFaqChecklist.classList.contains('hidden')) {
+                    renderExistingFaqs(); // Load FAQs only when visible
+                }
+            });
+
+            faqSearchInput.addEventListener('input', debounce(() => {
+                renderExistingFaqs(faqSearchInput.value.trim());
+            }, 300));
+
+            // Initial state: hide both new FAQ and existing FAQ sections
+            newFaqContainer.classList.add('hidden');
+            existingFaqChecklist.classList.add('hidden');
+
+            // If there are pre-selected FAQs from old input, show the existing FAQ section
+            if (selectedFaqs.length > 0) {
+                existingFaqChecklist.classList.remove('hidden');
+                renderExistingFaqs();
             }
         });
     </script>

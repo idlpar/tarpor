@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Admin\FaqController;
+use App\Http\Controllers\FaqController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProductAttributeController;
@@ -121,7 +121,10 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Label Management
         Route::resource('labels', LabelController::class)->names('labels');
 
-        Route::resource('faqs', FaqController::class)->names('faqs');
+                Route::resource('faqs', \App\Http\Controllers\FaqController::class)->names('faqs');
+        Route::resource('brands', \App\Http\Controllers\BrandController::class)->names('brands');
+        Route::patch('/brands/{id}/restore', [\App\Http\Controllers\BrandController::class, 'restore'])->name('brands.restore');
+        Route::delete('/brands/{id}/force-delete', [\App\Http\Controllers\BrandController::class, 'forceDelete'])->name('brands.force-delete');
 
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
@@ -141,12 +144,14 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
             Route::get('category/slug/check', [CategoryController::class, 'checkSlug'])->name('category.slug.check');
             Route::get('collection/slug/check', [CollectionController::class, 'checkSlug'])->name('collection.slug.check');
             Route::get('label/slug/check', [LabelController::class, 'checkSlug'])->name('label.slug.check');
+            Route::get('brand/slug/check', [\App\Http\Controllers\BrandController::class, 'checkSlug'])->name('brand.slug.check');
             Route::post('generate-sku', [ProductController::class, 'generateSku'])->name('sku.generate');
             Route::get('products/{product}/quick-view', [ProductController::class, 'quickView'])->name('products.quickView');
             Route::get('product/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');
             Route::get('product/search', [ProductController::class, 'search'])->name('products.search');
             Route::get('product/{product}/brief', [ProductController::class, 'brief'])->name('products.brief');
             Route::post('product/brief-batch', [ProductController::class, 'briefBatch'])->name('products.briefBatch');
+            Route::get('faqs', [FaqController::class, 'index'])->name('faqs.index');
         });
     });
 

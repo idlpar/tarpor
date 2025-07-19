@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Faq;
@@ -8,8 +8,11 @@ use Illuminate\Http\Request;
 
 class FaqController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
+        if ($request->expectsJson()) {
+            return response()->json(Faq::all());
+        }
         $faqs = Faq::all();
         return view('admin.faqs.index', compact('faqs'));
     }

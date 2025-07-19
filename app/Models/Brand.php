@@ -13,8 +13,16 @@ class Brand extends Model
     use HasFactory;
 
     protected $fillable = [
-        'name', 'slug', 'logo', 'description', 'status'
+        'name', 'slug', 'description', 'status', 'logo_id'
     ];
+
+    /**
+     * Get the brand's logo.
+     */
+    public function logo()
+    {
+        return $this->belongsTo(Media::class, 'logo_id');
+    }
 
     protected $casts = [
         'status' => 'string',

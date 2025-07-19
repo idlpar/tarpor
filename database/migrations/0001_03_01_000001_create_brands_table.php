@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id(); // Primary key
             $table->string('name', 255); // Brand name
             $table->string('slug', 255)->unique(); // URL-friendly slug
-            $table->string('logo')->nullable(); // Brand logo URL
+            $table->foreignId('logo_id')->nullable()->constrained('media')->onDelete('set null'); // Brand logo ID
             $table->text('description')->nullable(); // Brand description
             $table->enum('status', ['active', 'inactive'])->default('active'); // Brand status
             $table->timestamps(); // created_at and updated_at

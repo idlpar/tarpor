@@ -1,102 +1,211 @@
 <div class="bg-gray-800 text-white w-64 space-y-6 py-7 px-2 absolute inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 transition duration-200 ease-in-out" id="sidebar">
     <!-- Sidebar Header -->
     <div class="text-white flex items-center space-x-2 px-4">
-        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.827 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.827 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.827-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.827-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
+        <i class="fas fa-cogs w-8 h-8"></i>
         <span class="text-2xl font-extrabold">Admin Panel</span>
     </div>
 
     <!-- Navigation -->
-    <nav>
-        <a href="{{ route('dashboard') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('dashboard') ? 'bg-gray-700 text-blue-400' : '' }}">
+    <nav x-data="{ openDropdown: null }">
+        <a href="{{ route('dashboard') }}" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('dashboard') ? 'bg-gray-700 text-blue-400' : '' }}">
+            <i class="fas fa-tachometer-alt w-5 h-5 mr-3"></i>
             Dashboard
         </a>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('productsDropdown')">
-                Products
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- Products Dropdown -->
+        <div class="relative" x-data="{ id: 'productsDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-box-open w-5 h-5 mr-3"></i>
+                    Products
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="productsDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('products.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.index') ? 'bg-gray-700 text-blue-400' : '' }}">All Products</a>
-                <a href="{{ route('products.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New Product</a>
-                <a href="{{ route('products.variants.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.variants.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Variants</a>
-                <a href="{{ route('product_attributes.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('product_attributes.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Attributes</a>
-                <a href="{{ route('collections.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('collections.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Collections</a>
-                <a href="{{ route('labels.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('labels.index') ? 'bg-gray-700 text-blue-400' : '' }}">Product Labels</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('products.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-list w-4 h-4 mr-3"></i>
+                    All Products
+                </a>
+                <a href="{{ route('products.create') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.create') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-plus-circle w-4 h-4 mr-3"></i>
+                    Add New Product
+                </a>
+                <a href="{{ route('products.variants.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.variants.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-tags w-4 h-4 mr-3"></i>
+                    Product Variants
+                </a>
+                <a href="{{ route('product_attributes.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('product_attributes.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-cogs w-4 h-4 mr-3"></i>
+                    Product Attributes
+                </a>
+                <a href="{{ route('collections.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('collections.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-layer-group w-4 h-4 mr-3"></i>
+                    Product Collections
+                </a>
+                <a href="{{ route('labels.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('labels.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-bookmark w-4 h-4 mr-3"></i>
+                    Product Labels
+                </a>
             </div>
         </div>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('faqsDropdown')">
-                FAQs
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- FAQs Dropdown -->
+        <div class="relative" x-data="{ id: 'faqsDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-question-circle w-5 h-5 mr-3"></i>
+                    FAQs
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="faqsDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('faqs.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.index') ? 'bg-gray-700 text-blue-400' : '' }}">All FAQs</a>
-                <a href="{{ route('faqs.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('faqs.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-list-alt w-4 h-4 mr-3"></i>
+                    All FAQs
+                </a>
+                <a href="{{ route('faqs.create') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('faqs.create') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-plus-square w-4 h-4 mr-3"></i>
+                    Add New
+                </a>
             </div>
         </div>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('ordersDropdown')">
-                Orders
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- Brands Dropdown -->
+        <div class="relative" x-data="{ id: 'brandsDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-copyright w-5 h-5 mr-3"></i>
+                    Brands
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="ordersDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('admin.orders.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.orders.index') ? 'bg-gray-700 text-blue-400' : '' }}">All Orders</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('brands.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('brands.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-clipboard-list w-4 h-4 mr-3"></i>
+                    All Brands
+                </a>
+                <a href="{{ route('brands.create') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('brands.create') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-plus-square w-4 h-4 mr-3"></i>
+                    Add New Brand
+                </a>
             </div>
         </div>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('categoriesDropdown')">
-                Categories
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- Orders Dropdown -->
+        <div class="relative" x-data="{ id: 'ordersDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-shopping-cart w-5 h-5 mr-3"></i>
+                    Orders
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="categoriesDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('categories.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('categories.index') ? 'bg-gray-700 text-blue-400' : '' }}">All Categories</a>
-                <a href="{{ route('categories.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('categories.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New Category</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('admin.orders.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.orders.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-receipt w-4 h-4 mr-3"></i>
+                    All Orders
+                </a>
             </div>
         </div>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('couponsDropdown')">
-                Coupons
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- Categories Dropdown -->
+        <div class="relative" x-data="{ id: 'categoriesDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-sitemap w-5 h-5 mr-3"></i>
+                    Categories
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="couponsDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('coupons.index') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('coupons.index') ? 'bg-gray-700 text-blue-400' : '' }}">All Coupons</a>
-                <a href="{{ route('coupons.create') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('coupons.create') ? 'bg-gray-700 text-blue-400' : '' }}">Add New Coupon</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('categories.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('categories.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-list-ul w-4 h-4 mr-3"></i>
+                    All Categories
+                </a>
+                <a href="{{ route('categories.create') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('categories.create') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-folder-plus w-4 h-4 mr-3"></i>
+                    Add New Category
+                </a>
             </div>
         </div>
 
-        <div class="relative">
-            <button class="w-full flex justify-between items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none" onclick="toggleDropdown('newsletterDropdown')">
-                Newsletter
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+        <!-- Coupons Dropdown -->
+        <div class="relative" x-data="{ id: 'couponsDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-ticket-alt w-5 h-5 mr-3"></i>
+                    Coupons
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
-            <div id="newsletterDropdown" class="hidden pl-6 mt-1 space-y-2">
-                <a href="{{ route('admin.newsletter.subscribers') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.subscribers') ? 'bg-gray-700 text-blue-400' : '' }}">Subscribers</a>
-                <a href="{{ route('admin.newsletter.send') }}" class="block py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.send') ? 'bg-gray-700 text-blue-400' : '' }}">Send Newsletter</a>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('coupons.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('coupons.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-clipboard-list w-4 h-4 mr-3"></i>
+                    All Coupons
+                </a>
+                <a href="{{ route('coupons.create') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('coupons.create') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-plus-square w-4 h-4 mr-3"></i>
+                    Add New Coupon
+                </a>
             </div>
         </div>
 
-        <a href="{{ route('users.index') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('users.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+        <!-- Newsletter Dropdown -->
+        <div class="relative" x-data="{ id: 'newsletterDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-envelope-open-text w-5 h-5 mr-3"></i>
+                    Newsletter
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
+            </button>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('admin.newsletter.subscribers') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.subscribers') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-users w-4 h-4 mr-3"></i>
+                    Subscribers
+                </a>
+                <a href="{{ route('admin.newsletter.send') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.send') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-paper-plane w-4 h-4 mr-3"></i>
+                    Send Newsletter
+                </a>
+            </div>
+        </div>
+
+        <!-- Single Menu Items -->
+        <a href="{{ route('users.index') }}" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('users.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+            <i class="fas fa-users-cog w-5 h-5 mr-3"></i>
             Users
         </a>
 
-        <a href="{{ route('gallery.index') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('gallery.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+        <a href="{{ route('gallery.index') }}" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('gallery.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+            <i class="fas fa-images w-5 h-5 mr-3"></i>
             Gallery
         </a>
 
-        <a href="{{ route('storage.link') }}" class="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('storage.link') ? 'bg-gray-700 text-blue-400' : '' }}">
+        <a href="{{ route('storage.link') }}" class="flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('storage.link') ? 'bg-gray-700 text-blue-400' : '' }}">
+            <i class="fas fa-hdd w-5 h-5 mr-3"></i>
             Storage Link
         </a>
-
     </nav>
 </div>
-
-<script>
-    function toggleDropdown(id) {
-        document.getElementById(id).classList.toggle('hidden');
-    }
-</script>

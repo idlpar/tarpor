@@ -32,4 +32,7 @@ window.Alpine = Alpine;
 window.Swal = Swal;
 window.tippy = tippy;
 Alpine.plugin(Collapse);
-Alpine.start();
+
+document.addEventListener('DOMContentLoaded', () => {
+    Alpine.start();
+});

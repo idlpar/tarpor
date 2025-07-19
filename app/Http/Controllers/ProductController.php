@@ -187,16 +187,19 @@ class ProductController extends Controller
                 }
             }
 
-            if (!empty($validated['product_faqs'])) {
-                $productFaqs = is_string($validated['product_faqs']) ? json_decode($validated['product_faqs'], true) : ($validated['product_faqs'] ?? []);
-                if (is_array($productFaqs)) {
-                    // Assuming product_faqs is an array of {question: string, answer: string}
-                    // Clear existing FAQs and then create new ones
-                    $product->faqs()->delete();
-                    foreach ($productFaqs as $faq) {
+            // Handle new FAQs
+            if (!empty($validated['new_faqs_data'])) {
+                $newFaqs = is_string($validated['new_faqs_data']) ? json_decode($validated['new_faqs_data'], true) : ($validated['new_faqs_data'] ?? []);
+                if (is_array($newFaqs)) {
+                    foreach ($newFaqs as $faq) {
                         $product->faqs()->create($faq);
                     }
                 }
+            }
+
+            // Handle selected existing FAQs
+            if (!empty($validated['selected_faqs'])) {
+                $product->faqs()->syncWithoutDetaching($validated['selected_faqs']);
             }
 
             if (!empty($validated['specifications'])) {
@@ -378,13 +381,21 @@ class ProductController extends Controller
                 $product->crossSellingProducts()->sync($crossSellingProducts);
             }
 
-            // Handle product FAQs
-            $productFaqs = is_string($validated['product_faqs']) ? json_decode($validated['product_faqs'], true) : ($validated['product_faqs'] ?? []);
-            if (is_array($productFaqs)) {
-                $product->faqs()->delete(); // Clear existing FAQs
-                foreach ($productFaqs as $faq) {
-                    $product->faqs()->create($faq);
+            // Handle new FAQs
+            if (!empty($validated['new_faqs_data'])) {
+                $newFaqs = is_string($validated['new_faqs_data']) ? json_decode($validated['new_faqs_data'], true) : ($validated['new_faqs_data'] ?? []);
+                if (is_array($newFaqs)) {
+                    foreach ($newFaqs as $faq) {
+                        $product->faqs()->create($faq);
+                    }
                 }
+            }
+
+            // Handle selected existing FAQs
+            if (!empty($validated['selected_faqs'])) {
+                $product->faqs()->sync($validated['selected_faqs']);
+            } else {
+                $product->faqs()->detach(); // Detach all if none selected
             }
 
             // Handle product specifications
@@ -746,7 +757,9 @@ class ProductController extends Controller
             'max_order_quantity' => 'nullable|integer|min:0',
             'related_products' => 'nullable|json',
             'cross_selling_products' => 'nullable|json',
-            'product_faqs' => 'nullable|json',
+            'new_faqs_data' => 'nullable|json',
+            'selected_faqs' => 'nullable|array',
+            'selected_faqs.*' => 'exists:faqs,id',
             'specifications' => 'nullable|json',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
