@@ -30,8 +30,7 @@ if (!Config::get('installer.installed')) {
     });
 }
 
-// Public Product Detail Route (moved to top for precedence)
-Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
+
 
 // Test JSON route - TEMPORARY
 Route::get('/test-json', function () {
@@ -93,6 +92,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
+        Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
         Route::get('/admin/products/{product:id}', [ProductController::class, 'show'])->name('products.show');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
         Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import');

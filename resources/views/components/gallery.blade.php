@@ -831,6 +831,28 @@
 </div>
 
 
+<!-- Progress Modal -->
+<div id="progressModal" class="progress-modal">
+    <div class="progress-content">
+        <div class="progress-header" id="progressTitle">Processing Files</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-status" id="progressStatus">0% Complete</div>
+    </div>
+</div>
+
+<!-- Progress Modal -->
+<div id="progressModal" class="progress-modal">
+    <div class="progress-content">
+        <div class="progress-header" id="progressTitle">Processing Files</div>
+        <div class="progress-bar-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        <div class="progress-status" id="progressStatus">0% Complete</div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
