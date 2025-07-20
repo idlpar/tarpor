@@ -1057,7 +1057,7 @@
                         this.featuredImageContainer.classList.remove('hidden');
                     });
                     if (this.selectedImagesPreview) {
-                        new Sortable(this.selectedImagesPreview, {
+                        new window.Sortable(this.selectedImagesPreview, {
                             animation: 150,
                             ghostClass: 'sortable-ghost',
                             dragClass: 'sortable-image',

@@ -1246,13 +1246,7 @@
                             mainImage.dataset.zoomImage = thumb.dataset.zoomImage;
                             mainImage.style.opacity = '1';
 
-                            // Reinitialize zoom if zoom plugin is used
-                            if (typeof $.fn.elevateZoom !== 'undefined') {
-                                $(mainImage).elevateZoom({
-                                    zoomType: "inner",
-                                    cursor: "crosshair"
-                                });
-                            }
+                            
                         }, 300);
 
                         // Remove active class from all thumbnails
@@ -1333,13 +1327,7 @@
                 }
             });
 
-            // Initialize image zoom
-            if (typeof $.fn.elevateZoom !== 'undefined') {
-                $('#main-product-image').elevateZoom({
-                    zoomType: "inner",
-                    cursor: "crosshair"
-                });
-            }
+
         });
     </script>
 @endpush
@@ -1502,13 +1490,7 @@
                             mainImage.dataset.zoomImage = thumb.dataset.zoomImage;
                             mainImage.style.opacity = '1';
 
-                            // Reinitialize zoom if zoom plugin is used
-                            if (typeof $.fn.elevateZoom !== 'undefined') {
-                                $(mainImage).elevateZoom({
-                                    zoomType: "inner",
-                                    cursor: "crosshair"
-                                });
-                            }
+                            
                         }, 300);
 
                         // Remove active class from all thumbnails
@@ -1589,13 +1571,7 @@
                 }
             });
 
-            // Initialize image zoom
-            if (typeof $.fn.elevateZoom !== 'undefined') {
-                $('#main-product-image').elevateZoom({
-                    zoomType: "inner",
-                    cursor: "crosshair"
-                });
-            }
+
         });
     </script>
 @endpush

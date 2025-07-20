@@ -28,16 +28,16 @@
                     <!-- Image Gallery -->
                     <div>
                         <div class="relative mb-4">
-                            <img id="mainProductImage" src="{{ $product->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $product->name }}" class="w-full h-96 object-contain rounded-lg shadow-sm cursor-zoom-in">
-                            <!-- Zoom overlay (optional, can be more complex with JS) -->
-                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-opacity duration-300 flex items-center justify-center opacity-0 hover:opacity-100">
+                            <img id="mainProductImage" src="{{ $product->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $product->name }}" class="w-full h-96 object-contain rounded-lg shadow-sm cursor-zoom-in" data-full-src="{{ $product->thumbnail_url ?? asset('images/default-product.jpg') }}">
+                            <!-- Zoom overlay -->
+                            <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-10 transition-opacity duration-300 flex items-center justify-center opacity-0 hover:opacity-100 cursor-zoom-in" id="zoomOverlay">
                                 <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0zM10 7v3m0 0v3m0-3h3m0 0h-3"></path></svg>
                             </div>
                         </div>
                         @if ($product->gallery_images->isNotEmpty())
                             <div class="grid grid-cols-4 gap-2">
                                 @foreach ($product->gallery_images as $image_url)
-                                    <img src="{{ $image_url }}" alt="{{ $product->name }} thumbnail" class="w-full h-24 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-colors duration-200 thumbnail-image" data-src="{{ $image_url }}">
+                                    <img src="{{ $image_url }}" alt="{{ $product->name }} thumbnail" class="w-full h-24 object-cover rounded-md cursor-pointer border-2 border-transparent hover:border-blue-500 transition-colors duration-200 thumbnail-image" data-src="{{ $image_url }}" data-full-src="{{ str_replace('/thumb/', '/', $image_url) }}">
                                 @endforeach
                             </div>
                         @endif
@@ -461,6 +461,57 @@
 
         buyNowBtn.addEventListener('click', function() {
             addToCart(this, true);
+        });
+
+        // --- IMAGE ZOOM ---
+        const zoomOverlay = document.getElementById('zoomOverlay');
+        const modal = document.createElement('div');
+        modal.id = 'imageZoomModal';
+        modal.classList.add('fixed', 'inset-0', 'bg-black', 'bg-opacity-75', 'flex', 'items-center', 'justify-center', 'z-50', 'hidden');
+        modal.innerHTML = `
+            <div class="relative">
+                <button id="closeZoomModal" class="absolute top-2 right-2 text-white text-3xl font-bold leading-none hover:text-gray-300">&times;</button>
+                <img src="" alt="Product Zoom" class="max-w-full max-h-screen object-contain" id="zoomedImage">
+            </div>
+        `;
+        document.body.appendChild(modal);
+
+        const zoomedImage = document.getElementById('zoomedImage');
+        const closeZoomModal = document.getElementById('closeZoomModal');
+
+        function openZoomModal(src) {
+            zoomedImage.src = src;
+            modal.classList.remove('hidden');
+        }
+
+        function closeZoomModalFunc() {
+            modal.classList.add('hidden');
+            zoomedImage.src = ''; // Clear image source
+        }
+
+        zoomOverlay.addEventListener('click', function() {
+            const fullSrc = mainProductImage.dataset.fullSrc;
+            openZoomModal(fullSrc);
+        });
+
+        thumbnailImages.forEach(thumbnail => {
+            thumbnail.addEventListener('click', function () {
+                mainProductImage.src = this.dataset.src;
+                mainProductImage.dataset.fullSrc = this.dataset.fullSrc; // Update full-src for main image
+            });
+        });
+
+        closeZoomModal.addEventListener('click', closeZoomModalFunc);
+        modal.addEventListener('click', function(event) {
+            if (event.target === modal) { // Close only if clicking on the overlay, not the image
+                closeZoomModalFunc();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape' && !modal.classList.contains('hidden')) {
+                closeZoomModalFunc();
+            }
         });
     });
 </script>

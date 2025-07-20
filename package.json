@@ -23,6 +23,8 @@
         "@splidejs/splide": "^4.1.4",
         "alpinejs": "^3.14.8",
         "chart.js": "^4.4.8",
+        "jquery": "^3.7.1",
+        "medium-zoom": "^1.1.0",
         "sortablejs": "^1.15.6",
         "sweetalert2": "^11.21.0",
         "tippy.js": "^6.3.7"

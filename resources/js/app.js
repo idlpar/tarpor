@@ -3,11 +3,15 @@ import Alpine from 'alpinejs';
 import Collapse from '@alpinejs/collapse';
 import '@fortawesome/fontawesome-free/js/all.js'; // Optional: Consider specific icon imports for performance
 import Splide from '@splidejs/splide';
+import $ from 'jquery';
+window.$ = window.jQuery = $;
 import Swal from 'sweetalert2';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
 import Sortable from 'sortablejs';
+import mediumZoom from 'medium-zoom';
+window.mediumZoom = mediumZoom;
 
 window.Sortable = Sortable;
 
