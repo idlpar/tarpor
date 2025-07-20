@@ -7,6 +7,9 @@ import Swal from 'sweetalert2';
 import ClassicEditor from '@ckeditor/ckeditor5-build-classic';
 import tippy from 'tippy.js';
 import 'tippy.js/dist/tippy.css';
+import Sortable from 'sortablejs';
+
+window.Sortable = Sortable;
 
 window.ClassicEditor = ClassicEditor;
 const editors = {}; // Store CKEditor instances

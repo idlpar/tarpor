@@ -803,8 +803,11 @@
 </div>
 
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <script>
+    // Sortable is globally available via app.js
+    // import Sortable from 'sortablejs'; // No longer needed here
+
     document.addEventListener('DOMContentLoaded', function () {
         // Utility Functions
         const debounce = (func, wait) => {

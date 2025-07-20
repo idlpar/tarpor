@@ -44,26 +44,7 @@
         gap: 0.75rem;
     }
 
-    .gallery-close {
-        background: #FFFFFF;
-        border: 2px solid #FFFFFF;
-        border-radius: 50%;
-        width: 2rem;
-        height: 2rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: #be123c;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .gallery-close:hover {
-        background: #be123c;
-        color: white;
-        border-color: #be123c;
-        transform: scale(1.05);
-    }
+    
 
     /* Toolbar */
     .gallery-toolbar {
@@ -98,46 +79,7 @@
         gap: 0.5rem;
     }
 
-    .toolbar-button {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: all 0.2s;
-    }
-
-    .toolbar-button.primary {
-        background-color: #4f46e5;
-        color: white;
-    }
-
-    .toolbar-button.primary:hover {
-        background-color: #4338ca;
-    }
-
-    .toolbar-button.secondary {
-        background-color: white;
-        border-color: #e2e8f0;
-        color: #4f46e5;
-    }
-
-    .toolbar-button.secondary:hover {
-        background-color: #f8fafc;
-    }
-
-    .toolbar-button.danger {
-        background-color: #ef4444;
-        color: white;
-    }
-
-    .toolbar-button.danger:hover {
-        background-color: #dc2626;
-    }
+    
 
     .search-container {
         position: relative;
@@ -424,36 +366,7 @@
         margin-top: 1.5rem;
     }
 
-    .action-button {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.5rem;
-        padding: 0.5rem;
-        border-radius: 0.375rem;
-        font-weight: 500;
-        cursor: pointer;
-        transition: all 0.2s;
-        border: none;
-    }
-
-    .action-button.primary {
-        background-color: #4f46e5;
-        color: white;
-    }
-
-    .action-button.primary:hover {
-        background-color: #4338ca;
-    }
-
-    .action-button.danger {
-        background-color: #ef4444;
-        color: white;
-    }
-
-    .action-button.danger:hover {
-        background-color: #dc2626;
-    }
+    
 
     /* Context Menu */
     .context-menu {
@@ -508,18 +421,7 @@
         border-top: none;
     }
 
-    .pagination-button {
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        background-color: #f8fafc;
-        border: 1px solid #e2e8f0;
-        cursor: pointer;
-        transition: all 0.2s;
-    }
-
-    .pagination-button:hover:not(:disabled) {
-        background-color: #e2e8f0;
-    }
+    
 
     .pagination-button:disabled {
         opacity: 0.5;
@@ -687,7 +589,7 @@
                 <i class="fas fa-images"></i>
                 <span>Media Gallery</span>
             </div>
-            <button type="button" id="closeGalleryModal" class="gallery-close" aria-label="Close Gallery">
+            <button type="button" id="closeGalleryModal" class="bg-white border-2 border-white rounded-full w-8 h-8 flex items-center justify-center text-rose-700 cursor-pointer transition-all duration-200 hover:bg-rose-700 hover:text-white hover:border-rose-700 hover:scale-105" aria-label="Close Gallery">
                 <i class="fas fa-times"></i>
             </button>
         </div>
@@ -695,41 +597,45 @@
         <!-- Toolbar -->
         <div class="gallery-toolbar">
             <div class="toolbar-group normal-actions">
-                <button type="button" id="refreshButton" class="toolbar-button secondary" aria-label="Refresh Gallery">
+                <button type="button" id="refreshButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Refresh Gallery">
                     <i class="fas fa-sync-alt"></i>
                     <span>Refresh</span>
                 </button>
-                <button type="button" id="newFolderButton" class="toolbar-button secondary" aria-label="Create New Folder">
+                <button type="button" id="openFolderButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md hidden" aria-label="Open Selected Folder">
+                    <i class="fas fa-folder-open"></i>
+                    <span>Open</span>
+                </button>
+                <button type="button" id="newFolderButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Create New Folder">
                     <i class="fas fa-folder-plus"></i>
                     <span>New Folder</span>
                 </button>
-                <button type="button" id="uploadButton" class="toolbar-button secondary" aria-label="Upload Files">
+                <button type="button" id="uploadButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Upload Files">
                     <i class="fas fa-upload"></i>
                     <span>Upload</span>
                 </button>
-                <button type="button" id="deleteButton" class="toolbar-button danger hidden" aria-label="Delete Selected Items">
+                <button type="button" id="deleteButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 bg-red-500 text-white hover:bg-red-600 hover:scale-105 hover:shadow-md hidden" aria-label="Delete Selected Items">
                     <i class="fas fa-trash"></i>
                     <span>Delete</span>
                 </button>
             </div>
 
             <div class="toolbar-group trash-actions">
-                <button type="button" id="restoreButton" class="toolbar-button secondary" aria-label="Restore Selected Items">
+                <button type="button" id="restoreButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Restore Selected Items">
                     <i class="fas fa-trash-restore"></i>
                     <span>Restore</span>
                 </button>
-                <button type="button" id="permanentDeleteButton" class="toolbar-button danger" aria-label="Delete Permanently">
+                <button type="button" id="permanentDeleteButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 bg-red-500 text-white hover:bg-red-600 hover:scale-105 hover:shadow-md" aria-label="Delete Permanently">
                     <i class="fas fa-trash"></i>
                     <span>Delete Permanently</span>
                 </button>
-                <button type="button" id="emptyTrashButton" class="toolbar-button danger" aria-label="Empty Trash">
+                <button type="button" id="emptyTrashButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-transparent transition-all duration-200 bg-red-500 text-white hover:bg-red-600 hover:scale-105 hover:shadow-md" aria-label="Empty Trash">
                     <i class="fas fa-broom"></i>
                     <span>Empty Trash</span>
                 </button>
             </div>
 
             <div class="toolbar-group">
-                <button type="button" id="toggleTrashButton" class="toolbar-button secondary" aria-label="Toggle Trash View">
+                <button type="button" id="toggleTrashButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Toggle Trash View">
                     <i class="fas fa-trash"></i>
                     <span id="trashButtonText">Trash</span>
                 </button>
@@ -747,11 +653,11 @@
             </div>
 
             <div class="pagination-controls">
-                <button id="prevPage" class="pagination-button" disabled aria-label="Previous Page">
+                <button id="prevPage" class="px-4 py-2 rounded-md bg-gray-50 border border-gray-200 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:scale-105 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed" disabled aria-label="Previous Page">
                     <i class="fas fa-chevron-left"></i>
                 </button>
                 <span id="pageInfo">Page 1 of 1</span>
-                <button id="nextPage" class="pagination-button" disabled aria-label="Next Page">
+                <button id="nextPage" class="px-4 py-2 rounded-md bg-gray-50 border border-gray-200 cursor-pointer transition-all duration-200 hover:bg-gray-100 hover:scale-105 hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed" disabled aria-label="Next Page">
                     <i class="fas fa-chevron-right"></i>
                 </button>
             </div>
@@ -801,15 +707,15 @@
                 </div>
 
                 <div id="actionButtons" class="action-buttons hidden">
-                    <button class="action-button primary" id="insertButton" aria-label="Insert Selected Media">
+                    <button class="flex items-center justify-center gap-2 p-2 rounded-md font-medium cursor-pointer transition-all duration-200 border-none bg-indigo-600 text-white hover:bg-indigo-700 hover:scale-105 hover:shadow-md" id="insertButton" aria-label="Insert Selected Media">
                         <i class="fas fa-check mr-2"></i>
                         Insert
                     </button>
-                    <button class="action-button secondary" id="downloadButton" aria-label="Download Media">
+                    <button class="flex items-center justify-center gap-2 p-2 rounded-md font-medium cursor-pointer transition-all duration-200 border border-gray-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" id="downloadButton" aria-label="Download Media">
                         <i class="fas fa-download mr-2"></i>
                         Download
                     </button>
-                    <button class="action-button danger" id="deleteSingleButton" aria-label="Delete Media">
+                    <button class="flex items-center justify-center gap-2 p-2 rounded-md font-medium cursor-pointer transition-all duration-200 border-none bg-red-500 text-white hover:bg-red-600 hover:scale-105 hover:shadow-md" id="deleteSingleButton" aria-label="Delete Media">
                         <i class="fas fa-trash mr-2"></i>
                         Delete
                     </button>
@@ -853,8 +759,11 @@
     </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
 <script>
+    // Sortable is globally available via app.js
+    // import Sortable from 'sortablejs'; // No longer needed here
+
     document.addEventListener('DOMContentLoaded', function () {
         // Utility Functions
         const debounce = (func, wait) => {
@@ -884,6 +793,7 @@
                 downloadButton: document.getElementById('downloadButton'),
                 deleteSingleButton: document.getElementById('deleteSingleButton'),
                 refreshButton: document.getElementById('refreshButton'),
+                openFolderButton: document.getElementById('openFolderButton'),
                 newFolderButton: document.getElementById('newFolderButton'),
                 uploadButton: document.getElementById('uploadButton'),
                 deleteButton: document.getElementById('deleteButton'),
@@ -947,6 +857,11 @@
                 this.elements.refreshButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.refreshContents();
+                });
+
+                this.elements.openFolderButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.openSelectedFolder();
                 });
 
                 this.elements.toggleTrashButton.addEventListener('click', (e) => {
@@ -1090,7 +1005,7 @@
             setupImageSorting() {
                 const previewContainer = document.getElementById('selectedImagesPreview');
                 if (previewContainer) {
-                    new Sortable(previewContainer, {
+                    new window.Sortable(previewContainer, {
                         animation: 150,
                         ghostClass: 'sortable-ghost',
                         dragClass: 'sortable-image',
@@ -1514,6 +1429,9 @@
                 this.elements.restoreButton.classList.toggle('hidden', !isTrashView || !hasSelection);
                 this.elements.permanentDeleteButton.classList.toggle('hidden', !isTrashView || !hasSelection);
 
+                const selectedFolder = singleSelection && Array.from(this.state.selectedItems)[0].startsWith('folder:');
+                this.elements.openFolderButton.classList.toggle('hidden', !selectedFolder || isTrashView);
+
                 if (singleSelection && Array.from(this.state.selectedItems)[0].startsWith('file:')) {
                     const fileId = Array.from(this.state.selectedItems)[0].split(':')[1];
                     this.fetchFileDetails(fileId);
@@ -1691,7 +1609,19 @@
                 this.elements.detailUploaded.textContent = this.formatDate(file.created_at);
             },
 
-            // Gallery Operations
+            openSelectedFolder() {
+                if (this.state.selectedItems.size !== 1) return;
+
+                const selectedItemKey = Array.from(this.state.selectedItems)[0];
+                if (!selectedItemKey.startsWith('folder:')) return;
+
+                const folderId = selectedItemKey.split(':')[1];
+                const folderElement = document.querySelector(`.gallery-item[data-id="${folderId}"][data-type="folder"]`);
+
+                if (folderElement) {
+                    this.navigateToFolder(folderElement);
+                }
+            },
             toggleTrashView() {
                 this.state.isTrashView = !this.state.isTrashView;
                 this.state.currentPath = '';
@@ -1779,7 +1709,7 @@
                 }).then(result => {
                     if (result.isConfirmed) {
                         const folderName = result.value;
-                        this.showProgress('Creating Folder');
+                        this.showProgress('Creating Folder...');
                         fetch('{{ route("gallery.folder.create") }}', {
                             method: 'POST',
                             headers: {
@@ -1798,20 +1728,12 @@
                                 if (data.success) {
                                     this.showSuccessNotification('Folder created successfully');
                                     this.loadContents();
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Success',
-                                        text: 'Folder created successfully',
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    });
                                 } else {
                                     throw new Error(data.message || 'Folder creation failed');
                                 }
                             })
                             .catch(error => {
                                 this.showError(error.message);
-                                Swal.fire({ icon: 'error', title: 'Error', text: error.message });
                             })
                             .finally(() => this.hideProgress());
                     }
@@ -1837,7 +1759,7 @@
                     confirmButtonText: permanent ? 'Delete Permanently' : 'Move to Trash'
                 }).then(result => {
                     if (result.isConfirmed) {
-                        this.showProgress(permanent ? 'Deleting Items' : 'Moving to Trash');
+                        this.showProgress(permanent ? 'Deleting Items Permanently...' : 'Moving to Trash...');
                         fetch('{{ route("gallery.delete") }}', {
                             method: 'POST',
                             headers: {
@@ -1850,21 +1772,17 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    this.updateProgress(100, 'Completed');
-                                    setTimeout(() => {
-                                        this.hideProgress();
-                                        this.showSuccessNotification(data.message);
-                                        this.clearPreview();
-                                        this.refreshContents();
-                                    }, 500);
+                                    this.showSuccessNotification(data.message);
+                                    this.clearPreview();
+                                    this.refreshContents();
                                 } else {
                                     throw new Error(data.message || 'Delete failed');
                                 }
                             })
                             .catch(error => {
-                                this.hideProgress();
                                 this.showError(error.message);
-                            });
+                            })
+                            .finally(() => this.hideProgress());
                     }
                 });
             },
@@ -1886,7 +1804,7 @@
                     confirmButtonText: 'Restore'
                 }).then(result => {
                     if (result.isConfirmed) {
-                        this.showProgress('Restoring Items');
+                        this.showProgress('Restoring Items...');
                         fetch('{{ route("gallery.restore") }}', {
                             method: 'POST',
                             headers: {
@@ -1899,21 +1817,17 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    this.updateProgress(100, 'Completed');
-                                    setTimeout(() => {
-                                        this.hideProgress();
-                                        this.showSuccessNotification(data.message);
-                                        this.clearPreview();
-                                        this.refreshContents();
-                                    }, 500);
+                                    this.showSuccessNotification(data.message);
+                                    this.clearPreview();
+                                    this.refreshContents();
                                 } else {
                                     throw new Error(data.message || 'Restore failed');
                                 }
                             })
                             .catch(error => {
-                                this.hideProgress();
                                 this.showError(error.message);
-                            });
+                            })
+                            .finally(() => this.hideProgress());
                     }
                 });
             },
@@ -1928,7 +1842,7 @@
                     confirmButtonText: 'Empty Trash'
                 }).then(result => {
                     if (result.isConfirmed) {
-                        this.showProgress('Emptying Trash');
+                        this.showProgress('Emptying Trash...');
                         fetch('{{ route("gallery.empty-trash") }}', {
                             method: 'POST',
                             headers: {
@@ -1940,21 +1854,17 @@
                             .then(response => response.json())
                             .then(data => {
                                 if (data.success) {
-                                    this.updateProgress(100, 'Completed');
-                                    setTimeout(() => {
-                                        this.hideProgress();
-                                        this.showSuccessNotification(data.message);
-                                        this.clearPreview();
-                                        this.loadTrashContents();
-                                    }, 500);
+                                    this.showSuccessNotification(data.message);
+                                    this.clearPreview();
+                                    this.loadTrashContents();
                                 } else {
                                     throw new Error(data.message || 'Failed to empty trash');
                                 }
                             })
                             .catch(error => {
-                                this.hideProgress();
                                 this.showError(error.message);
-                            });
+                            })
+                            .finally(() => this.hideProgress());
                     }
                 });
             },
@@ -1994,7 +1904,7 @@
                     return;
                 }
 
-                this.showProgress('Fetching Files');
+                this.showProgress('Inserting Media...');
                 const fetchPromises = items.map(item =>
                     fetch(`{{ route("gallery.file.for-insertion", ":id") }}`.replace(':id', item.id), {
                         method: 'GET',

@@ -839,6 +839,9 @@
 
     <!-- Image Handling, and Form Submission -->
     <script>
+        // Sortable is globally available via app.js
+        // import Sortable from 'sortablejs'; // No longer needed here
+
         document.addEventListener('DOMContentLoaded', () => {
             let galleryManager = {
                 productImagesInput: document.getElementById('productImagesInput'),
@@ -971,7 +974,7 @@
                         this.featuredImageContainer.classList.remove('hidden');
                     });
                     if (this.selectedImagesPreview) {
-                        new Sortable(this.selectedImagesPreview, {
+                        new window.Sortable(this.selectedImagesPreview, {
                             animation: 150,
                             ghostClass: 'sortable-ghost',
                             dragClass: 'sortable-image',
