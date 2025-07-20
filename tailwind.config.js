@@ -14,18 +14,17 @@ export default {
     theme: {
         extend: {
             colors: {
-                primary: '#A68A64', // Muted gold
-                'primary-dark': '#8B6F47', // Darker gold
-                secondary: '#F5E6CC', // Soft cream
-                dark: '#1A1C2B', // Deep charcoal
-                light: '#F9F6EE', // Off-white
-                gold: '#D4A017', // Vibrant gold
-                'nav-bg': '#1A1C2B', // Navigation background
-                emerald: '#355E3B', // Rich green
-                burgundy: '#5C2C2A', // Deep burgundy
-                ivory: '#F3E9DC', // Warm ivory
-                'red-close': '#D32F2F', // Red for close buttons
-                'red-badge': '#EF4444', // Red for notification badges
+                primary: '#2C5F2D', // Deep Forest Green
+                'primary-dark': '#1F4020', // Darker Forest Green
+                secondary: '#F5F5DC', // Cream/Beige
+                accent: '#B8860B', // Dark Goldenrod
+                'text-dark': '#333333', // Charcoal
+                'text-light': '#666666', // Medium Gray
+                'bg-light': '#F8F8F8', // Very Light Gray
+                'input-bg': '#FFFFFF', // White
+                'input-border': '#D1D5DB', // Light Gray
+                error: '#DC2626', // Red
+                success: '#16A34A', // Green
             },
             fontFamily: {
                 brand: ['Playfair Display', 'serif', ...defaultTheme.fontFamily.serif],

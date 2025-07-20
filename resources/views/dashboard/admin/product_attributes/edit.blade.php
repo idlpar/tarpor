@@ -24,22 +24,22 @@
             ]
         ])
 
-        <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800">Edit Product Attribute</h1>
+        <div class="max-w-xl mx-auto bg-input-bg p-8 rounded-lg shadow-lg">
+            <h1 class="text-3xl font-bold mb-6 text-text-dark">Edit Product Attribute</h1>
 
             <form action="{{ route('product_attributes.update', $product_attribute->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="mb-6">
-                    <label for="name" class="block font-semibold text-gray-700 mb-2">Attribute Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name', $product_attribute->name) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="e.g., Size, Color, Material">
+                    <label for="name" class="block font-semibold text-text-dark mb-2">Attribute Name *</label>
+                    <input type="text" id="name" name="name" value="{{ old('name', $product_attribute->name) }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('name') border-error @enderror" placeholder="e.g., Size, Color, Material">
                     @error('name')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="flex justify-end">
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors duration-200">
+                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors duration-200">
                         Update Attribute
                     </button>
                 </div>

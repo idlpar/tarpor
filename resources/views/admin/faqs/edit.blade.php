@@ -12,20 +12,20 @@
     
     <div class="container mx-auto px-4 py-6">
         <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Edit FAQ</h1>
-            <a href="{{ route('faqs.index') }}" class="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            <h1 class="text-2xl font-bold text-text-dark">Edit FAQ</h1>
+            <a href="{{ route('faqs.index') }}" class="inline-flex items-center px-4 py-2 border border-input-border rounded-md shadow-sm text-sm font-medium text-text-dark bg-input-bg hover:bg-bg-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
                 Back to FAQs
             </a>
         </div>
 
         @if (session('success'))
-            <div class="mb-4 rounded-lg bg-green-100 px-6 py-5 text-base text-green-700" role="alert">
+            <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4" role="alert">
                 {{ session('success') }}
             </div>
         @endif
 
         @if ($errors->any())
-            <div class="mb-4 rounded-lg bg-red-100 px-6 py-5 text-base text-red-700" role="alert">
+            <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-4" role="alert">
                 <ul>
                     @foreach ($errors->all() as $error)
                         <li>{{ $error }}</li>
@@ -34,20 +34,20 @@
             </div>
         @endif
 
-        <div class="bg-white shadow-sm rounded-lg p-6 border border-gray-200">
+        <div class="bg-white shadow-sm rounded-lg p-6 border border-input-border">
             <form action="{{ route('faqs.update', $faq->id) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="mb-4">
-                    <label for="question" class="block text-sm font-medium text-gray-700">Question</label>
-                    <input type="text" name="question" id="question" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('question') border-red-500 @enderror" value="{{ old('question', $faq->question) }}" required>
+                    <label for="question" class="block text-sm font-medium text-text-dark">Question</label>
+                    <input type="text" name="question" id="question" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('question') border-error @enderror" value="{{ old('question', $faq->question) }}" required>
                 </div>
                 <div class="mb-4">
-                    <label for="answer" class="block text-sm font-medium text-gray-700">Answer</label>
-                    <textarea id="answer" name="answer" rows="5" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('answer') border-red-500 @enderror" placeholder="Enter FAQ answer" required>{{ old('answer', $faq->answer) }}</textarea>
+                    <label for="answer" class="block text-sm font-medium text-text-dark">Answer</label>
+                    <textarea id="answer" name="answer" rows="5" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('answer') border-error @enderror" placeholder="Enter FAQ answer" required>{{ old('answer', $faq->answer) }}</textarea>
                 </div>
                 <div class="flex justify-end">
-                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
                         Update FAQ
                     </button>
                 </div>

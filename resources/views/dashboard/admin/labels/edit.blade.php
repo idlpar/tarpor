@@ -7,7 +7,7 @@
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
-                <h1 class="text-2xl font-bold text-gray-900">Edit Label</h1>
+                <h1 class="text-2xl font-bold text-text-dark">Edit Label</h1>
                 @include('components.breadcrumbs', [
                     'links' => [
                         'Labels' => route('labels.index'),
@@ -22,42 +22,42 @@
                 @csrf
                 @method('PUT')
                 <div class="mb-6">
-                    <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name', $label->name) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Label Name">
+                    <label for="name" class="block font-semibold text-text-dark mb-2">Name *</label>
+                    <input type="text" id="name" name="name" value="{{ old('name', $label->name) }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('name') border-error @enderror" placeholder="Label Name">
                     @error('name')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label for="slug" class="block font-semibold text-gray-700 mb-2">Slug *</label>
-                    <input type="text" id="slug" name="slug" value="{{ old('slug', $label->slug) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="label-slug">
+                    <label for="slug" class="block font-semibold text-text-dark mb-2">Slug *</label>
+                    <input type="text" id="slug" name="slug" value="{{ old('slug', $label->slug) }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('slug') border-error @enderror" placeholder="label-slug">
                     @error('slug')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label for="description" class="block font-semibold text-gray-700 mb-2">Description</label>
-                    <textarea id="description" name="description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('description') border-red-500 @enderror" placeholder="Label Description">{{ old('description', $label->description) }}</textarea>
+                    <label for="description" class="block font-semibold text-text-dark mb-2">Description</label>
+                    <textarea id="description" name="description" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('description') border-error @enderror" placeholder="Label Description">{{ old('description', $label->description) }}</textarea>
                     @error('description')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label for="status" class="block font-semibold text-gray-700 mb-2">Status</label>
-                    <select id="status" name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
+                    <label for="status" class="block font-semibold text-text-dark mb-2">Status</label>
+                    <select id="status" name="status" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('status') border-error @enderror">
                         <option value="active" {{ old('status', $label->status) == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ old('status', $label->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                     @error('status')
-                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-error text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="flex justify-end">
-                    <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors">Update Label</button>
+                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors">Update Label</button>
                 </div>
             </form>
         </div>

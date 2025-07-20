@@ -113,52 +113,61 @@ class BrandController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        $brand->name = $request->name;
-        $brand->slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
-        $brand->description = $request->description;
-        $brand->status = $request->status;
-        $brand->save();
+        try {
+            $brand->name = $request->name;
+            $brand->slug = $request->slug ? Str::slug($request->slug) : Str::slug($request->name);
+            $brand->description = $request->description;
+            $brand->status = $request->status;
 
-        // Handle logo update or association
-        if ($request->hasFile('logo_new')) {
-            // Delete old logo if exists
-            if ($brand->logo_id) {
-                Media::find($brand->logo_id)?->delete();
-            }
-            $file = $request->file('logo_new');
-            $path = $file->store('brand_logos', 'public');
+            // Handle logo update or association
+            if ($request->hasFile('logo_new')) {
+                $file = $request->file('logo_new');
+                $path = $file->store('brand_logos', 'public');
 
-            $media = Media::create([
-                'model_type' => Brand::class,
-                'model_id' => $brand->id,
-                'uuid' => Str::uuid(),
-                'collection_name' => 'brand_logos',
-                'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'file_name' => basename($path),
-                'mime_type' => $file->getMimeType(),
-                'disk' => 'public',
-                'conversions_disk' => 'public',
-                'size' => $file->getSize(),
-                'directory' => 'brand_logos',
-                'alt_text' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'caption' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-                'title' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
-            ]);
-            $brand->logo_id = $media->id;
-            $brand->save();
-        } elseif ($request->filled('logo_existing')) {
-            $brand->logo_id = $request->logo_existing;
-            $brand->save();
-        } else {
-            // If no new file and no existing ID, remove current logo
-            if ($brand->logo_id) {
-                Media::find($brand->logo_id)?->delete();
+                $media = Media::create([
+                    'model_type' => Brand::class,
+                    'model_id' => $brand->id,
+                    'uuid' => Str::uuid(),
+                    'collection_name' => 'brand_logos',
+                    'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'file_name' => basename($path),
+                    'mime_type' => $file->getMimeType(),
+                    'disk' => 'public',
+                    'conversions_disk' => 'public',
+                    'size' => $file->getSize(),
+                    'directory' => 'brand_logos',
+                    'alt_text' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'caption' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                    'title' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+                ]);
+                $brand->logo_id = $media->id;
+            } elseif ($request->filled('logo_existing')) {
+                $brand->logo_id = $request->logo_existing;
+            } else {
                 $brand->logo_id = null;
-                $brand->save();
             }
-        }
 
-        return redirect()->route('brands.index')->with('success', 'Brand updated successfully.');
+            $brand->save();
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Brand updated successfully.',
+                    'data' => $brand
+                ]);
+            }
+
+            return redirect()->route('brands.index')->with('success', 'Brand updated successfully.');
+        } catch (\Exception $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Error updating brand: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return back()->with('error', 'Error updating brand: ' . $e->getMessage());
+        }
     }
 
     /**
