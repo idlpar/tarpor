@@ -136,6 +136,15 @@ class UserController extends Controller
     }
 
     /**
+     * Display the specified user (Admin only).
+     */
+    public function show(User $user)
+    {
+        $this->authorize('view', $user);
+        return view('users.show', compact('user'));
+    }
+
+    /**
      * Show the user's profile (All roles).
      */
     public function showProfile()

@@ -4,6 +4,12 @@
 
 @section('admin_content')
     <div class="min-h-screen bg-bg-light">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Categories' => route('categories.index'),
+                'Create New Category' => null
+            ]
+        ])
         <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex justify-between items-center mb-8">
                 <div>

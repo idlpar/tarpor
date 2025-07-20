@@ -409,16 +409,28 @@
                                 <dt class="text-sm font-medium text-gray-500">Max Order</dt>
                                 <dd class="mt-1 text-sm text-gray-900">{{ $product->max_order_quantity ?? 'No limit' }}</dd>
                             </div>
+                            @if($product->tags->isNotEmpty())
+                                <div class="col-span-2">
+                                    <dt class="text-sm font-medium text-gray-500">Tags</dt>
+                                    <dd class="mt-1 text-sm text-gray-900 flex flex-wrap gap-2">
+                                        @foreach($product->tags as $tag)
+                                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                                                {{ Str::upper($tag->name) === $tag->name ? $tag->name : Str::ucfirst($tag->name) }}
+                                            </span>
+                                        @endforeach
+                                    </dd>
+                                </div>
+                            @endif
                         </div>
 
-                        <!-- Product Options -->
-                        @if($product->options->isNotEmpty())
+                        <!-- Product Attributes (Options) -->
+                        @if(optional($product->productAttributes)->isNotEmpty())
                             <div class="space-y-4">
-                                @foreach($product->options as $option)
+                                @foreach($product->productAttributes as $attribute)
                                     <div>
-                                        <h4 class="text-sm font-medium text-gray-900 mb-1">{{ $option->name }}</h4>
+                                        <h4 class="text-sm font-medium text-gray-900 mb-1">{{ $attribute->name }}</h4>
                                         <div class="flex flex-wrap gap-2">
-                                            @foreach($option->values as $value)
+                                            @foreach(optional($attribute->values)->isNotEmpty() ? $attribute->values : [] as $value)
                                                 <button type="button" class="px-3 py-1 border rounded-md text-sm font-medium
                                                     {{ $loop->first ? 'bg-blue-50 border-blue-500 text-blue-600' : 'border-gray-300 text-gray-700 hover:bg-gray-50' }}">
                                                     {{ $value->value }}

@@ -30,6 +30,9 @@ if (!Config::get('installer.installed')) {
     });
 }
 
+// Public Product Detail Route (moved to top for precedence)
+Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
+
 // Test JSON route - TEMPORARY
 Route::get('/test-json', function () {
     return response()->json(['message' => 'This is a test JSON response.']);
@@ -90,7 +93,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
-        Route::get('/admin/products/{product}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('/admin/products/{product:id}', [ProductController::class, 'show'])->name('products.show');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
         Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import');
         Route::post('/products/import', [ProductController::class, 'import'])->name('products.import.store');
@@ -252,7 +255,7 @@ Route::get('/', fn() => view('home'))->name('home');
 Route::get('/shop', [ShopController::class, 'index'])->name('shop.index');
 Route::get('/search', [ShopController::class, 'search'])->name('shop.search');
 Route::post('/products/{product}/reviews', [ShopController::class, 'storeReview'])->name('products.reviews.store');
-Route::get('/shop/{product_slug}', [ShopController::class, 'productDetails'])->name('product.view');
+
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show')
     ->where('category_slug', '[a-z0-9-]+');

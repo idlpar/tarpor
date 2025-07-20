@@ -4,6 +4,11 @@
 
 @section('admin_content')
 <div class="container mx-auto px-4 py-6">
+    @include('components.breadcrumbs', [
+        'links' => [
+            'Coupons' => null
+        ]
+    ])
     <h1 class="text-3xl font-bold text-gray-800 mb-6">Coupons Management</h1>
 
     <div class="flex justify-between items-center mb-4">

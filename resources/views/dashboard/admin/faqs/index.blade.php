@@ -3,13 +3,12 @@
 @section('title', 'FAQs Management')
 
 @section('admin_content')
-    @php
-        $breadcrumbs = [
-            ['title' => 'FAQs'],
-        ];
-    @endphp
-    
     <div class="container mx-auto px-4 py-6">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'FAQs' => null
+            ]
+        ])
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>

@@ -110,6 +110,28 @@
             ]
         ])
 
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('products.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Edit Product</h1>
+                        <p class="mt-1 text-sm text-gray-600">Modify the details of an existing product</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('products.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Products
+                </a>
+            </div>
+        </div>
+
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
             <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
                 @method('PUT')
@@ -125,7 +147,7 @@
                         <!-- Name -->
                         <div class="mb-6">
                             <label for="name" class="block font-semibold text-gray-700 mb-2">Name *</label>
-                            <input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('name') border-red-500 @enderror" placeholder="Product Name">
+                            <input type="text" id="name" name="name" value="{{ old('name', $product->name) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Product Name">
                             @error('name')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                             @enderror
@@ -134,8 +156,11 @@
                         <!-- Permalink -->
                         <div class="mb-6">
                             <label for="slug" class="block font-semibold text-gray-700 mb-2">Permalink *</label>
-                            <div class="relative">
-                                <input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('slug') border-red-500 @enderror" placeholder="your-slug">
+                            <div class="flex rounded-md shadow-sm border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition duration-200">
+                                <span class="inline-flex items-center px-3 rounded-l-md border-r border-gray-300 bg-gray-200 text-gray-600 text-sm">
+                                    {{ url('/product') }}/
+                                </span>
+                                <input type="text" id="slug" name="slug" value="{{ old('slug', $product->slug) }}" class="flex-1 block w-full border-0 px-4 py-2 bg-gray-50 focus:ring-0 focus:outline-none rounded-r-md placeholder-gray-500" placeholder="your-slug">
                             </div>
                             @error('slug')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -146,35 +171,34 @@
                         </div>
 
                         <!-- Description -->
-                        <x-forms.ckeditor id="description" name="description" value="{{ old('description', $product->description) }}">Description</x-forms.ckeditor>
+                        <x-forms.ckeditor id="description" name="description" value="{{ old('description', $product->description) }}" class="mb-5">Description</x-forms.ckeditor>
 
                         <!-- Content (short_description) -->
-                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description', $product->short_description) }}">Content</x-forms.ckeditor>
+                        <x-forms.ckeditor id="short_description" name="short_description" value="{{ old('short_description', $product->short_description) }}" class="mb-5">Content</x-forms.ckeditor>
 
                         <!-- Images -->
-                        <div class="mb-6 border border-dashed border-gray-400 p-6 rounded-lg">
-                            <label class="block font-semibold text-left text-gray-700 mb-4">Images</label>
-                            <div class="clickable-upload-area border-dashed border-2 border-gray-300 p-6 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all">
-                                <div id="defaultUploadContent" class="flex flex-col items-center justify-center gap-3 min-h-[120px]">
-                                    <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
-                                        <path d="M15 8h.01"></path>
-                                        <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
-                                        <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
-                                        <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
-                                        <path d="M16 19h6"></path>
-                                        <path d="M19 16v6"></path>
-                                    </svg>
-                                    <span class="text-gray-500 text-lg">Click here to add images.</span>
-                                </div>
-                                <div id="selectedImagesPreview" class="flex flex-wrap gap-4 mb-4 hidden">
-                                    <!-- Dynamic images will be populated here -->
-                                </div>
-                                <div id="imageActionButtons" class="flex justify-start gap-4 mt-4 hidden">
-                                    <button type="button" id="addMoreImages" class="px-5 py-2.5 bg-indigo-600 text-white rounded-lg font-semibold text-sm hover:bg-indigo-700 transition-all">Add Images</button>
-                                    <button type="button" id="resetImages" class="px-5 py-2.5 bg-red-500 text-white rounded-lg font-semibold text-sm hover:bg-red-600 transition-all">Reset</button>
-                                </div>
+                        <div class="mb-5 p-6 rounded-lg shadow-sm border border-gray-200 bg-white">
+                            <label class="block text-sm font-semibold text-gray-700 mb-4">Images</label>
+                            <div class="clickable-upload-area border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 min-h-[120px]">
+                                <svg class="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
+                                    <path d="M15 8h.01"></path>
+                                    <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
+                                    <path d="M3 16l5 -5c.928 -.893 2.072 -.893 3 0l4 4"></path>
+                                    <path d="M14 14l1 -1c.67 -.644 1.45 -.824 2.182 -.54"></path>
+                                    <path d="M16 19h6"></path>
+                                    <path d="M19 16v6"></path>
+                                </svg>
+                                <span class="text-gray-500 text-lg">Click here to add images.</span>
                             </div>
+                            <div id="selectedImagesPreview" class="flex flex-wrap gap-4 mb-4 hidden">
+                                <!-- Dynamic images will be populated here -->
+                            </div>
+                            <div id="imageActionButtons" class="flex justify-start gap-4 mt-4 hidden">
+                                <button type="button" id="addMoreImages" class="px-5 py-2.5 bg-blue-600 text-white rounded-lg font-semibold text-sm hover:bg-blue-700 transition-all">Add Images</button>
+                                <button type="button" id="resetImages" class="px-5 py-2.5 bg-red-600 text-white rounded-lg font-semibold text-sm hover:bg-red-700 transition-all">Reset</button>
+                            </div>
+                        </div>
 {{--                            <input type="hidden" name="images" id="productImagesInput" value="{{ Js::from(old('images', [])) }}">--}}
                             @error('images')
                             <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
@@ -186,144 +210,144 @@
                     </div>
 
                     <!-- Additional Details -->
-                    <div class="bg-gray-300 p-6 rounded-lg shadow-lg mt-6">
+                    <div class="bg-white p-8 rounded-lg shadow-lg mt-6">
                         <!-- Specification Tables -->
-                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
-                            <div class="flex justify-between items-center border-b border-gray-200 mb-4">
-                                <label class="block font-semibold text-lg text-gray-700 mb-2">Specification Tables</label>
-                                <select id="specificationDropdown" name="attributes" class="border text-sm p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
+                                <label class="block text-xl font-bold text-gray-800">Specification Tables</label>
+                                <select id="specificationDropdown" name="attributes" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                                     <option value="">None</option>
                                     <option value="general" {{ old('attributes') == 'general' ? 'selected' : '' }}>General Specification</option>
                                     <option value="technical" {{ old('attributes') == 'technical' ? 'selected' : '' }}>Technical Specification</option>
                                 </select>
                             </div>
-                            <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
-                            <div id="specificationFields" class="bg-white p-4 rounded-lg shadow-md hidden mt-4">
+                            <p class="text-sm text-gray-600 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
+                            <div id="specificationFields" class="bg-gray-50 p-4 rounded-lg shadow-inner hidden mt-4">
                                 <table class="w-full border-collapse border border-gray-300">
                                     <thead>
                                     <tr class="bg-gray-100">
-                                        <th class="border p-3">Group</th>
-                                        <th class="border p-3">Attribute</th>
-                                        <th class="border p-3">Attribute Value</th>
+                                        <th class="border p-3 text-left text-sm font-semibold text-gray-700">Group</th>
+                                        <th class="border p-3 text-left text-sm font-semibold text-gray-700">Attribute</th>
+                                        <th class="border p-3 text-left text-sm font-semibold text-gray-700">Attribute Value</th>
                                     </tr>
                                     </thead>
                                     <tbody id="specTableBody"></tbody>
                                 </table>
                             </div>
                             @error('attributes')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                             <input type="hidden" name="specifications" id="specifications-hidden-input" value="{{ old('specifications', $product->specifications->toJson()) }}">
                         </div>
 
                         <!-- Overview -->
-                        <x-form.card label="Overview" class="bg-transparent">
+                        <x-form.card label="Overview" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sku') border-red-500 @enderror" placeholder="SKU-CZA-PZ-997">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">SKU</label>
+                                    <input type="text" name="sku" value="{{ old('sku', $product->sku) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="SKU-CZA-PZ-997">
                                     @error('sku')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price</label>
-                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Price</label>
+                                    <input type="number" name="price" value="{{ old('price', $product->price) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0.00" step="0.01">
                                     @error('price')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
-                                    <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
-                                    <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Sale Price</label>
+                                    <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0.00" step="0.01">
+                                    <p class="text-sm text-gray-600 mt-2">Choose Discount Period</p>
                                     @error('sale_price')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Cost per Item</label>
-                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('cost_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
-                                    <p class="text-sm text-gray-500 mt-2">Customers won't see this price.</p>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Cost per Item</label>
+                                    <input type="number" name="cost_price" value="{{ old('cost_price', $product->cost_price) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0.00" step="0.01">
+                                    <p class="text-sm text-gray-600 mt-2">Customers won't see this price.</p>
                                     @error('cost_price')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Stock Quantity</label>
-                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('stock_quantity') border-red-500 @enderror" placeholder="Enter stock quantity" min="0">
-                                    <p class="text-sm text-gray-500 mt-2">Number of items available in stock.</p>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Stock Quantity</label>
+                                    <input type="number" name="stock_quantity" value="{{ old('stock_quantity', $product->stock_quantity) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter stock quantity" min="0">
+                                    <p class="text-sm text-gray-600 mt-2">Number of items available in stock.</p>
                                     @error('stock_quantity')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Low Stock Threshold</label>
-                                    <input type="number" name="low_stock_threshold" value="{{ old('low_stock_threshold', $product->low_stock_threshold) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('low_stock_threshold') border-red-500 @enderror" placeholder="0" min="0">
-                                    <p class="text-sm text-gray-500 mt-2">Alert when stock falls below this quantity.</p>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Low Stock Threshold</label>
+                                    <input type="number" name="low_stock_threshold" value="{{ old('low_stock_threshold', $product->low_stock_threshold) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0" min="0">
                                     @error('low_stock_threshold')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
-                                    <input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('barcode') border-red-500 @enderror" placeholder="Enter barcode">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Barcode (ISBN, UPC, GTIN, etc.)</label>
+                                    <input type="text" name="barcode" value="{{ old('barcode', $product->barcode) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter barcode">
                                     @error('barcode')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                             </div>
                         </x-form.card>
 
                         <!-- Stock Status -->
-                        <x-form.card label="Stock Status" class="bg-transparent">
+                        <x-form.card label="Stock Status" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                             <div class="flex items-center space-x-6">
-                                <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', $product->stock_status) == 'in_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
-                                    <span class="text-gray-700">In Stock</span>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="stock_status" value="in_stock" {{ old('stock_status', $product->stock_status) == 'in_stock' ? 'checked' : '' }} class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 @error('stock_status') border-red-500 @enderror">
+                                    <span class="ml-2 text-gray-700">In Stock</span>
                                 </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status', $product->stock_status) == 'out_of_stock' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
-                                    <span class="text-gray-700">Out of Stock</span>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="stock_status" value="out_of_stock" {{ old('stock_status', $product->stock_status) == 'out_of_stock' ? 'checked' : '' }} class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 @error('stock_status') border-red-500 @enderror">
+                                    <span class="ml-2 text-gray-700">Out of Stock</span>
                                 </label>
-                                <label class="flex items-center">
-                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status', $product->stock_status) == 'backorder' ? 'checked' : '' }} class="mr-2 @error('stock_status') border-red-500 @enderror">
-                                    <span class="text-gray-700">Backorder</span>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="stock_status" value="backorder" {{ old('stock_status', $product->stock_status) == 'backorder' ? 'checked' : '' }} class="form-radio h-4 w-4 text-blue-600 focus:ring-blue-500 @error('stock_status') border-red-500 @enderror">
+                                    <span class="ml-2 text-gray-700">Backorder</span>
                                 </label>
                             </div>
                             @error('stock_status')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </x-form.card>
 
                         <!-- Shipping -->
-                        <x-form.card label="Shipping" class="bg-transparent">
+                        <x-form.card label="Shipping" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div>
-                                    <label class="block font-semibold text-sm text-gray-700 mb-2">Weight (g)</label>
-                                    <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('weight') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Weight (g)</label>
+                                    <input type="number" name="weight" value="{{ old('weight', $product->weight) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0" step="0.01">
                                     @error('weight')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-sm text-gray-700 mb-2">Length (cm)</label>
-                                    <input type="number" name="length" value="{{ old('length', $product->length) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('length') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Length (cm)</label>
+                                    <input type="number" name="length" value="{{ old('length', $product->length) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0" step="0.01">
                                     @error('length')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-sm text-gray-700 mb-2">Width (cm)</label>
-                                    <input type="number" name="width" value="{{ old('width', $product->width) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('width') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Width (cm)</label>
+                                    <input type="number" name="width" value="{{ old('width', $product->width) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0" step="0.01">
                                     @error('width')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-sm text-gray-700 mb-2">Height (cm)</label>
-                                    <input type="number" name="height" value="{{ old('height', $product->height) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('height') border-red-500 @enderror" placeholder="0" step="0.01">
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Height (cm)</label>
+                                    <input type="number" name="height" value="{{ old('height', $product->height) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0" step="0.01">
                                     @error('height')
-                                    <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                             </div>
@@ -356,21 +380,21 @@
                         </x-form.card>
 
                         <!-- Product Options -->
-                        <x-form.card label="Product Options" class="bg-transparent">
-                            <select name="product_options" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_options') border-red-500 @enderror">
+                        <x-form.card label="Product Options" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                            <select name="product_options" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                                 <option value="">Select Global Option</option>
                                 <!-- Add options dynamically if needed -->
                             </select>
                             @error('product_options')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </x-form.card>
 
                         <!-- Related Products -->
-                        <x-form.card label="Related Products" class="bg-transparent">
+                        <x-form.card label="Related Products" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                             <div class="relative">
                                 <div class="relative">
-                                    <input type="text" id="related-products-search" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('related_products') border-red-500 @enderror" placeholder="Search products by name or SKU" autocomplete="off">
+                                    <input type="text" id="related-products-search" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Search products by name or SKU" autocomplete="off">
                                     <div id="related-products-loading" class="absolute inset-y-0 right-0 flex items-center pr-3 hidden">
                                         <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -398,7 +422,7 @@
                                 </div>
                                 <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', json_encode($product->relatedProducts->pluck('id'))) }}">
                                 @error('related_products')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                         </x-form.card>
@@ -439,136 +463,148 @@
                         </x-form.card>
 
                         <!-- Product FAQs -->
-                        <x-form.card label="Product FAQs" class="bg-transparent">
+                        <x-form.card label="Product FAQs" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                             <div id="faqs-container">
                                 @if(old('product_faqs'))
                                     @foreach(json_decode(old('product_faqs')) as $faq)
-                                        <div class="faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                        <div class="faq-item mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
                                             <div class="mb-2">
-                                                <label class="block font-semibold text-gray-700 mb-1">Question</label>
-                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question ?? '' }}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Question</label>
+                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question ?? '' }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                                             </div>
                                             <div class="mb-2">
-                                                <label class="block font-semibold text-gray-700 mb-1">Answer</label>
-                                                <textarea name="product_faqs[][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ $faq->answer ?? '' }}</textarea>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Answer</label>
+                                                <textarea name="product_faqs[][answer]" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ $faq->answer ?? '' }}</textarea>
                                             </div>
-                                            <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                                            <button type="button" class="remove-faq-item text-red-600 hover:text-red-800 text-sm">Remove FAQ</button>
                                         </div>
                                     @endforeach
                                 @elseif($product->faqs->isNotEmpty())
                                     @foreach($product->faqs as $faq)
-                                        <div class="faq-item mb-4 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                                        <div class="faq-item mb-4 p-4 border border-gray-300 rounded-lg bg-gray-50">
                                             <div class="mb-2">
-                                                <label class="block font-semibold text-gray-700 mb-1">Question</label>
-                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question }}" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Question</label>
+                                                <input type="text" name="product_faqs[][question]" value="{{ $faq->question }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                                             </div>
                                             <div class="mb-2">
-                                                <label class="block font-semibold text-gray-700 mb-1">Answer</label>
-                                                <textarea name="product_faqs[][answer]" class="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">{{ $faq->answer }}</textarea>
+                                                <label class="block text-sm font-semibold text-gray-700 mb-1">Answer</label>
+                                                <textarea name="product_faqs[][answer]" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ $faq->answer }}</textarea>
                                             </div>
-                                            <button type="button" class="remove-faq-item text-red-500 hover:text-red-700 text-sm">Remove FAQ</button>
+                                            <button type="button" class="remove-faq-item text-red-600 hover:text-red-800 text-sm">Remove FAQ</button>
                                         </div>
                                     @endforeach
                                 @endif
                             </div>
-                            <button type="button" id="add-faq-item" class="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">Add FAQ</button>
+                            <button type="button" id="add-faq-item" class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Add FAQ</button>
                             @error('product_faqs')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                             @error('product_faqs.*')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </x-form.card>
 
                         <!-- Search Engine Optimize -->
-                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
-                            <div class="flex justify-between items-center border-b border-gray-200 mb-4">
+                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                            <div class="flex justify-between items-center border-b border-gray-200 pb-4 mb-4">
                                 <label class="block text-xl font-bold text-gray-800">Search Engine Optimize</label>
-                                <button type="button" class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-blue-500 hover:bg-blue-600 transition-all">Edit SEO Meta</button>
+                                <button type="button" class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-blue-600 hover:bg-blue-700 transition-all">Edit SEO Meta</button>
                             </div>
-                            <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
-                                <input type="text" name="meta_title" value="{{ old('meta_title', $product->seo->meta_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
+                            <p class="text-sm text-gray-600 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Meta Title</label>
+                                <input type="text" name="meta_title" value="{{ old('meta_title', $product->seo->meta_title ?? '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Meta Title">
                                 @error('meta_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
-                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description', $product->seo->meta_description ?? '') }}</textarea>
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Meta Description</label>
+                                <textarea name="meta_description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ old('meta_description', $product->seo->meta_description ?? '') }}</textarea>
                                 @error('meta_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Keywords</label>
-                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->seo->meta_keywords ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Meta Keywords</label>
+                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->seo->meta_keywords ?? '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Meta Keywords">
                                 @error('meta_keywords')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Canonical URL</label>
-                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $product->seo->canonical_url ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Canonical URL</label>
+                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $product->seo->canonical_url ?? '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Canonical URL">
                                 @error('canonical_url')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
-                                <input type="text" name="og_title" value="{{ old('og_title', $product->seo->og_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Open Graph Title</label>
+                                <input type="text" name="og_title" value="{{ old('og_title', $product->seo->og_title ?? '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Open Graph Title">
                                 @error('og_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
-                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description', $product->seo->og_description ?? '') }}</textarea>
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Open Graph Description</label>
+                                <textarea name="og_description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ old('og_description', $product->seo->og_description ?? '') }}</textarea>
                                 @error('og_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Image</label>
-                                <input type="file" name="og_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_image') border-red-500 @enderror">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Open Graph Image</label>
+                                <input type="file" name="og_image" class="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-blue-50 file:text-blue-700
+                                    hover:file:bg-blue-100 file:transition-all file:duration-200
+                                    cursor-pointer">
                                 @error('og_image')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
-                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $product->seo->twitter_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Twitter Title</label>
+                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $product->seo->twitter_title ?? '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                                 @error('twitter_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
-                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description', $product->seo->twitter_description ?? '') }}</textarea>
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Twitter Description</label>
+                                <textarea name="twitter_description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ old('twitter_description', $product->seo->twitter_description ?? '') }}</textarea>
                                 @error('twitter_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Image</label>
-                                <input type="file" name="twitter_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_image') border-red-500 @enderror">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Twitter Image</label>
+                                <input type="file" name="twitter_image" class="block w-full text-sm text-gray-500
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-md file:border-0
+                                    file:text-sm file:font-semibold
+                                    file:bg-blue-50 file:text-blue-700
+                                    hover:file:bg-blue-100 file:transition-all file:duration-200
+                                    cursor-pointer">
                                 @error('twitter_image')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Schema Markup</label>
-                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup', $product->seo->schema_markup ?? '') }}</textarea>
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Schema Markup</label>
+                                <textarea name="schema_markup" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">{{ old('schema_markup', $product->seo->schema_markup ?? '') }}</textarea>
                                 @error('schema_markup')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Robots</label>
-                                <input type="text" name="robots" value="{{ old('robots', $product->seo->robots ?? 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
+                            <div class="mt-5">
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Robots</label>
+                                <input type="text" name="robots" value="{{ old('robots', $product->seo->robots ?? 'index, follow') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="index, follow">
                                 @error('robots')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                                 @enderror
                             </div>
                         </div>
@@ -578,65 +614,65 @@
                 <!-- Right Column -->
                 <div class="w-full lg:w-3/12 sticky top-6">
                     <!-- Publish Card -->
-                    <div class="mb-6 bg-white p-6 rounded-lg shadow-lg">
-                        <h3 class="text-2xl font-bold text-gray-800 mb-2">Publish</h3>
-                        <div class="pt-4 border-t border-gray-200 flex gap-4">
-                            <button type="submit" id="saveButton" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover-effect">Save</button>
-                            <button type="submit" id="saveExitButton" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover-effect">Save & Exit</button>
+                    <div class="mb-6 bg-white p-6 rounded-lg shadow-lg border border-gray-200">
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Publish</h3>
+                        <div class="pt-4 border-t border-gray-200 flex flex-col gap-4">
+                            <button type="submit" id="saveButton" class="w-full bg-blue-600 text-white px-4 py-3 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Save</button>
+                            <button type="submit" id="saveExitButton" class="w-full bg-green-600 text-white px-4 py-3 rounded-lg hover:bg-green-700 transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75">Save & Exit</button>
                         </div>
                     </div>
 
 
 
                     <!-- Product Type -->
-                    <x-form.card label="Product Type" required="true">
-                        <select name="type" id="product_type" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('type') border-red-500 @enderror">
+                    <x-form.card label="Product Type" required="true" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <select name="type" id="product_type" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                             <option value="simple" {{ old('type', $product->type) == 'simple' ? 'selected' : '' }}>Simple Product</option>
                             <option value="variable" {{ old('type', $product->type) == 'variable' ? 'selected' : '' }}>Variable Product</option>
                         </select>
                         @error('type')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Status Card -->
-                    <x-form.card label="Status" required="true">
-                        <select name="status" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('status') border-red-500 @enderror">
+                    <x-form.card label="Status" required="true" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <select name="status" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                             <option value="published" {{ old('status', $product->status) == 'published' ? 'selected' : '' }}>Published</option>
-                            <option value="draft" {{ old('status', $product->status) == 'draft' ? 'selected' : '' }}>Draft</option>
-                            <option value="archived" {{ old('status', $product->status) == 'archived' ? 'selected' : '' }}>Archived</option>
+                            <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
+                            <option value="archived" {{ old('status') == 'archived' ? 'selected' : '' }}>Archived</option>
                         </select>
                         @error('status')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Store Card -->
-                    <x-form.card label="Store">
-                        <select name="store" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('store') border-red-500 @enderror">
+                    <x-form.card label="Store" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <select name="store" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                             <option value="">Select a store...</option>
                             <!-- Add store options dynamically if needed -->
                         </select>
                         @error('store')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Is Featured? Card -->
-                    <x-form.card label="Is Featured?">
+                    <x-form.card label="Is Featured?" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                         <label class="relative inline-flex items-center cursor-pointer ml-2">
                             <input type="checkbox" name="is_featured" value="1" class="sr-only peer" id="featuredToggle" {{ old('is_featured', $product->is_featured) ? 'checked' : '' }}>
-                            <div class="w-11 h-6 bg-gray-100 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-5 peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                         </label>
                         @error('is_featured')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Categories Card -->
-                    <x-form.card label="Categories">
+                    <x-form.card label="Categories" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                         <div class="relative mb-3">
-                            <input type="text" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 pl-10 @error('category_ids') border-red-500 @enderror" placeholder="Search..." id="category-search">
+                            <input type="text" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 pl-10" placeholder="Search..." id="category-search">
                             <span class="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
                                 <svg class="w-5 h-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -645,41 +681,41 @@
                                 </svg>
                             </span>
                         </div>
-                        <div class="max-h-[200px] overflow-auto">
+                        <div class="max-h-[200px] overflow-auto border border-gray-200 rounded-md p-2 bg-gray-50">
                             <ul id="category-tree" class="mt-2 space-y-1">
                                 @include('partials.category-checkboxes', ['categories' => $categories, 'selected' => old('category_ids', $product->categories->pluck('id')->toArray())])
                             </ul>
                         </div>
                         @error('category_ids')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                         @error('category_ids.*')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Brand Card -->
-                    <x-form.card label="Brand">
+                    <x-form.card label="Brand" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                         <div class="relative">
-                            <input type="text" id="brand-search" value="{{ old('brand_id', $product->brand_id) ? App\Models\Brand::find(old('brand_id', $product->brand_id))->name : '' }}" class="w-full border border-gray-300 p-2.5 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm @error('brand_id') border-red-500 @enderror" placeholder="Search brands...">
-                            <div id="brand-dropdown" class="absolute z-20 bg-white mt-1 w-full border border-gray-200 rounded-md shadow-md hidden max-h-64 overflow-y-auto">
-                                <ul id="brand-list" class="divide-y divide-gray-100 text-sm text-gray-700">
+                            <input type="text" id="brand-search" value="{{ old('brand_id', $product->brand_id) ? App\Models\Brand::find(old('brand_id', $product->brand_id))->name : '' }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Search brands...">
+                            <div id="brand-dropdown" class="absolute z-20 bg-white mt-1 w-full border border-gray-300 rounded-md shadow-lg hidden max-h-64 overflow-y-auto">
+                                <ul id="brand-list" class="divide-y divide-gray-200 text-sm text-gray-700">
                                     @foreach($brands as $brand)
-                                        <li class="px-3 py-2 hover:bg-blue-50 cursor-pointer transition-all" data-value="{{ $brand->id }}">{{ $brand->name }}</li>
+                                        <li class="px-4 py-2 hover:bg-blue-50 cursor-pointer transition-all" data-value="{{ $brand->id }}">{{ $brand->name }}</li>
                                     @endforeach
                                 </ul>
                             </div>
                             <input type="hidden" name="brand_id" id="selected-brand-id" value="{{ old('brand_id', $product->brand_id) }}">
                             @error('brand_id')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </x-form.card>
 
                     <!-- Featured Image Card -->
-                    <x-form.card label="Featured Image (Optional)">
+                    <x-form.card label="Featured Image (Optional)" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                         <div id="featuredImageContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-50 transition-all flex flex-col items-center justify-center gap-3 h-40">
-                            <svg class="w-16 h-16 text-gray-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <svg class="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                                 <path d="M15 8h.01"></path>
                                 <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
@@ -692,7 +728,7 @@
                         </div>
                         <div id="featuredImagePreview" class="mt-4 hidden">
                             <div class="relative w-full max-w-xs mx-auto">
-                                <img id="featuredImageThumbnail" src="" alt="Featured Image" class="w-full h-auto rounded-lg border border-gray-200">
+                                <img id="featuredImageThumbnail" src="" alt="Featured Image" class="w-full h-auto rounded-lg border border-gray-300">
                                 <button type="button" id="removeFeaturedImage" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -702,80 +738,82 @@
                         </div>
                         <input type="hidden" name="thumbnail_existing" id="featuredImageInput" value="{{ old('thumbnail_existing', $product->thumbnail_media->id ?? '') }}">
                         @error('thumbnail_existing')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <x-gallery />
 
                     <!-- Product Collections Card -->
-                    <x-form.card label="Product Collections">
-                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4">
+                    <x-form.card label="Product Collections" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
                             @foreach ($collections as $collection)
-                                <label class="flex items-center space-x-3">
+                                <label class="flex items-center space-x-3 cursor-pointer">
                                     <input type="checkbox" name="product_collections[]" value="{{ $collection->id }}"
                                            {{ in_array($collection->id, old('product_collections', $product->collections->pluck('id')->toArray())) ? 'checked' : '' }}
-                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                           class="form-checkbox h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                     <span class="text-gray-700 font-medium">{{ $collection->name }}</span>
                                 </label>
                             @endforeach
                         </div>
                         @error('product_collections')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                         @error('product_collections.*')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Labels Card -->
-                    <x-form.card label="Labels">
-                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4">
+                    <x-form.card label="Labels" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <div class="flex flex-col space-y-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
                             @foreach ($labels as $label)
-                                <label class="flex items-center space-x-3">
+                                <label class="flex items-center space-x-3 cursor-pointer">
                                     <input type="checkbox" name="labels[]" value="{{ $label->id }}"
                                            {{ in_array($label->id, old('labels', $product->labels->pluck('id')->toArray())) ? 'checked' : '' }}
-                                           class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                           class="form-checkbox h-5 w-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
                                     <span class="text-gray-700 font-medium">{{ $label->name }}</span>
                                 </label>
                             @endforeach
                         </div>
                         @error('labels')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                         @error('labels.*')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Minimum Order Quantity Card -->
-                    <x-form.card label="Minimum Order Quantity" required="true">
-                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', $product->min_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('min_order_quantity') border-red-500 @enderror" placeholder="0">
-                        <p class="text-sm text-gray-500 mt-2">Minimum quantity to place an order, if the value is 0, there is no limit.</p>
+                    <x-form.card label="Minimum Order Quantity" required="true" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <input type="number" name="min_order_quantity" value="{{ old('min_order_quantity', $product->min_order_quantity) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0">
+                        <p class="text-sm text-gray-600 mt-2">Minimum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('min_order_quantity')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Maximum Order Quantity Card -->
-                    <x-form.card label="Maximum Order Quantity" required="true">
-                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', $product->max_order_quantity) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('max_order_quantity') border-red-500 @enderror" placeholder="0">
-                        <p class="text-sm text-gray-500 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
+                    <x-form.card label="Maximum Order Quantity" required="true" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
+                        <input type="number" name="max_order_quantity" value="{{ old('max_order_quantity', $product->max_order_quantity) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="0">
+                        <p class="text-sm text-gray-600 mt-2">Maximum quantity to place an order, if the value is 0, there is no limit.</p>
                         @error('max_order_quantity')
-                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                         @enderror
                     </x-form.card>
 
                     <!-- Tags Card -->
-                    <x-form.card label="Tags">
+                    <x-form.card label="Tags" class="bg-white p-6 mb-6 shadow-lg rounded-lg border border-gray-200">
                         <div class="relative" id="tags-container">
-                            <div class="flex flex-wrap gap-2 mb-2 items-center border border-gray-300 rounded-lg p-2 min-h-12" id="tags-input-wrapper">
-                                <input type="text" id="tag-input" class="flex-grow outline-none min-w-[100px]" placeholder="Add tags..." autocomplete="off">
+                            <div class="flex flex-wrap gap-2 mb-2 items-center border border-gray-300 rounded-lg p-2 min-h-12 bg-gray-50 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition duration-200" id="tags-input-wrapper">
+                                <input type="text" id="tag-input" class="flex-grow outline-none min-w-[100px] bg-gray-50" placeholder="Add tags..." autocomplete="off">
                             </div>
-                            <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"></div>
+                            <div id="tag-suggestions" class="hidden absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto">
+                                <!-- Suggestions will be loaded here -->
+                            </div>
                             <input type="hidden" name="tags" id="tags-hidden-input" value="{{ old('tags', optional($product->tags)->pluck('name')->toJson() ?? '[]') }}">
                             @error('tags')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                            <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                             @enderror
                         </div>
                     </x-form.card>

@@ -56,7 +56,7 @@
                                 <!-- User Avatar -->
                                 <div class="h-8 w-8 mr-2 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center">
                                     @if (Auth::user()->profile_photo)
-                                        <img src="{{ asset('storage/' . Auth::user()->profile_photo) }}" alt="{{ Auth::user()->name }}'s avatar" class="h-full w-full object-cover">
+                                        <img src="{{ Auth::user()->profile_photo ? asset('storage/' . Auth::user()->profile_photo) : asset('images/avatar/default-avatar.jpg') }}" alt="{{ Auth::user()->name }}'s avatar" class="h-full w-full object-cover">
                                     @else
                                         <span class="text-white font-medium text-sm">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                                     @endif
@@ -87,7 +87,7 @@
                                 <div class="px-4 py-3 border-b border-gray-700/30 bg-gradient-to-r from-blue-900/30 to-gray-800/30 flex items-center">
                                     <div class="h-10 w-10 rounded-full overflow-hidden bg-gradient-to-br from-blue-600 to-blue-800 flex items-center justify-center mr-3">
                                         @if (Auth::user()->profile_photo)
-                                            <img src="{{ asset('storage/' . Auth::user()->profile_photo) }}" alt="{{ Auth::user()->name }}'s avatar" class="h-full w-full object-cover">
+                                            <img src="{{ Auth::user()->profile_photo ? asset('storage/' . Auth::user()->profile_photo) : asset('images/avatar/default-avatar.jpg') }}" alt="{{ Auth::user()->name }}'s avatar" class="h-full w-full object-cover">
                                         @else
                                             <span class="text-white font-medium text-lg">{{ strtoupper(substr(Auth::user()->name, 0, 1)) }}</span>
                                         @endif

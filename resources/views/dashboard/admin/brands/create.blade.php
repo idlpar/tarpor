@@ -22,39 +22,61 @@
             ]
         ])
 
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('brands.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Add New Brand</h1>
+                        <p class="mt-1 text-sm text-gray-600">Create a new brand for your products</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('brands.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Brands
+                </a>
+            </div>
+        </div>
+
         <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold mb-6 text-text-dark">Add New Brand</h2>
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Add New Brand</h2>
 
             <form action="{{ route('brands.store') }}" method="POST" enctype="multipart/form-data" id="brandForm">
                 @csrf
-                <div class="mb-6">
-                    <label for="name" class="block font-semibold text-text-dark mb-2">Brand Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('name') border-error @enderror" placeholder="Enter brand name">
+                <div class="mb-5">
+                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Brand Name *</label>
+                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter brand name">
                     @error('name')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="mb-6">
-                    <label for="slug" class="block font-semibold text-text-dark mb-2">Slug</label>
-                    <div class="flex rounded-lg shadow-sm border border-input-border focus-within:ring-2 focus-within:ring-primary focus-within:border-primary @error('slug') border-error @enderror">
-                        <span class="inline-flex items-center px-3 rounded-l-lg border-r border-input-border bg-input-bg text-text-light text-sm">
+                <div class="mb-5">
+                    <label for="slug" class="block text-sm font-semibold text-gray-700 mb-2">Slug</label>
+                    <div class="flex rounded-md shadow-sm border border-gray-300 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 transition duration-200">
+                        <span class="inline-flex items-center px-3 rounded-l-md border-r border-gray-300 bg-gray-200 text-gray-600 text-sm">
                             {{ url('/brand') }}/
                         </span>
-                        <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="flex-1 block w-full border-0 p-2.5 focus:ring-0 focus:outline-none rounded-r-lg bg-input-bg text-text-dark" placeholder="your-slug">
+                        <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="flex-1 block w-full border-0 px-4 py-2 bg-gray-50 focus:ring-0 focus:outline-none rounded-r-md placeholder-gray-500" placeholder="your-slug">
                     </div>
                     @error('slug')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
-                    <p class="text-sm text-text-light mt-2">
-                        Preview: <a href="#" class="text-primary hover:underline" id="permalink-preview"></a>
+                    <p class="text-sm text-gray-500 mt-2">
+                        Preview: <a href="#" class="text-blue-600 hover:underline" id="permalink-preview"></a>
                     </p>
                 </div>
 
-                <div class="mb-6">
-                    <label class="block font-semibold text-text-dark mb-2">Brand Logo (Optional)</label>
-                    <div id="brandLogoContainer" class="border-dashed border-2 border-input-border p-10 rounded-lg text-center cursor-pointer hover:bg-bg-light transition-all flex flex-col items-center justify-center gap-3 h-40">
-                        <svg class="w-16 h-16 text-text-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Brand Logo (Optional)</label>
+                    <div id="brandLogoContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                        <svg class="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                             <path d="M15 8h.01"></path>
                             <path d="M12.5 21h-6.5a3 3 0 0 1 -3 -3v-12a3 3 0 0 1 3 -3h12a3 3 0 0 1 3 3v6.5"></path>
@@ -63,12 +85,12 @@
                             <path d="M16 19h6"></path>
                             <path d="M19 16v6"></path>
                         </svg>
-                        <span class="text-text-light text-md">Choose Logo</span>
+                        <span class="text-gray-500 text-md">Choose Logo</span>
                     </div>
                     <div id="brandLogoPreview" class="mt-4 hidden">
                         <div class="relative w-full max-w-xs mx-auto">
-                            <img id="brandLogoThumbnail" src="" alt="Brand Logo" class="w-full h-auto rounded-lg border border-input-border">
-                            <button type="button" id="removeBrandLogo" class="absolute top-2 right-2 bg-error text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-error">
+                            <img id="brandLogoThumbnail" src="" alt="Brand Logo" class="w-full h-auto rounded-lg border border-gray-300">
+                            <button type="button" id="removeBrandLogo" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
                                 </svg>
@@ -77,31 +99,31 @@
                     </div>
                     <input type="hidden" name="logo_existing" id="brandLogoInput" value="{{ old('logo_existing') }}">
                     @error('logo_existing')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="mb-6">
-                    <label for="description" class="block font-semibold text-text-dark mb-2">Description (Optional)</label>
-                    <textarea id="description" name="description" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('description') border-error @enderror" rows="4" placeholder="Enter brand description">{{ old('description') }}</textarea>
+                <div class="mb-5">
+                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description (Optional)</label>
+                    <textarea id="description" name="description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" rows="4" placeholder="Enter brand description">{{ old('description') }}</textarea>
                     @error('description')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label for="status" class="block font-semibold text-text-dark mb-2">Status *</label>
-                    <select id="status" name="status" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('status') border-error @enderror">
+                    <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">Status *</label>
+                    <select id="status" name="status" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         <option value="active" {{ old('status') == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                     @error('status')
-                        <p class="text-error text-sm mt-1">{{ $message }}</p>
+                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200">Add Brand</button>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Add Brand</button>
                 </div>
             </form>
         </div>

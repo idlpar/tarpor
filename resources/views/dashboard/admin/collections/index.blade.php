@@ -4,15 +4,16 @@
 
 @section('admin_content')
     <div class="container mx-auto px-4 py-6">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Collections' => null
+            ]
+        ])
+
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-gray-900">Product Collections</h1>
-                @include('components.breadcrumbs', [
-                    'links' => [
-                        'Collections' => route('collections.index'),
-                    ]
-                ])
             </div>
 
             <div class="flex flex-wrap gap-3">

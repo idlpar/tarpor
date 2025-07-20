@@ -4,6 +4,11 @@
 
 @section('admin_content')
 <div class="container mx-auto px-4 py-8">
+    @include('components.breadcrumbs', [
+        'links' => [
+            'Newsletter Subscribers' => null
+        ]
+    ])
     <h1 class="text-3xl font-bold text-gray-900 mb-6">Newsletter Subscribers</h1>
 
     <div class="bg-white shadow-md rounded-lg overflow-hidden">

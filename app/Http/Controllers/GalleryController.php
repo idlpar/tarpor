@@ -47,7 +47,7 @@ class GalleryController extends Controller
      */
     public function index(Request $request)
     {
-        return view('admin.gallery.index');
+        return view('dashboard.admin.gallery.index');
     }
 
     /**

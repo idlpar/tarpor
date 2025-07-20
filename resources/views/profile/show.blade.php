@@ -19,6 +19,12 @@
 @section('title', 'My Profile')
 
 @section('content')
+    @include('components.breadcrumbs', [
+        'links' => [
+            'Home' => '/',
+            'My Profile' => null
+        ]
+    ])
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
@@ -56,7 +62,7 @@
                     <div class="p-6">
                         <div class="flex flex-col items-center text-center mb-6">
                             <div class="relative mb-4">
-                                <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/default-avatar.png') }}"
+                                <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/avatar/default-avatar.jpg') }}"
                                      alt="User Avatar" class="w-24 h-24 rounded-full border-4 border-white shadow-md">
                                 @if($user->profile_photo)
                                     <form action="{{ route('profile.avatar.destroy', $user) }}" method="POST" class="absolute -bottom-2 -right-2 delete-avatar-form">
@@ -195,7 +201,7 @@
 
                                 <div class="flex flex-col sm:flex-row items-start sm:items-center gap-6">
                                     <div class="flex-shrink-0">
-                                        <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/default-avatar.png') }}"
+                                        <img src="{{ $user->profile_photo ? asset('storage/' . $user->profile_photo) : asset('images/avatar/default-avatar.jpg') }}"
                                              alt="Current Avatar" class="h-20 w-20 rounded-full border-2 border-gray-200">
                                     </div>
                                     <div class="flex-1 w-full">

@@ -19,6 +19,11 @@
 @endpush
 
 @section('admin_content')
+    @include('components.breadcrumbs', [
+        'links' => [
+            'Users' => null
+        ]
+    ])
     <section class="py-12 bg-gradient-to-b from-blue-50 to-white">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
@@ -245,6 +250,15 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
+                                        <a href="{{ route('users.show', $user) }}"
+                                           class="text-green-600 hover:text-green-800 flex items-center transition duration-150" title="View">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+                                        
+                                        <span class="text-gray-300">|</span>
                                         <a href="{{ route('users.edit', $user) }}"
                                            class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150" title="Edit">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor"

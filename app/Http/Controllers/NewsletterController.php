@@ -60,7 +60,7 @@ class NewsletterController extends Controller
 
     public function showSendForm()
     {
-        return view('admin.newsletter.send');
+        return view('dashboard.admin.newsletter.send');
     }
 
     public function sendMail(Request $request)

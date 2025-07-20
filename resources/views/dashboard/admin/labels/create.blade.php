@@ -4,59 +4,84 @@
 
 @section('admin_content')
     <div class="container mx-auto px-4 py-6">
-        <!-- Header Section -->
-        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Labels' => route('labels.index'),
+                'Create' => null
+            ]
+        ])
+
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Labels' => route('labels.index'),
+                'Create' => null
+            ]
+        ])
+
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('labels.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Create New Label</h1>
+                        <p class="mt-1 text-sm text-gray-600">Define a new label for your products</p>
+                    </div>
+                </div>
+            </div>
             <div>
-                <h1 class="text-2xl font-bold text-text-dark">Create Label</h1>
-                @include('components.breadcrumbs', [
-                    'links' => [
-                        'Labels' => route('labels.index'),
-                        'Create' => route('labels.create'),
-                    ]
-                ])
+                <a href="{{ route('labels.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Labels
+                </a>
             </div>
         </div>
 
         <div class="bg-white p-8 rounded-lg shadow-lg">
+            <h2 class="text-3xl font-bold mb-6 text-gray-800">Create Label</h2>
+
             <form action="{{ route('labels.store') }}" method="POST">
                 @csrf
-                <div class="mb-6">
-                    <label for="name" class="block font-semibold text-text-dark mb-2">Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('name') border-error @enderror" placeholder="Label Name">
+                <div class="mb-5">
+                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Name">
                     @error('name')
-                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="mb-6">
-                    <label for="slug" class="block font-semibold text-text-dark mb-2">Slug *</label>
-                    <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('slug') border-error @enderror" placeholder="label-slug">
+                <div class="mb-5">
+                    <label for="slug" class="block text-sm font-semibold text-gray-700 mb-2">Slug *</label>
+                    <input type="text" id="slug" name="slug" value="{{ old('slug') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="label-slug">
                     @error('slug')
-                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="mb-6">
-                    <label for="description" class="block font-semibold text-text-dark mb-2">Description</label>
-                    <textarea id="description" name="description" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('description') border-error @enderror" placeholder="Label Description">{{ old('description') }}</textarea>
+                <div class="mb-5">
+                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                    <textarea id="description" name="description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Description">{{ old('description') }}</textarea>
                     @error('description')
-                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
                 <div class="mb-6">
-                    <label for="status" class="block font-semibold text-text-dark mb-2">Status</label>
-                    <select id="status" name="status" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('status') border-error @enderror">
+                    <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                    <select id="status" name="status" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                         <option value="active" {{ old('status', 'active') == 'active' ? 'selected' : '' }}>Active</option>
                         <option value="inactive" {{ old('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
                     </select>
                     @error('status')
-                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors">Create Label</button>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Create Label</button>
                 </div>
             </form>
         </div>

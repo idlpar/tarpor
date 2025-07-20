@@ -2,6 +2,12 @@
 
 @section('content')
     <div class="min-h-screen bg-bg-light py-8">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'My Addresses' => route('profile.addresses.index'),
+                'Add New Address' => null
+            ]
+        ])
         <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="bg-white shadow-lg rounded-lg p-6 md:p-8">
                 <h2 class="text-3xl font-bold text-text-dark mb-6">Add New Address</h2>

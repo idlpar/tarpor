@@ -11,6 +11,28 @@
             ]
         ])
 
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('coupons.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Edit Coupon</h1>
+                        <p class="mt-1 text-sm text-gray-600">Modify the details of an existing coupon</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('coupons.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Coupons
+                </a>
+            </div>
+        </div>
+
         @if (session('success'))
             <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
                 {{ session('success') }}
@@ -30,35 +52,35 @@
                 @method('PUT')
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                     <div>
-                        <label for="code" class="block text-sm font-medium text-text-dark">Coupon Code</label>
-                        <input type="text" name="code" id="code" value="{{ old('code', $coupon->code) }}" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2" required>
+                        <label for="code" class="block text-sm font-semibold text-gray-700 mb-2">Coupon Code</label>
+                        <input type="text" name="code" id="code" value="{{ old('code', $coupon->code) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" required placeholder="e.g., SUMMER20">
                     </div>
                     <div>
-                        <label for="type" class="block text-sm font-medium text-text-dark">Discount Type</label>
-                        <select name="type" id="type" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2" required>
+                        <label for="type" class="block text-sm font-semibold text-gray-700 mb-2">Discount Type</label>
+                        <select name="type" id="type" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" required>
                             <option value="fixed" {{ old('type', $coupon->type) === 'fixed' ? 'selected' : '' }}>Fixed Amount</option>
                             <option value="percentage" {{ old('type', $coupon->type) === 'percentage' ? 'selected' : '' }}>Percentage</option>
                         </select>
                     </div>
                     <div>
-                        <label for="value" class="block text-sm font-medium text-text-dark">Discount Value</label>
-                        <input type="number" name="value" id="value" value="{{ old('value', $coupon->value) }}" step="0.01" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2" required>
+                        <label for="value" class="block text-sm font-semibold text-gray-700 mb-2">Discount Value</label>
+                        <input type="number" name="value" id="value" value="{{ old('value', $coupon->value) }}" step="0.01" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" required placeholder="e.g., 10.00 or 20">
                     </div>
                     <div>
-                        <label for="usage_limit" class="block text-sm font-medium text-text-dark">Usage Limit (optional)</label>
-                        <input type="number" name="usage_limit" id="usage_limit" value="{{ old('usage_limit', $coupon->usage_limit) }}" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2">
+                        <label for="usage_limit" class="block text-sm font-semibold text-gray-700 mb-2">Usage Limit (optional)</label>
+                        <input type="number" name="usage_limit" id="usage_limit" value="{{ old('usage_limit', $coupon->usage_limit) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="e.g., 100">
                     </div>
                     <div>
-                        <label for="expires_at" class="block text-sm font-medium text-text-dark">Expires At (optional)</label>
-                        <input type="date" name="expires_at" id="expires_at" value="{{ old('expires_at', $coupon->expires_at ? $coupon->expires_at->format('Y-m-d') : '') }}" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2">
+                        <label for="expires_at" class="block text-sm font-semibold text-gray-700 mb-2">Expires At (optional)</label>
+                        <input type="date" name="expires_at" id="expires_at" value="{{ old('expires_at', $coupon->expires_at ? $coupon->expires_at->format('Y-m-d') : '') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
                     </div>
                     <div>
-                        <label for="max_discount_amount" class="block text-sm font-medium text-text-dark">Max Discount Amount (for percentage, optional)</label>
-                        <input type="number" name="max_discount_amount" id="max_discount_amount" value="{{ old('max_discount_amount', $coupon->max_discount_amount) }}" step="0.01" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2">
+                        <label for="max_discount_amount" class="block text-sm font-semibold text-gray-700 mb-2">Max Discount Amount (for percentage, optional)</label>
+                        <input type="number" name="max_discount_amount" id="max_discount_amount" value="{{ old('max_discount_amount', $coupon->max_discount_amount) }}" step="0.01" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="e.g., 50.00">
                     </div>
                 </div>
-                <div class="flex justify-end">
-                    <button type="submit" class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors duration-200">Update Coupon</button>
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Update Coupon</button>
                 </div>
             </form>
         </div>

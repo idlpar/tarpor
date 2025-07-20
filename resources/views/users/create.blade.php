@@ -19,8 +19,14 @@
 @endpush
 
 @section('admin_content')
+    @include('components.breadcrumbs', [
+        'links' => [
+            'Users' => route('users.index'),
+            'Create User' => null
+        ]
+    ])
     <section class="py-12 bg-gradient-to-b from-gray-50 to-white">
-        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div class="mb-4 md:mb-0">

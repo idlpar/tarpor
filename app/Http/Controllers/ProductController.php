@@ -282,7 +282,8 @@ class ProductController extends Controller
         }
 
         $breadcrumbs = [
-            'Products' => route('products.index'),
+            ['name' => 'Products', 'url' => route('products.index')],
+            ['name' => $product->name, 'url' => '#'],
         ];
 
         $title = $product->name;
@@ -311,7 +312,9 @@ class ProductController extends Controller
                 ->get();
         }
 
-        return view('dashboard.admin.products.show', compact('product', 'breadcrumbs', 'title', 'relatedProducts'));
+        $recentlyViewed = collect(); // Initialize as an empty collection
+
+        return view('dashboard.admin.products.show', compact('product', 'breadcrumbs', 'title', 'relatedProducts', 'recentlyViewed'));
     }
 
     public function edit(Product $product)
@@ -487,8 +490,10 @@ class ProductController extends Controller
      */
     public function showFrontend(Product $product)
     {
+        Log::info('showFrontend method hit for product slug: ' . $product->slug);
         // Ensure the product is published before showing on the frontend
         if ($product->status !== 'published') {
+            Log::warning('Attempted to access unpublished product: ' . $product->slug);
             abort(404); // Or redirect to a suitable page
         }
 

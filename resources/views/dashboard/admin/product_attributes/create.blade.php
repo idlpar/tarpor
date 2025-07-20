@@ -24,21 +24,43 @@
             ]
         ])
 
-        <div class="max-w-xl mx-auto bg-input-bg p-8 rounded-lg shadow-lg">
-            <h1 class="text-3xl font-bold mb-6 text-text-dark">Create New Product Attribute</h1>
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('product_attributes.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Create New Product Attribute</h1>
+                        <p class="mt-1 text-sm text-gray-600">Define a new attribute for your products (e.g., Size, Color)</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('product_attributes.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Attributes
+                </a>
+            </div>
+        </div>
+
+        <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+            <h1 class="text-3xl font-bold mb-6 text-gray-800">Create New Product Attribute</h1>
 
             <form action="{{ route('product_attributes.store') }}" method="POST">
                 @csrf
-                <div class="mb-6">
-                    <label for="name" class="block font-semibold text-text-dark mb-2">Attribute Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="w-full border border-input-border bg-input-bg text-text-dark p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary @error('name') border-error @enderror" placeholder="e.g., Size, Color, Material">
+                <div class="mb-5">
+                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Attribute Name *</label>
+                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="e.g., Size, Color, Material">
                     @error('name')
-                    <p class="text-error text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
-                <div class="flex justify-end">
-                    <button type="submit" class="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark transition-colors duration-200">
+                <div class="flex justify-end mt-8">
+                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
                         Create Attribute
                     </button>
                 </div>
