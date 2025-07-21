@@ -1035,11 +1035,11 @@
             </div>
 
             <!-- Related Products -->
-            @if ($relatedProducts->isNotEmpty())
+            @if ($product->relatedProducts->isNotEmpty())
                 <div class="mt-12">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6">You may also like</h2>
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        @foreach ($relatedProducts as $relatedProduct)
+                        @foreach ($product->relatedProducts as $relatedProduct)
                             <div
                                 class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
                                 <a href="{{ route('products.show', $relatedProduct->id) }}" class="block">
@@ -1093,6 +1093,67 @@
                     </div>
                 </div>
             @endif
+
+            <!-- Cross-Selling Products -->
+            @if ($product->crossSellingProducts->isNotEmpty())
+                <div class="mt-12">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">You might also be interested in</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        @foreach ($product->crossSellingProducts as $crossSellingProduct)
+                            <div
+                                class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-200 group">
+                                <a href="{{ route('products.show', $crossSellingProduct->id) }}" class="block">
+                                    <div class="bg-gray-50 h-48 flex items-center justify-center p-4 relative">
+                                        <img
+                                            src="{{ asset($crossSellingProduct->thumbnail_url ?? 'images/default-product.jpg') }}"
+                                            alt="{{ $crossSellingProduct->name }}"
+                                            class="max-h-full max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                            loading="lazy"
+                                        >
+                                        @if($crossSellingProduct->discount)
+                                            <span
+                                                class="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                                -{{ $crossSellingProduct->discount }}%
+                                            </span>
+                                        @endif
+
+                                        <!-- Quick View Button -->
+                                        <button type="button"
+                                                class="absolute bottom-2 left-1/2 transform -translate-x-1/2 bg-white rounded-md px-3 py-1 text-xs font-medium text-gray-900 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                                            Quick View
+                                        </button>
+                                    </div>
+                                    <div class="p-4">
+                                        <h3 class="text-sm font-medium text-gray-900 truncate">{{ $crossSellingProduct->name }}</h3>
+                                        <div class="mt-2 flex items-center justify-between">
+                                            <div>
+                                                <span class="text-sm font-medium text-gray-900">
+                                                    {{ format_taka($crossSellingProduct->sale_price ?? $crossSellingProduct->price) }}
+                                                </span>
+                                                @if($crossSellingProduct->sale_price)
+                                                    <span class="text-xs line-through text-gray-500 ml-1">
+                                                        {{ format_taka($crossSellingProduct->price) }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 text-yellow-400" fill="currentColor"
+                                                     viewBox="0 0 20 20">
+                                                    <path
+                                                        d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.97a1 1 0 00.95.69h4.178c.969 0 1.371 1.24.588 1.81l-3.375 2.45a1 1 0 00-.364 1.118l1.286 3.97c.3 .921-.755 1.688-1.54 1.118l-3.375-2.45a1 1 0 00-1.175 0l-3.375 2.45c-.784 .57-1.838-.197-1.54-1.118l1.286-3.97a1 1 0 00-.364-1.118L2.735 8.397c-.783-.57-.38-1.81 .588-1.81h4.178a1 1 0 00.95-.69l1.286-3.97z"/>
+                                                </svg>
+                                                <span
+                                                    class="text-xs text-gray-500 ml-1">{{ number_format($crossSellingProduct->average_rating, 1) }}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </a>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
 
             <!-- Recently Viewed Products -->
             @if($recentlyViewed->isNotEmpty())
@@ -1246,7 +1307,7 @@
                             mainImage.dataset.zoomImage = thumb.dataset.zoomImage;
                             mainImage.style.opacity = '1';
 
-                            
+
                         }, 300);
 
                         // Remove active class from all thumbnails
@@ -1490,7 +1551,7 @@
                             mainImage.dataset.zoomImage = thumb.dataset.zoomImage;
                             mainImage.style.opacity = '1';
 
-                            
+
                         }, 300);
 
                         // Remove active class from all thumbnails

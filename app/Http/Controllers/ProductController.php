@@ -506,33 +506,12 @@ class ProductController extends Controller
             'media',
             'seo',
             'pricingTiers',
-            'specialOffers'
+            'specialOffers',
+            'relatedProducts',
+            'crossSellingProducts'
         ]);
 
-        $relatedProducts = collect();
-        $categoryIds = $product->categories->pluck('id');
-        if ($categoryIds->isNotEmpty()) {
-            $relatedProducts = Product::whereHas('categories', function ($query) use ($categoryIds) {
-                $query->whereIn('categories.id', $categoryIds);
-            })
-                ->where('id', '!=', $product->id)
-                ->where('status', 'published')
-                ->with('categories')
-                ->inRandomOrder()
-                ->limit(4)
-                ->get();
-        }
-
-        if ($relatedProducts->isEmpty() && $product->brand_id) {
-            $relatedProducts = Product::where('brand_id', $product->brand_id)
-                ->where('id', '!=', $product->id)
-                ->where('status', 'published')
-                ->inRandomOrder()
-                ->limit(4)
-                ->get();
-        }
-
-        return view('products.show', compact('product', 'relatedProducts'));
+        return view('products.show', compact('product'));
     }
 
     public function quickView($id)
@@ -815,6 +794,11 @@ class ProductController extends Controller
             while (Product::where('sku', $validatedData['sku'])->where('id', '!=', $product?->id)->exists()) {
                 $validatedData['sku'] = 'SKU-' . Str::upper(Str::random(8));
             }
+        }
+
+        // Ensure max_order_quantity is not null
+        if (!isset($validatedData['max_order_quantity']) || $validatedData['max_order_quantity'] === null) {
+            $validatedData['max_order_quantity'] = 100; // Set a default max order quantity
         }
 
         return $validatedData;

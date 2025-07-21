@@ -221,11 +221,11 @@
             <!-- Sidebar (Right Column) -->
             <div class="lg:col-span-1 space-y-8">
                 <!-- Similar Products / Cross-Sell -->
-                @if ($relatedProducts->isNotEmpty())
+                @if ($product->relatedProducts->isNotEmpty())
                     <div class="bg-white p-6 rounded-lg shadow-md">
-                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Similar Products</h3>
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Related Products</h3>
                         <div class="space-y-4">
-                            @foreach ($relatedProducts as $relatedProduct)
+                            @foreach ($product->relatedProducts as $relatedProduct)
                                 <div class="flex items-center space-x-4">
                                     <a href="{{ route('products.show.frontend', $relatedProduct->slug) }}">
                                         <img src="{{ $relatedProduct->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $relatedProduct->name }}" class="w-20 h-20 object-cover rounded-md">
@@ -233,6 +233,25 @@
                                     <div>
                                         <a href="{{ route('products.show.frontend', $relatedProduct->slug) }}" class="text-gray-800 hover:text-blue-600 font-medium">{{ $relatedProduct->name }}</a>
                                         <p class="text-gray-600">BDT {{ number_format($relatedProduct->price, 2) }}</p>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    </div>
+                @endif
+
+                @if ($product->crossSellingProducts->isNotEmpty())
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">Cross-Selling Products</h3>
+                        <div class="space-y-4">
+                            @foreach ($product->crossSellingProducts as $crossSellingProduct)
+                                <div class="flex items-center space-x-4">
+                                    <a href="{{ route('products.show.frontend', $crossSellingProduct->slug) }}">
+                                        <img src="{{ $crossSellingProduct->thumbnail_url ?? asset('images/default-product.jpg') }}" alt="{{ $crossSellingProduct->name }}" class="w-20 h-20 object-cover rounded-md">
+                                    </a>
+                                    <div>
+                                        <a href="{{ route('products.show.frontend', $crossSellingProduct->slug) }}" class="text-gray-800 hover:text-blue-600 font-medium">{{ $crossSellingProduct->name }}</a>
+                                        <p class="text-gray-600">BDT {{ number_format($crossSellingProduct->price, 2) }}</p>
                                     </div>
                                 </div>
                             @endforeach
