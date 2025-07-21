@@ -11,7 +11,7 @@
 
         <main class="flex-1 overflow-x-hidden bg-bg-light p-4">
             @include('components.app.toast')
-            @includeIf('components.admin.breadcrumb')
+{{--            @includeIf('components.admin.breadcrumb')--}}
             @yield('admin_content')
         </main>
     </div>

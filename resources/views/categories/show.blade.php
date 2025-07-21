@@ -5,38 +5,25 @@
 @section('content')
     <div class="min-h-screen bg-gray-50">
         <!-- Header Section -->
-        <div class="bg-white shadow">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                    <!-- Breadcrumbs -->
-                    <nav class="flex" aria-label="Breadcrumb">
-                        <ol class="flex items-center space-x-3">
-                            @foreach($breadcrumbs as $index => $crumb)
-                                <li class="flex items-center">
-                                    @if($crumb['url'])
-                                        <a href="{{ $crumb['url'] }}" class="flex items-center text-sm font-medium text-gray-500 hover:text-blue-600 transition-colors duration-200" title="{{ $crumb['name'] }}">
-                                            @if($crumb['name'] === 'Home')
-                                                <svg class="w-4 h-4 mr-1 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                                                </svg>
-                                            @endif
-                                            <span>{{ $crumb['name'] }}</span>
-                                        </a>
-                                    @else
-                                        <span class="text-sm font-semibold text-gray-900" aria-current="page">{{ $crumb['name'] }}</span>
-                                    @endif
-                                </li>
-                                @if(!$loop->last)
-                                    <li>
-                                        <svg class="flex-shrink-0 h-5 w-5 text-gray-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
-                                        </svg>
-                                    </li>
-                                @endif
-                            @endforeach
-                        </ol>
-                    </nav>
-
+        <div class="container mx-auto px-4 py-6">
+            @php
+                $currentPageTitle = array_pop($breadcrumbs)['title'];
+                $formattedLinks = [];
+                foreach ($breadcrumbs as $crumb) {
+                    $formattedLinks[$crumb['title']] = $crumb['url'];
+                }
+            @endphp
+            @include('components.breadcrumbs', [
+                'links' => $formattedLinks,
+                'title' => $currentPageTitle,
+                'showHome' => true // Assuming you want to show Home for public view
+            ])
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-text-dark">Category: <span class="text-text-light">{{ $category->name }}</span></h1>
+                    <p class="mt-2 text-sm text-text-light">Browse products in this category.</p>
+                </div>
+                <div class="flex items-center gap-4">
                     <!-- Sorting Dropdown -->
                     <div class="relative">
                         <select id="sort" name="sort" onchange="window.location.href='{{ route('categories.show', $category->slug) }}?sort='+this.value" class="block appearance-none bg-white border border-gray-300 text-gray-700 py-2 px-4 pr-8 rounded-md leading-tight focus:outline-none focus:ring-blue-500 focus:border-blue-500 text-sm">
@@ -51,6 +38,13 @@
                             <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20"><path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/></svg>
                         </div>
                     </div>
+                    <!-- Back to Categories Button -->
+                    <a href="{{ route('categories.index') }}" class="inline-flex items-center px-4 py-2 border border-input-border text-sm font-medium rounded-full shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        Back to Categories
+                    </a>
                 </div>
             </div>
         </div>

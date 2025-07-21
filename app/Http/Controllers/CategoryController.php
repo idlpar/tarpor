@@ -55,14 +55,17 @@ class CategoryController extends Controller
                 }, 'children' => function($query) {
                     $query->where('status', 'active')->withCount('products');
                 }])
+                ->with('parent') // Eager load the parent category
                 ->firstOrFail();
 
         $this->authorize('view', $category);
 
-        if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+        $isAdminView = auth()->check() && in_array(auth()->user()->role, ['admin', 'staff']);
+
+        if ($isAdminView) {
             return view('dashboard.admin.categories.show', [
                 'category' => $category,
-                'breadcrumbs' => $this->getBreadcrumbs($category)
+                'breadcrumbs' => $this->getBreadcrumbs($category, true)
             ]);
         }
 
@@ -93,41 +96,44 @@ class CategoryController extends Controller
         return view('categories.show', [
             'category' => $category,
             'products' => $products,
-            'breadcrumbs' => $this->getBreadcrumbs($category),
-            'relatedCategories' => $category->siblings()->where('status', 'active')->withCount('products')->get()
+            'relatedCategories' => $category->siblings()->where('status', 'active')->withCount('products')->get(),
+            'breadcrumbs' => $this->getBreadcrumbs($category, false)
         ]);
     }
+
+
 
     /**
      * Build breadcrumbs for category navigation
      */
-    private function getBreadcrumbs(Category $category)
+    protected function getBreadcrumbs(Category $category, $isAdminView = false)
     {
         $breadcrumbs = [];
-        $current = $category;
 
-        // Add current category and its ancestors
-        while ($current) {
-            $breadcrumbs[] = [
-                'name' => $current->name,
-                'url' => route('categories.show', $current->slug)
-            ];
-            $current = $current->parent;
-        }
-
-        // Add Categories link
+        // Add Categories link first
         $breadcrumbs[] = [
-            'name' => 'Categories',
+            'title' => 'Categories',
             'url' => route('categories.index')
         ];
 
-        // Add Home link
+        // Get all ancestors of the current category
+        $ancestors = $category->ancestors()->reverse();
+
+        // Add ancestors to breadcrumbs
+        foreach ($ancestors as $ancestor) {
+            $breadcrumbs[] = [
+                'title' => $ancestor->name,
+                'url' => $isAdminView ? route('categories.show', $ancestor->id) : route('categories.show', $ancestor->slug)
+            ];
+        }
+
+        // Add current category to breadcrumbs
         $breadcrumbs[] = [
-            'name' => 'Home',
-            'url' => route('home')
+            'title' => $category->name,
+            'url' => null // Current page, no link
         ];
 
-        return array_reverse($breadcrumbs);
+        return $breadcrumbs;
     }
 
     /**
