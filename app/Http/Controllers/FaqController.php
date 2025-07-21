@@ -14,12 +14,12 @@ class FaqController extends Controller
             return response()->json(Faq::all());
         }
         $faqs = Faq::all();
-        return view('admin.faqs.index', compact('faqs'));
+        return view('dashboard.admin.faqs.index', compact('faqs'));
     }
 
     public function create()
     {
-        return view('admin.faqs.create');
+        return view('dashboard.admin.faqs.create');
     }
 
     public function store(Request $request)

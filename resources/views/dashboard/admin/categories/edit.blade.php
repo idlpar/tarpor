@@ -3,14 +3,21 @@
 @section('title', 'Edit Category')
 
 @section('admin_content')
-    <div class="min-h-screen bg-bg-light">
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="container mx-auto px-4 py-6">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Categories' => route('categories.index'),
+                $category->name => route('categories.show', $category->id),
+                'Edit' => null
+            ]
+        ])
+        <div class="max-w-3xl mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-text-dark">Edit Category: <span class="text-text-light">{{ $category->name }}</span></h1>
                     <p class="mt-2 text-sm text-text-light">Update this product category information</p>
                 </div>
-                <a href="{{ route('categories.index') }}" class="inline-flex items-center px-4 py-2 border border-input-border text-sm font-medium rounded-full shadow-sm text-text-dark bg-input-bg hover:bg-bg-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
+                <a href="{{ route('categories.index') }}" class="inline-flex items-center px-4 py-2 border border-input-border text-sm font-medium rounded-full shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
                     <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
                     </svg>
@@ -18,11 +25,27 @@
                 </a>
             </div>
 
+            @if (session('success'))
+                <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4" role="alert">
+                    {{ session('success') }}
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-4" role="alert">
+                    <ul>
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
             <div class="bg-white shadow-lg rounded-lg overflow-hidden border border-input-border">
                 <form action="{{ route('categories.update', $category->id) }}" method="POST">
                     @csrf
                     @method('PUT')
-                    <div class="p-8 space-y-8 bg-bg-light">
+                    <div class="p-8 space-y-8">
                         <!-- Name Field -->
                         <div>
                             <label for="name" class="block text-sm font-medium text-text-dark mb-2">Category Name <span class="text-error">*</span></label>
@@ -113,7 +136,10 @@
                     </div>
 
                     <div class="px-8 py-6 bg-bg-light border-t border-input-border flex justify-end space-x-4">
-                        <a href="{{ route('categories.index') }}" class="inline-flex items-center px-6 py-3 border border-input-border text-base font-medium rounded-full shadow-sm text-text-dark bg-input-bg hover:bg-bg-light focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
+                        <a href="{{ route('categories.index') }}" class="inline-flex items-center px-4 py-2 border border-input-border text-sm font-medium rounded-full shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200">
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
                             Cancel
                         </a>
                         <button type="submit" class="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-full shadow-sm text-white bg-primary hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all duration-200 transform hover:scale-105">

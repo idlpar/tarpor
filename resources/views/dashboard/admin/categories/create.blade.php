@@ -3,14 +3,14 @@
 @section('title', 'Create Category')
 
 @section('admin_content')
-    <div class="min-h-screen bg-bg-light">
+    <div class="container mx-auto px-4 py-6">
         @include('components.breadcrumbs', [
             'links' => [
                 'Categories' => route('categories.index'),
                 'Create New Category' => null
             ]
         ])
-        <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="max-w-3xl mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-text-dark">Create New Category</h1>

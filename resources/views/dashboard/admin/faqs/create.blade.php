@@ -3,14 +3,14 @@
 @section('title', 'Add New FAQ')
 
 @section('admin_content')
-    @php
-        $breadcrumbs = [
-            ['title' => 'FAQs', 'url' => route('faqs.index')],
-            ['title' => 'Add New'],
-        ];
-    @endphp
-    
     <div class="container mx-auto px-4 py-6">
+        @include('components.breadcrumbs', [
+            'links' => [
+                'FAQs' => route('faqs.index'),
+                'Add New' => null
+            ]
+        ])
+
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div class="mb-4 md:mb-0">
@@ -50,17 +50,21 @@
         @endif
 
         <div class="bg-white shadow-lg rounded-lg p-8">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Add New FAQ</h2>
-
             <form action="{{ route('faqs.store') }}" method="POST">
                 @csrf
                 <div class="mb-5">
-                    <label for="question" class="block text-sm font-semibold text-gray-700 mb-2">Question</label>
+                    <label for="question" class="block text-sm font-semibold text-gray-700 mb-2">Question *</label>
                     <input type="text" name="question" id="question" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" value="{{ old('question') }}" required placeholder="Enter the FAQ question">
+                    @error('question')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="mb-5">
-                    <label for="answer" class="block text-sm font-semibold text-gray-700 mb-2">Answer</label>
+                    <label for="answer" class="block text-sm font-semibold text-gray-700 mb-2">Answer *</label>
                     <textarea id="answer" name="answer" rows="5" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter FAQ answer" required>{{ old('answer') }}</textarea>
+                    @error('answer')
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    @enderror
                 </div>
                 <div class="flex justify-end mt-8">
                     <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">

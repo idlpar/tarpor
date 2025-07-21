@@ -3,15 +3,20 @@
 @section('title', 'Add Brand | ' . strtoupper(config('app.name')))
 
 @section('admin_content')
-    <div class="min-h-screen bg-bg-light p-6 md:p-8">
+    <div class="container mx-auto px-4 py-6">
         @if (session('success'))
-            <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
+            <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4" role="alert">
                 {{ session('success') }}
             </div>
         @endif
-        @if (session('error'))
-            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-                {{ session('error') }}
+
+        @if ($errors->any())
+            <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-4" role="alert">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
             </div>
         @endif
 
@@ -44,16 +49,15 @@
             </div>
         </div>
 
-        <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Add New Brand</h2>
+        <div class="bg-white shadow-lg rounded-lg p-8">
 
             <form action="{{ route('brands.store') }}" method="POST" enctype="multipart/form-data" id="brandForm">
                 @csrf
                 <div class="mb-5">
                     <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Brand Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Enter brand name">
+                    <input type="text" name="name" id="name" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" value="{{ old('name') }}" required placeholder="Enter brand name">
                     @error('name')
-                        <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
 
@@ -75,7 +79,7 @@
 
                 <div class="mb-5">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Brand Logo (Optional)</label>
-                    <div id="brandLogoContainer" class="border-dashed border-2 border-gray-300 p-10 rounded-lg text-center cursor-pointer hover:bg-gray-100 transition-all flex flex-col items-center justify-center gap-3 h-40">
+                    <div id="brandLogoContainer" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 text-center cursor-pointer hover:bg-gray-100 flex flex-col items-center justify-center gap-3 h-32">
                         <svg class="w-16 h-16 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
                             <path d="M15 8h.01"></path>
