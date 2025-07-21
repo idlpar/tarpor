@@ -159,7 +159,7 @@ class ProductController extends Controller
             if (!empty($validated['tags'])) {
                 $tags = is_string($validated['tags']) ? json_decode($validated['tags'], true) : $validated['tags'];
                 if (is_array($tags)) {
-                    
+
                     $this->syncTags($product, $tags);
                 }
             }

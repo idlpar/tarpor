@@ -31,7 +31,6 @@
                 language: 'en',
             })
             .then(editor => {
-                console.log(`CKEditor initialized for #${'{{ $id }}'}`);
                 window.editors['{{ $id }}'] = editor;
                 editor.model.document.on('change:data', () => {
                     textarea.value = editor.getData();

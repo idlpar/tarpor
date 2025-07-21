@@ -1470,10 +1470,13 @@
             async function fetchProductBrief(productId) {
                 try {
                     const response = await fetch(`${fetchBriefUrl.replace('{productId}', productId)}`);
-                    if (!response.ok) throw new Error(`Network response was not ok for product brief ${productId}`);
+                    if (!response.ok) {
+                        console.error(`Failed to fetch product ${productId}: ${response.status}`);
+                        return null; // or return a default product object
+                    }
                     return await response.json();
                 } catch (error) {
-                    console.error(`${consoleErrorPrefix} Failed to fetch product brief:`, error);
+                    console.error(`Error fetching product ${productId}:`, error);
                     return null;
                 }
             }

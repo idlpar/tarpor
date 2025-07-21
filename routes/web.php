@@ -30,13 +30,6 @@ if (!Config::get('installer.installed')) {
     });
 }
 
-
-
-// Test JSON route - TEMPORARY
-Route::get('/test-json', function () {
-    return response()->json(['message' => 'This is a test JSON response.']);
-});
-
 // Guest Routes
 Route::middleware('guest')->group(function () {
     Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login')->middleware('throttle:5,1');
@@ -141,21 +134,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Coupon Management
         Route::resource('coupons', CouponController::class)->names('coupons');
 
-        // API Routes for Admin/Staff
-        Route::prefix('api')->name('api.')->group(function () {
-            Route::get('product/slug/check', [ProductController::class, 'checkSlug'])->name('slug.check');
-            Route::get('category/slug/check', [CategoryController::class, 'checkSlug'])->name('category.slug.check');
-            Route::get('collection/slug/check', [CollectionController::class, 'checkSlug'])->name('collection.slug.check');
-            Route::get('label/slug/check', [LabelController::class, 'checkSlug'])->name('label.slug.check');
-            Route::get('brand/slug/check', [\App\Http\Controllers\BrandController::class, 'checkSlug'])->name('brand.slug.check');
-            Route::post('generate-sku', [ProductController::class, 'generateSku'])->name('sku.generate');
-            Route::get('products/{product}/quick-view', [ProductController::class, 'quickView'])->name('products.quickView');
-            Route::get('product/suggestions', [ProductController::class, 'suggestions'])->name('products.suggestions');
-            Route::get('product/search', [ProductController::class, 'search'])->name('products.search');
-            Route::get('product/{product}/brief', [ProductController::class, 'brief'])->name('products.brief');
-            Route::post('product/brief-batch', [ProductController::class, 'briefBatch'])->name('products.briefBatch');
-            Route::get('faqs', [FaqController::class, 'index'])->name('faqs.index');
-        });
+
+
     });
 
     // Admin-Only Routes
@@ -164,7 +144,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Newsletter Routes (Moved inside admin role middleware)
         Route::get('/admin/newsletter/subscribers', function () {
             $subscribers = App\Models\NewsletterSubscription::all(); // Get all to show status
-            return view('admin.newsletter.subscribers', compact('subscribers'));
+            return view('dashboard.admin.newsletter.subscribers', compact('subscribers'));
         })->name('admin.newsletter.subscribers');
         Route::get('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'showSendForm'])->name('admin.newsletter.send');
         Route::post('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'sendMail'])->name('admin.newsletter.send.post');
@@ -264,4 +244,4 @@ Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->
 Route::any('/{any}', function ($any) {
     \Log::info('Empty request detected', ['path' => $any]);
     abort(404);
-})->where('any', '.*');
+})->where('any', '^(?!api).*');
