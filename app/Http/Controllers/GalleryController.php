@@ -424,14 +424,38 @@ class GalleryController extends Controller
 
         $path = $request->input('path', '');
         $uploadedFiles = [];
+        $duplicateFiles = [];
 
         try {
             foreach ($request->file('files') as $file) {
                 $originalName = $file->getClientOriginalName();
                 $baseName = pathinfo($originalName, PATHINFO_FILENAME);
                 $extension = strtolower($file->getClientOriginalExtension());
-                $fileName = $this->generateUniqueFilename($path, Str::slug($baseName), $extension);
                 $fileHash = md5_file($file->getRealPath());
+
+                // Check if a file with the same hash already exists
+                $existingMedia = Media::where('file_hash', $fileHash)->first();
+
+                if ($existingMedia) {
+                    // If duplicate, add existing media to uploadedFiles and mark as duplicate
+                    $uploadedFiles[] = [
+                        'id' => $existingMedia->id,
+                        'name' => $existingMedia->name,
+                        'file_name' => $existingMedia->file_name,
+                        'path' => $existingMedia->directory ? $existingMedia->directory . '/' . $existingMedia->file_name : $existingMedia->file_name,
+                        'url' => Storage::disk($this->disk)->url($existingMedia->directory ? $existingMedia->directory . '/' . $existingMedia->file_name : $existingMedia->file_name),
+                        'thumb_url' => $this->getThumbUrl($existingMedia),
+                        'mime_type' => $existingMedia->mime_type,
+                        'size' => $this->formatFileSize($existingMedia->size), // Formatted size
+                        'size_bytes' => $existingMedia->size, // Raw size in bytes
+                        'created_at' => $existingMedia->created_at->format('d-m-Y'),
+                        'is_duplicate' => true
+                    ];
+                    $duplicateFiles[] = $originalName;
+                    continue; // Skip to the next file
+                }
+
+                $fileName = $this->generateUniqueFilename($path, Str::slug($baseName), $extension);
                 $mimeType = $file->getMimeType();
                 $size = $file->getSize();
 
@@ -474,15 +498,21 @@ class GalleryController extends Controller
                     'url' => Storage::disk($this->disk)->url($storedPath),
                     'thumb_url' => $this->getThumbUrl($media),
                     'mime_type' => $media->mime_type,
-                    'size' => $this->formatFileSize($media->size),
+                    'size' => $this->formatFileSize($media->size), // Formatted size
+                    'size_bytes' => $media->size, // Raw size in bytes
                     'created_at' => $media->created_at->format('d-m-Y')
                 ];
+            }
+
+            $message = 'Files uploaded successfully.';
+            if (!empty($duplicateFiles)) {
+                $message .= ' Some files were already present: ' . implode(', ', $duplicateFiles) . '.';
             }
 
             return response()->json([
                 'success' => true,
                 'files' => $uploadedFiles,
-                'message' => 'Files uploaded successfully'
+                'message' => $message
             ]);
         } catch (\Exception $e) {
             \Log::error('Upload failed: ' . $e->getMessage());
@@ -953,9 +983,29 @@ class GalleryController extends Controller
                     return $file->directory === $currentTrashedFolder->path;
                 });
             } else {
-                // Root trash view: show all trashed files and top-level trashed folders
-                $filteredFolders = $allTrashedFolders;
-                $filteredFiles = $allTrashedFiles;
+                // Root trash view:
+                // Get IDs of all trashed folders for efficient lookup
+                $trashedFolderIds = $allTrashedFolders->pluck('id')->toArray();
+
+                // Filter files: only show files whose direct parent folder is NOT trashed
+                $filteredFiles = $allTrashedFiles->filter(function ($file) use ($allTrashedFolders) {
+                    // Find the MediaFolder object for the file's directory
+                    $parentFolder = $allTrashedFolders->firstWhere('path', $file->directory);
+                    // If the parent folder exists AND is trashed, then this file should NOT be shown individually
+                    return !($parentFolder && $parentFolder->trashed());
+                });
+
+                // Filter folders: only show folders whose direct parent folder is NOT trashed
+                $filteredFolders = $allTrashedFolders->filter(function ($folder) use ($allTrashedFolders) {
+                    // If the folder has no parent, it's a top-level trashed folder
+                    if ($folder->parent_id === null) {
+                        return true;
+                    }
+                    // Find the MediaFolder object for the folder's parent_id
+                    $parentFolder = $allTrashedFolders->firstWhere('id', $folder->parent_id);
+                    // If the parent folder exists AND is trashed, then this folder should NOT be shown individually
+                    return !($parentFolder && $parentFolder->trashed());
+                });
             }
 
             $trashedFiles = $filteredFiles->map(function ($file) {

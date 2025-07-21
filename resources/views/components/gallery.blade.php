@@ -601,6 +601,10 @@
                     <i class="fas fa-sync-alt"></i>
                     <span>Refresh</span>
                 </button>
+                <button type="button" id="selectAllButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md" aria-label="Select All Items">
+                    <i class="fas fa-check-double"></i>
+                    <span>Select All</span>
+                </button>
                 <button type="button" id="openFolderButton" class="flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium cursor-pointer border border-gray-200 transition-all duration-200 bg-white text-indigo-600 hover:bg-gray-100 hover:scale-105 hover:shadow-md hidden" aria-label="Open Selected Folder">
                     <i class="fas fa-folder-open"></i>
                     <span>Open</span>
@@ -793,6 +797,7 @@
                 downloadButton: document.getElementById('downloadButton'),
                 deleteSingleButton: document.getElementById('deleteSingleButton'),
                 refreshButton: document.getElementById('refreshButton'),
+                selectAllButton: document.getElementById('selectAllButton'),
                 openFolderButton: document.getElementById('openFolderButton'),
                 newFolderButton: document.getElementById('newFolderButton'),
                 uploadButton: document.getElementById('uploadButton'),
@@ -826,7 +831,7 @@
                 featuredImage: null,
                 pagination: {
                     currentPage: 1,
-                    perPage: 12,
+                    perPage: 30,
                     totalItems: 0,
                     totalPages: 1,
                     hasPrevious: false,
@@ -857,6 +862,11 @@
                 this.elements.refreshButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.refreshContents();
+                });
+
+                this.elements.selectAllButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    this.selectAllItems();
                 });
 
                 this.elements.openFolderButton.addEventListener('click', (e) => {
@@ -971,6 +981,15 @@
                 this.elements.insertButton.addEventListener('click', (e) => {
                     e.preventDefault();
                     this.insertSelectedForProduct();
+                });
+
+                this.elements.deleteSingleButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const selectedItemKey = Array.from(this.state.selectedItems)[0];
+                    if (selectedItemKey) {
+                        const [type, id] = selectedItemKey.split(':');
+                        this.deleteSelected(false, [{ id, type }]);
+                    }
                 });
             },
 
@@ -1359,7 +1378,7 @@
                         </div>
                     </div>
                     <div class="item-info">
-                        <div class="item-name">${file.name}</div>
+                        <div class="item-name">${isTrash ? file.path : file.name}</div>
                     </div>
                 `;
 
@@ -1438,6 +1457,23 @@
                 } else if (!hasSelection) {
                     this.clearPreview();
                 }
+            },
+
+            selectAllItems() {
+                this.elements.itemsContainer.querySelectorAll('.gallery-item').forEach(item => {
+                    const id = item.dataset.id;
+                    const type = item.dataset.type;
+                    if (id !== 'go-up') { // Exclude "Go Up" folder
+                        const itemKey = `${type}:${id}`;
+                        if (!this.state.selectedItems.has(itemKey)) {
+                            this.state.selectedItems.add(itemKey);
+                            item.classList.add('selected');
+                            const checkbox = item.querySelector('.item-checkbox input');
+                            if (checkbox) checkbox.checked = true;
+                        }
+                    }
+                });
+                this.updateSelectionDisplay();
             },
 
             // Preview Management
@@ -1740,13 +1776,13 @@
                 });
             },
 
-            deleteSelected(permanent = false) {
-                if (this.state.selectedItems.size === 0) return;
-
-                const items = Array.from(this.state.selectedItems).map(key => {
+            deleteSelected(permanent = false, itemsToDelete = null) {
+                const items = itemsToDelete || Array.from(this.state.selectedItems).map(key => {
                     const [type, id] = key.split(':');
                     return { id, type };
                 });
+
+                if (items.length === 0) return;
 
                 Swal.fire({
                     title: permanent ? 'Delete Permanently?' : 'Move to Trash?',
