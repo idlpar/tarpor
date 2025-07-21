@@ -47,8 +47,6 @@
         </div>
 
         <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800">Edit Product Attribute</h1>
-
             <form action="{{ route('product_attributes.update', $product_attribute->id) }}" method="POST">
                 @csrf
                 @method('PUT')

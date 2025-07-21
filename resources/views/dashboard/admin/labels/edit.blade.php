@@ -34,8 +34,6 @@
         </div>
 
         <div class="bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Edit Label</h2>
-
             <form action="{{ route('labels.update', $label->id) }}" method="POST">
                 @csrf
                 @method('PUT')

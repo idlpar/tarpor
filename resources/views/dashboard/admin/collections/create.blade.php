@@ -11,13 +11,6 @@
             ]
         ])
 
-        @include('components.breadcrumbs', [
-            'links' => [
-                'Collections' => route('collections.index'),
-                'Create' => null
-            ]
-        ])
-
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
             <div class="mb-4 md:mb-0">
@@ -41,8 +34,6 @@
         </div>
 
         <div class="bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Create Collection</h2>
-
             <form action="{{ route('collections.store') }}" method="POST">
                 @csrf
                 <div class="mb-5">

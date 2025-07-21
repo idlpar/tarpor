@@ -96,7 +96,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulk-action');
 
         // Product Variant Management
-        Route::get('/products/variants', [ProductController::class, 'indexVariants'])->name('products.variants.index');
+        
         Route::get('/products/{product}/variants/edit', [ProductController::class, 'editVariants'])->name('products.variants.edit');
         Route::put('/products/{product}/variants/sync', [ProductController::class, 'syncVariants'])->name('products.variants.sync');
 
@@ -149,7 +149,43 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::get('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'showSendForm'])->name('admin.newsletter.send');
         Route::post('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'sendMail'])->name('admin.newsletter.send.post');
 
-        Route::get('/setup/storage-link', fn() => \Artisan::call('storage:link') ? 'Storage link created successfully.' : 'Failed')->name('storage.link');
+        Route::get('/setup/storage-link', function () {
+    try {
+        $publicStoragePath = public_path('storage');
+
+        if (file_exists($publicStoragePath)) {
+            if (is_link($publicStoragePath)) {
+                // It's a symbolic link (either file or directory)
+                // On Windows, unlink() fails for directory symlinks (junctions).
+                // rmdir is needed for directory symlinks/junctions.
+                if (is_dir($publicStoragePath)) { // Check if it's a directory link (junction)
+                    $command = 'rmdir "' . $publicStoragePath . '"';
+                    $output = null;
+                    $returnVar = null;
+                    exec($command, $output, $returnVar);
+                    if ($returnVar !== 0) {
+                        throw new \Exception('Failed to remove existing directory symbolic link: ' . implode("\n", $output));
+                    }
+                } else {
+                    // It's a file symbolic link, unlink() should work
+                    unlink($publicStoragePath);
+                }
+            } elseif (is_dir($publicStoragePath)) {
+                // It's a real directory, not a symbolic link. User wants to keep its contents.
+                return 'Error: public/storage is a real directory. Please delete it manually if you wish to create a symbolic link. Its contents will NOT be deleted by this script.';
+            } else {
+                // It's a regular file, not a directory or link.
+                unlink($publicStoragePath);
+            }
+        }
+
+        // Then create the link
+        \Artisan::call('storage:link');
+        return 'Storage link created/updated successfully.';
+    } catch (\Exception $e) {
+        return 'Failed to create/update storage link: ' . $e->getMessage();
+    }
+})->name('storage.link');
         Route::prefix('icons')->name('icons.')->group(function () {
             Route::get('/', [SvgController::class, 'index']);
             Route::post('/cleanup', [SvgController::class, 'cleanup'])->name('cleanup');

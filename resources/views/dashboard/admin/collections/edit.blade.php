@@ -10,6 +10,7 @@
                 'Edit' => null
             ]
         ])
+        
 
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
@@ -34,8 +35,6 @@
         </div>
 
         <div class="bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold mb-6 text-gray-800">Edit Collection</h2>
-
             <form action="{{ route('collections.update', $collection->id) }}" method="POST">
                 @csrf
                 @method('PUT')

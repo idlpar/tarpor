@@ -33,10 +33,7 @@
                     <i class="fas fa-plus-circle w-4 h-4 mr-3"></i>
                     Add New Product
                 </a>
-                <a href="{{ route('products.variants.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('products.variants.index') ? 'bg-gray-700 text-blue-400' : '' }}">
-                    <i class="fas fa-tags w-4 h-4 mr-3"></i>
-                    Product Variants
-                </a>
+                
                 <a href="{{ route('product_attributes.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('product_attributes.index') ? 'bg-gray-700 text-blue-400' : '' }}">
                     <i class="fas fa-cogs w-4 h-4 mr-3"></i>
                     Product Attributes
