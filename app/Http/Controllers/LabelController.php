@@ -11,12 +11,19 @@ class LabelController extends Controller
     public function index()
     {
         $labels = Label::latest()->paginate(10);
-        return view('dashboard.admin.labels.index', compact('labels'));
+        $links = [
+            'Labels' => route('labels.index')
+        ];
+        return view('dashboard.admin.labels.index', compact('labels', 'links'));
     }
 
     public function create()
     {
-        return view('dashboard.admin.labels.create');
+        $links = [
+            'Labels' => route('labels.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.labels.create', compact('links'));
     }
 
     public function store(Request $request)
@@ -40,7 +47,11 @@ class LabelController extends Controller
 
     public function edit(Label $label)
     {
-        return view('dashboard.admin.labels.edit', compact('label'));
+        $links = [
+            'Labels' => route('labels.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.labels.edit', compact('label', 'links'));
     }
 
     public function update(Request $request, Label $label)

@@ -14,12 +14,19 @@ class FaqController extends Controller
             return response()->json(Faq::all());
         }
         $faqs = Faq::all();
-        return view('dashboard.admin.faqs.index', compact('faqs'));
+        $links = [
+            'FAQs' => route('faqs.index')
+        ];
+        return view('dashboard.admin.faqs.index', compact('faqs', 'links'));
     }
 
     public function create()
     {
-        return view('dashboard.admin.faqs.create');
+        $links = [
+            'FAQs' => route('faqs.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.faqs.create', compact('links'));
     }
 
     public function store(Request $request)
@@ -36,7 +43,11 @@ class FaqController extends Controller
 
     public function edit(Faq $faq)
     {
-        return view('dashboard.admin.faqs.edit', compact('faq'));
+        $links = [
+            'FAQs' => route('faqs.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.faqs.edit', compact('faq', 'links'));
     }
 
     public function update(Request $request, Faq $faq)

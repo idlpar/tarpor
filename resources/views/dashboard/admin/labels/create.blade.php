@@ -3,7 +3,7 @@
 @section('title', 'Create Label')
 
 @section('admin_content')
-    <div class="container mx-auto px-4 py-6">
+    <div class="container mx-auto">
         @include('components.breadcrumbs', [
             'links' => [
                 'Labels' => route('labels.index'),

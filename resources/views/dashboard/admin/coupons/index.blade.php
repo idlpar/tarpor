@@ -3,15 +3,15 @@
 @section('title', 'Coupons')
 
 @section('admin_content')
-<div class="container mx-auto px-4 py-6">
+<div class="container mx-auto">
     @include('components.breadcrumbs', [
         'links' => [
             'Coupons' => null
         ]
     ])
-    <h1 class="text-3xl font-bold text-gray-800 mb-6">Coupons Management</h1>
 
     <div class="flex justify-between items-center mb-4">
+    <h2 class="text-3xl font-bold text-gray-800 mb-6">Coupons Management</h2>
         <a href="{{ route('coupons.create') }}" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">
             Add New Coupon
         </a>

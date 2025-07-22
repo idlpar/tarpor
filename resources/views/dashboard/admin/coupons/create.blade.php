@@ -44,9 +44,7 @@
             </div>
         @endif
 
-        <div class="max-w-4xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h2 class="text-3xl font-bold text-gray-800 mb-6">Create New Coupon</h2>
-
+        <div class="max-w-full mx-auto bg-white p-8 rounded-lg shadow-lg">
             <form action="{{ route('coupons.store') }}" method="POST">
                 @csrf
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">

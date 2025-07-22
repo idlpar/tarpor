@@ -16,7 +16,10 @@ class BrandController extends Controller
     public function index()
     {
         $brands = Brand::latest()->paginate(10); // Fetch all brands, including soft deleted ones
-        return view('dashboard.admin.brands.index', compact('brands'));
+        $links = [
+            'Brands' => route('brands.index')
+        ];
+        return view('dashboard.admin.brands.index', compact('brands', 'links'));
     }
 
     /**
@@ -24,7 +27,11 @@ class BrandController extends Controller
      */
     public function create()
     {
-        return view('dashboard.admin.brands.create');
+        $links = [
+            'Brands' => route('brands.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.brands.create', compact('links'));
     }
 
     /**
@@ -94,7 +101,11 @@ class BrandController extends Controller
     public function edit(string $id)
     {
         $brand = Brand::findOrFail($id);
-        return view('dashboard.admin.brands.edit', compact('brand'));
+        $links = [
+            'Brands' => route('brands.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.brands.edit', compact('brand', 'links'));
     }
 
     /**

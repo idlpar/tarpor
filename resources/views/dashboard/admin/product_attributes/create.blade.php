@@ -46,11 +46,11 @@
             </div>
         </div>
 
-        <div class="max-w-xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
             <form action="{{ route('product_attributes.store') }}" method="POST">
                 @csrf
                 <div class="mb-5">
-                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Attribute Name *</label>
+                    <label for="name" class="block text-lg font-semibold text-gray-700 mb-2">Attribute Name *</label>
                     <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="e.g., Size, Color, Material">
                     @error('name')
                     <p class="text-red-600 text-sm mt-1">{{ $message }}</p>

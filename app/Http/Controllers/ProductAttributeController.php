@@ -13,12 +13,19 @@ class ProductAttributeController extends Controller
     public function index()
     {
         $attributes = ProductAttribute::with('values')->orderBy('name')->paginate(10);
-        return view('dashboard.admin.product_attributes.index', compact('attributes'));
+        $links = [
+            'Product Attributes' => route('product_attributes.index')
+        ];
+        return view('dashboard.admin.product_attributes.index', compact('attributes', 'links'));
     }
 
     public function create()
     {
-        return view('dashboard.admin.product_attributes.create');
+        $links = [
+            'Product Attributes' => route('product_attributes.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.product_attributes.create', compact('links'));
     }
 
     public function store(Request $request)
@@ -36,7 +43,11 @@ class ProductAttributeController extends Controller
 
     public function edit(ProductAttribute $product_attribute)
     {
-        return view('dashboard.admin.product_attributes.edit', compact('product_attribute'));
+        $links = [
+            'Product Attributes' => route('product_attributes.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.product_attributes.edit', compact('product_attribute', 'links'));
     }
 
     public function update(Request $request, ProductAttribute $product_attribute)

@@ -3,7 +3,7 @@
 @section('title', 'Edit ' . $brand->name . ' | ' . strtoupper(config('app.name')))
 
 @section('admin_content')
-    <div class="container mx-auto px-4 py-6">
+    <div class="container mx-auto">
         @if (session('success'))
             <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4" role="alert">
                 {{ session('success') }}

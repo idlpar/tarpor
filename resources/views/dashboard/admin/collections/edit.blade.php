@@ -3,14 +3,14 @@
 @section('title', 'Edit Collection')
 
 @section('admin_content')
-    <div class="container mx-auto px-4 py-6">
+    <div class="container mx-auto">
         @include('components.breadcrumbs', [
             'links' => [
                 'Collections' => route('collections.index'),
                 'Edit' => null
             ]
         ])
-        
+
 
         <!-- Page Header -->
         <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">

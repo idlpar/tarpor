@@ -11,8 +11,10 @@
 
         <main class="flex-1 overflow-x-hidden bg-bg-light p-4">
             @include('components.app.toast')
-{{--            @includeIf('components.admin.breadcrumb')--}}
-            @yield('admin_content')
+            <div class="container mx-auto px-4">
+                @includeIf('components.admin.breadcrumb')
+                @yield('admin_content')
+            </div>
         </main>
     </div>
 </div>

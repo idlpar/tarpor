@@ -11,12 +11,19 @@ class CollectionController extends Controller
     public function index()
     {
         $collections = Collection::latest()->paginate(10);
-        return view('dashboard.admin.collections.index', compact('collections'));
+        $links = [
+            'Collections' => route('collections.index')
+        ];
+        return view('dashboard.admin.collections.index', compact('collections', 'links'));
     }
 
     public function create()
     {
-        return view('dashboard.admin.collections.create');
+        $links = [
+            'Collections' => route('collections.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.collections.create', compact('links'));
     }
 
     public function store(Request $request)
@@ -40,7 +47,11 @@ class CollectionController extends Controller
 
     public function edit(Collection $collection)
     {
-        return view('dashboard.admin.collections.edit', compact('collection'));
+        $links = [
+            'Collections' => route('collections.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.collections.edit', compact('collection', 'links'));
     }
 
     public function update(Request $request, Collection $collection)

@@ -12,12 +12,19 @@ class CouponController extends Controller
     public function index()
     {
         $coupons = Coupon::all();
-        return view('dashboard.admin.coupons.index', compact('coupons'));
+        $links = [
+            'Coupons' => route('coupons.index')
+        ];
+        return view('dashboard.admin.coupons.index', compact('coupons', 'links'));
     }
 
     public function create()
     {
-        return view('dashboard.admin.coupons.create');
+        $links = [
+            'Coupons' => route('coupons.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.coupons.create', compact('links'));
     }
 
     public function store(Request $request)
@@ -38,7 +45,11 @@ class CouponController extends Controller
 
     public function edit(Coupon $coupon)
     {
-        return view('dashboard.admin.coupons.edit', compact('coupon'));
+        $links = [
+            'Coupons' => route('coupons.index'),
+            'Edit' => null
+        ];
+        return view('dashboard.admin.coupons.edit', compact('coupon', 'links'));
     }
 
     public function update(Request $request, Coupon $coupon)

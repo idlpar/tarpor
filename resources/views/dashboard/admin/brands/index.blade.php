@@ -4,7 +4,7 @@
 
 @section('admin_content')
     <div class="min-h-screen bg-gray-100 p-6 md:p-8">
-        
+
 
         @include('components.breadcrumbs', [
             'links' => [
@@ -23,7 +23,7 @@
             </div>
         @endif
 
-        <div class="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <div class="max-w-full mx-auto bg-white p-8 rounded-lg shadow-lg">
             <div class="flex justify-between items-center mb-6">
                 <h2 class="text-3xl font-bold text-gray-800">Brands</h2>
                 <a href="{{ route('brands.create') }}" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200">Add New Brand</a>

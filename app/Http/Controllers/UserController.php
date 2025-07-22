@@ -50,7 +50,10 @@ class UserController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        return view('users.index', compact('users'));
+        $links = [
+            'Users' => route('users.index')
+        ];
+        return view('users.index', compact('users', 'links'));
     }
 
     /**
@@ -59,7 +62,11 @@ class UserController extends Controller
     public function create()
     {
         $this->authorize('create', User::class);
-        return view('users.create');
+        $links = [
+            'Users' => route('users.index'),
+            'Add New' => null
+        ];
+        return view('users.create', compact('links'));
     }
 
     /**
@@ -93,7 +100,11 @@ class UserController extends Controller
     public function edit(User $user)
     {
         $this->authorize('update', $user);
-        return view('users.edit', compact('user'));
+        $links = [
+            'Users' => route('users.index'),
+            'Edit' => null
+        ];
+        return view('users.edit', compact('user', 'links'));
     }
 
     /**
