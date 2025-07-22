@@ -27,7 +27,10 @@ class CategoryController extends Controller
                 'categories' => $categories,
                 'tree' => $tree,
                 'totalCategories' => Category::count(),
-                'activeCategories' => Category::where('status', 'active')->count()
+                'activeCategories' => Category::where('status', 'active')->count(),
+                'links' => [
+                    'Categories' => route('categories.index')
+                ]
             ]);
         }
 
@@ -63,9 +66,10 @@ class CategoryController extends Controller
         $isAdminView = auth()->check() && in_array(auth()->user()->role, ['admin', 'staff']);
 
         if ($isAdminView) {
+            $links = $this->getBreadcrumbs($category, true);
             return view('dashboard.admin.categories.show', [
                 'category' => $category,
-                'breadcrumbs' => $this->getBreadcrumbs($category, true)
+                'links' => $links
             ]);
         }
 
@@ -97,7 +101,7 @@ class CategoryController extends Controller
             'category' => $category,
             'products' => $products,
             'relatedCategories' => $category->siblings()->where('status', 'active')->withCount('products')->get(),
-            'breadcrumbs' => $this->getBreadcrumbs($category, false)
+            'links' => $this->getBreadcrumbs($category, false)
         ]);
     }
 
@@ -108,32 +112,23 @@ class CategoryController extends Controller
      */
     protected function getBreadcrumbs(Category $category, $isAdminView = false)
     {
-        $breadcrumbs = [];
+        $links = [];
 
         // Add Categories link first
-        $breadcrumbs[] = [
-            'title' => 'Categories',
-            'url' => route('categories.index')
-        ];
+        $links['Categories'] = route('categories.index');
 
         // Get all ancestors of the current category
         $ancestors = $category->ancestors()->reverse();
 
         // Add ancestors to breadcrumbs
         foreach ($ancestors as $ancestor) {
-            $breadcrumbs[] = [
-                'title' => $ancestor->name,
-                'url' => $isAdminView ? route('categories.show', $ancestor->id) : route('categories.show', $ancestor->slug)
-            ];
+            $links[$ancestor->name] = $isAdminView ? route('categories.show', $ancestor->id) : route('categories.show', $ancestor->slug);
         }
 
         // Add current category to breadcrumbs
-        $breadcrumbs[] = [
-            'title' => $category->name,
-            'url' => null // Current page, no link
-        ];
+        $links[$category->name] = null; // Current page, no link
 
-        return $breadcrumbs;
+        return $links;
     }
 
     /**
@@ -158,8 +153,11 @@ class CategoryController extends Controller
         $categoriesTree = Category::whereNull('parent_id')
             ->with('children')
             ->get();
-
-        return view('dashboard.admin.categories.create', compact('categoriesTree'));
+        $links = [
+            'Categories' => route('categories.index'),
+            'Add New' => null
+        ];
+        return view('dashboard.admin.categories.create', compact('categoriesTree', 'links'));
     }
     /**
      * Store a newly created category.
@@ -199,7 +197,11 @@ class CategoryController extends Controller
 
         return view('dashboard.admin.categories.edit', [
             'category' => $category,
-            'categoriesTree' => $categoriesTree
+            'categoriesTree' => $categoriesTree,
+            'links' => [
+                'Categories' => route('categories.index'),
+                'Edit' => null
+            ]
         ]);
     }
 

@@ -11,7 +11,7 @@
                 'Edit' => null
             ]
         ])
-        <div class="max-w-3xl mx-auto">
+        <div class="max-w-full mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-text-dark">Edit Category: <span class="text-text-light">{{ $category->name }}</span></h1>

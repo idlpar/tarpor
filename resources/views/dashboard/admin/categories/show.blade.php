@@ -7,17 +7,25 @@
         <!-- Header Section -->
         <div class="container mx-auto">
             @php
-                $currentPageTitle = array_pop($breadcrumbs)['title'];
-                $formattedLinks = [];
-                foreach ($breadcrumbs as $crumb) {
-                    $formattedLinks[$crumb['title']] = $crumb['url'];
+                $currentPageTitle = '';
+                $formattedLinks = $links; // Start with the full links array from the controller
+
+                if (is_array($formattedLinks) && !empty($formattedLinks)) {
+                    // Get the last key (label) and its value (url)
+                    end($formattedLinks); // Move internal pointer to the last element
+                    $lastLabel = key($formattedLinks); // Get the key (label) of the last element
+                    array_pop($formattedLinks); // Remove the last element (its value is not needed here)
+
+                    $currentPageTitle = $lastLabel; // The last label is the current page title
+
+                    // $formattedLinks now contains all links *except* the current page, in the correct format.
                 }
             @endphp
-            @include('components.breadcrumbs', [
-                'links' => $formattedLinks,
-                'title' => $currentPageTitle,
-                'showHome' => true
-            ])
+{{--            @include('components.admin.breadcrumb', [--}}
+{{--                'links' => $formattedLinks,--}}
+{{--                'title' => $currentPageTitle,--}}
+{{--                'showHome' => true--}}
+{{--            ])--}}
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h1 class="text-3xl font-bold text-text-dark">Category: <span class="text-text-light">{{ $category->name }}</span></h1>

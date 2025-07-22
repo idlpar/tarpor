@@ -26,9 +26,13 @@
                     <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd"/>
                 </svg>
 
-                <a href="{{ $url }}" class="ml-1 text-emerald-600 hover:text-emerald-700 transition">
-                    {{ $label }}
-                </a>
+                @if ($url)
+                    <a href="{{ $url }}" class="ml-1 text-emerald-600 hover:text-emerald-700 transition">
+                        {{ $label }}
+                    </a>
+                @else
+                    <span class="ml-1 text-gray-500">{{ $label }}</span>
+                @endif
             </li>
         @endforeach
 
