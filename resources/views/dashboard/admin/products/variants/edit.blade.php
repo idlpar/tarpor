@@ -25,8 +25,29 @@
             ]
         ])
 
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('products.edit', $product->id) }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Manage Variants for {{ $product->name }}</h1>
+                        <p class="mt-1 text-sm text-gray-600">Edit and manage product variants</p>
+                    </div>
+                </div>
+            </div>
+            <div>
+                <a href="{{ route('products.edit', $product->id) }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    Back to Product
+                </a>
+            </div>
+        </div>
+
         <div class="max-w-7xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <h1 class="text-3xl font-bold mb-6 text-gray-800">Manage Variants for {{ $product->name }}</h1>
 
             <form action="{{ route('products.variants.sync', $product->id) }}" method="POST">
                 @csrf

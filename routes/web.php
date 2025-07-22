@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\BrandController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\LabelController;
@@ -85,8 +86,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
-        Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
         Route::get('/admin/products/{product:id}', [ProductController::class, 'show'])->name('products.show');
+        Route::get('/products/{product:id}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
         Route::get('/products/import', [ProductController::class, 'importForm'])->name('products.import');
         Route::post('/products/import', [ProductController::class, 'import'])->name('products.import.store');
@@ -96,9 +97,9 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::post('/products/bulk-action', [ProductController::class, 'bulkAction'])->name('products.bulk-action');
 
         // Product Variant Management
-        
-        Route::get('/products/{product}/variants/edit', [ProductController::class, 'editVariants'])->name('products.variants.edit');
-        Route::put('/products/{product}/variants/sync', [ProductController::class, 'syncVariants'])->name('products.variants.sync');
+
+        Route::get('/products/{product:id}/variants/edit', [ProductController::class, 'editVariants'])->name('products.variants.edit');
+        Route::put('/products/{product:id}/variants/sync', [ProductController::class, 'syncVariants'])->name('products.variants.sync');
 
         // Product Attributes Management
         Route::resource('product-attributes', ProductAttributeController::class)->names('product_attributes');
@@ -117,10 +118,10 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Label Management
         Route::resource('labels', LabelController::class)->names('labels');
 
-                Route::resource('faqs', \App\Http\Controllers\FaqController::class)->names('faqs');
-        Route::resource('brands', \App\Http\Controllers\BrandController::class)->names('brands');
-        Route::patch('/brands/{id}/restore', [\App\Http\Controllers\BrandController::class, 'restore'])->name('brands.restore');
-        Route::delete('/brands/{id}/force-delete', [\App\Http\Controllers\BrandController::class, 'forceDelete'])->name('brands.force-delete');
+                Route::resource('faqs', FaqController::class)->names('faqs');
+        Route::resource('brands', BrandController::class)->names('brands');
+        Route::patch('/brands/{id}/restore', [BrandController::class, 'restore'])->name('brands.restore');
+        Route::delete('/brands/{id}/force-delete', [BrandController::class, 'forceDelete'])->name('brands.force-delete');
 
         Route::resource('/admin/orders', OrderController::class)->names('admin.orders');
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
@@ -134,8 +135,6 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Coupon Management
         Route::resource('coupons', CouponController::class)->names('coupons');
 
-
-
     });
 
     // Admin-Only Routes
@@ -148,49 +147,6 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         })->name('admin.newsletter.subscribers');
         Route::get('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'showSendForm'])->name('admin.newsletter.send');
         Route::post('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'sendMail'])->name('admin.newsletter.send.post');
-
-        Route::get('/setup/storage-link', function () {
-    try {
-        $publicStoragePath = public_path('storage');
-
-        if (file_exists($publicStoragePath)) {
-            if (is_link($publicStoragePath)) {
-                // It's a symbolic link (either file or directory)
-                // On Windows, unlink() fails for directory symlinks (junctions).
-                // rmdir is needed for directory symlinks/junctions.
-                if (is_dir($publicStoragePath)) { // Check if it's a directory link (junction)
-                    $command = 'rmdir "' . $publicStoragePath . '"';
-                    $output = null;
-                    $returnVar = null;
-                    exec($command, $output, $returnVar);
-                    if ($returnVar !== 0) {
-                        throw new \Exception('Failed to remove existing directory symbolic link: ' . implode("\n", $output));
-                    }
-                } else {
-                    // It's a file symbolic link, unlink() should work
-                    unlink($publicStoragePath);
-                }
-            } elseif (is_dir($publicStoragePath)) {
-                // It's a real directory, not a symbolic link. User wants to keep its contents.
-                return 'Error: public/storage is a real directory. Please delete it manually if you wish to create a symbolic link. Its contents will NOT be deleted by this script.';
-            } else {
-                // It's a regular file, not a directory or link.
-                unlink($publicStoragePath);
-            }
-        }
-
-        // Then create the link
-        \Artisan::call('storage:link');
-        return 'Storage link created/updated successfully.';
-    } catch (\Exception $e) {
-        return 'Failed to create/update storage link: ' . $e->getMessage();
-    }
-})->name('storage.link');
-        Route::prefix('icons')->name('icons.')->group(function () {
-            Route::get('/', [SvgController::class, 'index']);
-            Route::post('/cleanup', [SvgController::class, 'cleanup'])->name('cleanup');
-            Route::post('/sort', [SvgController::class, 'sortSvgSymbols'])->name('sort');
-        });
     });
 
     // Gallery Routes (Admin and Staff) - Consolidated and Corrected
@@ -229,7 +185,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     });
 });
 
-
+// Public Routes                                                                                                                                                          │
+Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
 // Cart & Checkout
 Route::post('/cart/add', [CartController::class, 'add'])->name('cart.add');
 Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
@@ -253,8 +210,6 @@ Route::post('/rewards/apply', [RewardController::class, 'apply'])->name('rewards
 Route::post('/newsletter/subscribe', [App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');
 Route::get('/newsletter/unsubscribe', [App\Http\Controllers\NewsletterController::class, 'unsubscribe'])->name('newsletter.unsubscribe');
 
-// Public Routes
-Route::get('/products/{product:slug}', [ProductController::class, 'showFrontend'])->name('products.show.frontend');
 Route::middleware('install')->group(function () {
     Route::get('/install', [App\Http\Controllers\InstallerController::class, 'index'])->name('install.index');
     Route::get('/install/environment', [App\Http\Controllers\InstallerController::class, 'showEnvironmentForm'])->name('install.environment.form');
@@ -273,8 +228,9 @@ Route::get('/search', [ShopController::class, 'search'])->name('shop.search');
 Route::post('/products/{product}/reviews', [ShopController::class, 'storeReview'])->name('products.reviews.store');
 
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('/categories/{category_slug}', [CategoryController::class, 'show'])->name('categories.show')
-    ->where('category_slug', '[a-z0-9-]+');
+Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+
+
 
 // Catch-All Route
 Route::any('/{any}', function ($any) {

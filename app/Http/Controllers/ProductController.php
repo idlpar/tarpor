@@ -1098,7 +1098,13 @@ class ProductController extends Controller
         $product->load('variants.attributeValues.attribute', 'productAttributes');
         $attributes = $product->productAttributes; // Only load attributes associated with this product
 
-        return view('dashboard.admin.products.variants.edit', compact('product', 'attributes'));
+        $links = [
+            'Products' => route('products.index'),
+            $product->name => route('products.edit', $product->id),
+            'Edit Variants' => null
+        ];
+
+        return view('dashboard.admin.products.variants.edit', compact('product', 'attributes', 'links'));
     }
 
     public function syncVariants(Request $request, Product $product)
