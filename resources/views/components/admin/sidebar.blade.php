@@ -206,7 +206,7 @@
                    x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
             </button>
             <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
-                <a href="{{ route('admin.newsletter.subscribers') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.subscribers') ? 'bg-gray-700 text-blue-400' : '' }}">
+                <a href="{{ route('admin.newsletter.subscribers.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.newsletter.subscribers.index') ? 'bg-gray-700 text-blue-400' : '' }}">
                     <i class="fas fa-users w-4 h-4 mr-3"></i>
                     Subscribers
                 </a>

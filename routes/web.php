@@ -21,7 +21,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\CouponController;
-use App\Http\Controllers\RewardController;
+use App\Http\Controllers\NewsletterSubscriptionController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -138,6 +138,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Product Specifications Management
         Route::prefix('product-specifications')->name('admin.product_specifications.')->group(function () {
             Route::resource('groups', App\Http\Controllers\ProductSpecificationGroupController::class)->names('groups');
+            Route::patch('groups/{group}/restore', [App\Http\Controllers\ProductSpecificationGroupController::class, 'restore'])->name('groups.restore');
             Route::resource('attributes', App\Http\Controllers\ProductSpecificationAttributeController::class)->names('attributes');
             Route::resource('tables', App\Http\Controllers\ProductSpecificationTableController::class)->names('tables');
         });
@@ -147,11 +148,9 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin-Only Routes
     Route::middleware('role:admin')->group(function () {
         Route::resource('users', UserController::class)->names('users');
-        // Newsletter Routes (Moved inside admin role middleware)
-        Route::get('/admin/newsletter/subscribers', function () {
-            $subscribers = App\Models\NewsletterSubscription::all(); // Get all to show status
-            return view('dashboard.admin.newsletter.subscribers', compact('subscribers'));
-        })->name('admin.newsletter.subscribers');
+        // Newsletter Routes
+        Route::resource('admin/newsletter/subscribers', NewsletterSubscriptionController::class)->except(['create', 'store', 'show'])->names('admin.newsletter.subscribers');
+        Route::patch('/admin/newsletter/subscribers/{subscriber}/toggle-status', [NewsletterSubscriptionController::class, 'toggleStatus'])->name('admin.newsletter.subscribers.toggle-status');
         Route::get('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'showSendForm'])->name('admin.newsletter.send');
         Route::post('/admin/newsletter/send', [App\Http\Controllers\NewsletterController::class, 'sendMail'])->name('admin.newsletter.send.post');
     });
