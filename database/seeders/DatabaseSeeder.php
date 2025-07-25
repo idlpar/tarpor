@@ -32,6 +32,9 @@ class DatabaseSeeder extends Seeder
             CollectionSeeder::class,
             LabelSeeder::class,
             ProductAttributeValueSeeder::class,
+            FaqSeeder::class,
+            CouponSeeder::class,
+            NewsletterSubscriptionSeeder::class,
         ]);
     }
 }
