@@ -52,10 +52,10 @@
                                         @forelse ($attribute->values as $value)
                                             <span class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">
                                                 {{ $value->value }}
-                                                <button type="button" class="ml-1 -mr-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-green-400 hover:bg-green-200 hover:text-green-500 focus:outline-none focus:bg-green-200 focus:text-green-500 edit-value-btn" data-attribute-id="{{ $attribute->id }}" data-value-id="{{ $value->id }}" data-value-name="{{ $value->value }}" title="Edit Value">
+                                                <button type="button" class="ml-1 -mr-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-green-400 hover:bg-green-200 hover:text-green-500 focus:outline-none focus:bg-green-200 focus:text-green-500 edit-value-btn custom-tooltip-trigger" data-attribute-id="{{ $attribute->id }}" data-value-id="{{ $value->id }}" data-value-name="{{ $value->value }}" data-tooltip="Edit Value">
                                                     <svg class="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                                 </button>
-                                                <button type="button" class="ml-1 -mr-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-green-400 hover:bg-green-200 hover:text-green-500 focus:outline-none focus:bg-green-200 focus:text-green-500 delete-value-btn" data-attribute-id="{{ $attribute->id }}" data-value-id="{{ $value->id }}" title="Delete Value">
+                                                <button type="button" class="ml-1 -mr-0.5 h-4 w-4 rounded-full inline-flex items-center justify-center text-green-400 hover:bg-green-200 hover:text-green-500 focus:outline-none focus:bg-green-200 focus:text-green-500 delete-value-btn custom-tooltip-trigger" data-attribute-id="{{ $attribute->id }}" data-value-id="{{ $value->id }}" data-tooltip="Delete Value">
                                                     <span class="sr-only">Remove value</span>
                                                     <svg class="h-2 w-2" stroke="currentColor" fill="none" viewBox="0 0 8 8">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M1 1l6 6m0-6L1 7" />
@@ -65,7 +65,7 @@
                                         @empty
                                             <span class="text-gray-500 text-sm">No values yet.</span>
                                         @endforelse
-                                        <button type="button" class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 add-value-btn" data-attribute-id="{{ $attribute->id }}">
+                                        <button type="button" class="inline-flex items-center px-3 py-0.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800 hover:bg-blue-200 add-value-btn custom-tooltip-trigger" data-attribute-id="{{ $attribute->id }}" data-tooltip="Add New Value">
                                             <svg class="-ml-0.5 mr-1 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                                             Add Value
                                         </button>
@@ -73,16 +73,16 @@
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ route('product_attributes.edit', $attribute->id) }}" class="text-blue-600 hover:text-blue-900" title="Edit Attribute">
+                                        <a href="{{ route('product_attributes.edit', $attribute->id) }}" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Attribute">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                             </svg>
                                         </a>
                                         <span class="text-gray-300">|</span>
-                                        <form action="{{ route('product_attributes.destroy', $attribute->id) }}" method="POST" class="delete-attribute-form inline-block">
+                                        <form action="{{ route('product_attributes.destroy', $attribute->id) }}" method="POST" class="delete-attribute-form inline-block" onsubmit="confirmDelete(event)">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900" title="Delete Attribute">
+                                            <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Attribute">
                                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                                 </svg>
@@ -153,163 +153,24 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Delete Attribute Confirmation
-        document.querySelectorAll('.delete-attribute-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You won't be able to revert this! All associated values will also be deleted.",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33', // Red for delete
-                    cancelButtonColor: '#3085d6', // Blue for cancel
-                    confirmButtonText: 'Yes, delete it!',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true, // Puts cancel on the left, confirm on the right
-                    focusConfirm: false // Ensures cancel is not the default focus
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
-        });
-
-        // Add Value Modal Logic
-        document.querySelectorAll('.add-value-btn').forEach(button => {
-            button.addEventListener('click', function () {
-                const attributeId = this.dataset.attributeId;
-                document.getElementById('addValueAttributeId').value = attributeId;
-                document.getElementById('addValueForm').action = `/product-attributes/${attributeId}/values`;
-                document.getElementById('valueName').value = ''; // Clear previous value
-                document.getElementById('addValueModal').classList.remove('hidden');
-            });
-        });
-
-        // Edit Value Modal Logic
-        document.querySelectorAll('.edit-value-btn').forEach(button => {
-            button.addEventListener('click', function () {
-                const attributeId = this.dataset.attributeId;
-                const valueId = this.dataset.valueId;
-                const valueName = this.dataset.valueName;
-
-                document.getElementById('editValueAttributeId').value = attributeId;
-                document.getElementById('editValueValueId').value = valueId;
-                document.getElementById('editValueName').value = valueName;
-                document.getElementById('editValueForm').action = `/product-attributes/${attributeId}/values/${valueId}`;
-                document.getElementById('editValueModal').classList.remove('hidden');
-            });
-        });
-
-        // Delete Value Confirmation
-        document.querySelectorAll('.delete-value-btn').forEach(button => {
-            button.addEventListener('click', function () {
-                const attributeId = this.dataset.attributeId;
-                const valueId = this.dataset.valueId;
-
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You won't be able to revert this!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33', // Red for delete
-                    cancelButtonColor: '#3085d6', // Blue for cancel
-                    confirmButtonText: 'Yes, delete it!',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true, // Puts cancel on the left, confirm on the right
-                    focusConfirm: false // Ensures cancel is not the default focus
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        const form = document.createElement('form');
-                        form.method = 'POST';
-                        form.action = `/product-attributes/${attributeId}/values/${valueId}`;
-                        form.style.display = 'none';
-
-                        const csrfToken = document.createElement('input');
-                        csrfToken.type = 'hidden';
-                        csrfToken.name = '_token';
-                        csrfToken.value = document.querySelector('meta[name="csrf-token"]').content;
-                        form.appendChild(csrfToken);
-
-                        const methodField = document.createElement('input');
-                        methodField.type = 'hidden';
-                        methodField.name = '_method';
-                        methodField.value = 'DELETE';
-                        form.appendChild(methodField);
-
-                        document.body.appendChild(form);
-                        form.submit();
-                    }
-                });
-            });
-        });
-
-        // Filtering and Sorting (similar to products index, but for attributes)
-        const filterToggleButton = document.getElementById('filterToggleButton');
-        const filterSection = document.getElementById('filterSection');
-        const searchInput = document.getElementById('searchInput');
-        const sortSelect = document.getElementById('sortSelect');
-        const clearFiltersButton = document.getElementById('clearFiltersButton');
-
-        if (filterToggleButton && filterSection) {
-            filterToggleButton.addEventListener('click', () => {
-                filterSection.classList.toggle('hidden');
-            });
-        }
-
-        function applyFiltersAndSort() {
-            const params = new URLSearchParams();
-
-            if (searchInput && searchInput.value) {
-                params.append('search', searchInput.value);
+    function confirmDelete(event) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            focusCancel: true // Focus on the cancel button by default
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit(); // Submit the form if confirmed
             }
-            if (sortSelect && sortSelect.value) {
-                params.append('sort_by', sortSelect.value);
-            }
-
-            window.location.href = '{{ route('product_attributes.index') }}?' + params.toString();
-        }
-
-        if (searchInput) {
-            searchInput.addEventListener('keyup', function(event) {
-                if (event.key === 'Enter') {
-                    applyFiltersAndSort();
-                }
-            });
-        }
-        
-        if (sortSelect) {
-            sortSelect.addEventListener('change', applyFiltersAndSort);
-        }
-
-        if (clearFiltersButton) {
-            clearFiltersButton.addEventListener('click', () => {
-                if (searchInput) {
-                    searchInput.value = '';
-                }
-                if (sortSelect) {
-                    sortSelect.value = 'name_asc'; // Default sort for attributes
-                }
-                applyFiltersAndSort();
-            });
-        }
-
-        // Set initial filter and sort values from URL parameters
-        const urlParams = new URLSearchParams(window.location.search);
-        if (searchInput && urlParams.has('search')) {
-            searchInput.value = urlParams.get('search');
-        }
-        if (sortSelect && urlParams.has('sort_by')) {
-            sortSelect.value = urlParams.get('sort_by');
-        }
-
-        if (filterSection && urlParams.toString()) {
-            filterSection.classList.remove('hidden');
-        }
-    });
+        });
+    }
 </script>
 @endpush

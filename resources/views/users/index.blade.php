@@ -233,7 +233,7 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
                                         <a href="{{ route('users.show', $user) }}"
-                                           class="text-green-600 hover:text-green-800 flex items-center transition duration-150" title="View">
+                                           class="text-green-600 hover:text-green-800 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="View User">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -242,7 +242,7 @@
 
                                         <span class="text-gray-300">|</span>
                                         <a href="{{ route('users.edit', $user) }}"
-                                           class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150" title="Edit">
+                                           class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="Edit User">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor"
                                                  viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -251,12 +251,12 @@
                                         </a>
                                         <span class="text-gray-300">|</span>
                                         <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                              class="inline-block delete-user-form">
+                                              class="inline-block delete-user-form" onsubmit="confirmDelete(event)">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit"
-                                                    class="text-red-600 hover:text-amber-600 flex items-center transition duration-150"
-                                                    data-name="{{ $user->name }}" data-email="{{ $user->email }}" title="Delete">
+                                                    class="text-red-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger"
+                                                    data-name="{{ $user->name }}" data-email="{{ $user->email }}" data-tooltip="Delete User">
                                                 <svg class="h-5 w-5" fill="none" stroke="currentColor"
                                                      viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -319,56 +319,52 @@
 
 @push('scripts')
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Delete User Form
-            const deleteForms = document.querySelectorAll('.delete-user-form');
-            deleteForms.forEach(form => {
-                form.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const button = form.querySelector('button[type="submit"]');
-                    const userName = button.getAttribute('data-name') || '(unknown)';
-                    const userEmail = button.getAttribute('data-email') || '(unknown)';
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        html: `
-                            <div class="text-left">
-                                <p class="mb-4 text-gray-700">You are about to delete the following user:</p>
-                                <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                    <div class="flex items-center mb-2">
-                                        <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        <span class="font-medium">${userName}</span>
-                                    </div>
-                                    <div class="flex items-center">
-                                        <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                                        </svg>
-                                        <span class="font-medium">${userEmail}</span>
-                                    </div>
-                                </div>
-                                <p class="mt-4 text-sm text-red-500">This action cannot be undone.</p>
+        function confirmDelete(event) {
+            event.preventDefault(); // Prevent the form from submitting immediately
+            const button = event.target.querySelector('button[type="submit"]');
+            const userName = button.getAttribute('data-name') || '(unknown)';
+            const userEmail = button.getAttribute('data-email') || '(unknown)';
+            Swal.fire({
+                title: 'Are you sure?',
+                html: `
+                    <div class="text-left">
+                        <p class="mb-4 text-gray-700">You are about to delete the following user:</p>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div class="flex items-center mb-2">
+                                <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                <span class="font-medium">${userName}</span>
                             </div>
-                        `,
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonText: 'Delete User',
-                        cancelButtonText: 'Cancel',
-                        focusCancel: true,
-                        customClass: {
-                            popup: 'rounded-xl border border-gray-200 shadow-xl',
-                            title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
-                            confirmButton: 'bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-medium shadow-sm',
-                            cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
-                        }
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    });
-                });
+                            <div class="flex items-center">
+                                <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <span class="font-medium">${userEmail}</span>
+                            </div>
+                        </div>
+                        <p class="mt-4 text-sm text-red-500">This action cannot be undone.</p>
+                    </div>
+                `,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Delete User',
+                cancelButtonText: 'Cancel',
+                focusCancel: true,
+                customClass: {
+                    popup: 'rounded-xl border border-gray-200 shadow-xl',
+                    title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
+                    confirmButton: 'bg-red-500 hover:bg-red-600 px-4 py-2 rounded-md font-medium shadow-sm',
+                    cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    event.target.submit();
+                }
             });
+        }
 
+        document.addEventListener('DOMContentLoaded', () => {
             // Filter Form
             const filterForm = document.querySelector('.filter-form');
             filterForm.addEventListener('submit', function(e) {

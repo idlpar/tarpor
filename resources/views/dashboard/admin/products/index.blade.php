@@ -387,31 +387,31 @@
                             <!-- Actions -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end space-x-2">
-                                    <a href="{{ route('products.show.frontend', $product->slug) }}" target="_blank" class="text-gray-400 hover:text-gray-600" title="View on frontend">
+                                    <a href="{{ route('products.show.frontend', $product->slug) }}" target="_blank" class="text-gray-400 hover:text-gray-600 custom-tooltip-trigger" data-tooltip="View on Frontend">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </a>
                                     <span class="text-gray-300">|</span>
-                                    <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900" title="Edit">
+                                    <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Product">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </a>
                                     @if($product->type === 'variable')
                                         <span class="text-gray-300">|</span>
-                                        <a href="{{ route('products.variants.edit', $product->id) }}" class="text-purple-600 hover:text-purple-900" title="Manage Variants">
+                                        <a href="{{ route('products.variants.edit', $product->id) }}" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Manage Variants">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                             </svg>
                                         </a>
                                     @endif
                                     <span class="text-gray-300">|</span>
-                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form inline-block">
+                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                        <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Product">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
@@ -460,507 +460,24 @@
 @endsection
 
 @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            console.log('DOM Content Loaded');
 
-            // Delete confirmation
-            const deleteForms = document.querySelectorAll('.delete-form');
-            console.log('Delete Forms found:', deleteForms.length);
-            deleteForms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    console.log('Delete form submitted, showing Swal confirmation.');
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33', // Red for delete
-                        cancelButtonColor: '#3085d6', // Blue for cancel
-                        confirmButtonText: 'Yes, delete it!',
-                        cancelButtonText: 'Cancel',
-                        reverseButtons: true, // Puts cancel on the left, confirm on the right
-                        focusConfirm: false // Ensures cancel is not the default focus
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            console.log('Delete confirmed, submitting form.');
-                            form.submit();
-                        } else {
-                            console.log('Delete cancelled.');
-                        }
-                    });
-                });
-            });
-
-            // Quick Actions Menu
-            const quickActionsButton = document.getElementById('quickActionsButton');
-            const quickActionsMenu = document.getElementById('quickActionsMenu');
-            const exportProductsButton = document.getElementById('exportProductsButton');
-
-            console.log('Quick Actions Button:', quickActionsButton);
-            console.log('Quick Actions Menu:', quickActionsMenu);
-            console.log('Export Products Button:', exportProductsButton);
-
-            if (quickActionsButton) {
-                quickActionsButton.addEventListener('click', () => {
-                    quickActionsMenu.classList.toggle('hidden');
-                    console.log('Quick Actions Button clicked. Menu hidden:', quickActionsMenu.classList.contains('hidden'));
-                });
-            }
-
-            // Close quick actions menu when clicking outside
-            document.addEventListener('click', (e) => {
-                if (quickActionsButton && quickActionsMenu && !quickActionsButton.contains(e.target) && !quickActionsMenu.contains(e.target)) {
-                    quickActionsMenu.classList.add('hidden');
-                    console.log('Clicked outside quick actions menu. Menu hidden:', quickActionsMenu.classList.contains('hidden'));
-                }
-            });
-
-            // Export Products functionality
-            if (exportProductsButton) {
-                exportProductsButton.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    const selectedIds = Array.from(productCheckboxes)
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
-
-                    // If no products are selected, export all products
-                    const idsToExport = selectedIds.length > 0 ? selectedIds : null;
-
-                    Swal.fire({
-                        title: 'Exporting Products',
-                        text: 'Please wait while your products are being exported...',
-                        allowOutsideClick: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-
-                    fetch('{{ route('products.export') }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                        },
-                        body: JSON.stringify({ product_ids: idsToExport })
-                    })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error('Network response was not ok');
-                        }
-                        return response.blob();
-                    })
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.style.display = 'none';
-                        a.href = url;
-                        a.download = 'products.xlsx'; // Or get filename from response headers if available
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(url);
-                        Swal.close();
-                        Swal.fire('Export Successful', 'Your products have been exported.', 'success');
-                    })
-                    .catch(error => {
-                        console.error('Export error:', error);
-                        Swal.fire('Export Failed', 'There was an error exporting your products.', 'error');
-                    });
-                });
-            }
-
-            // Filter Toggle
-            const filterToggleButton = document.getElementById('filterToggleButton');
-            const filterSection = document.getElementById('filterSection');
-            console.log('Filter Toggle Button:', filterToggleButton);
-            console.log('Filter Section:', filterSection);
-
-            if (filterToggleButton) {
-                filterToggleButton.addEventListener('click', () => {
-                    filterSection.classList.toggle('hidden');
-                    console.log('Filter Toggle Button clicked. Filter section hidden:', filterSection.classList.contains('hidden'));
-                });
-            }
-
-            // Bulk Actions
-            const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-            const productCheckboxes = document.querySelectorAll('.product-checkbox');
-            const bulkActions = document.getElementById('bulkActions');
-            const bulkActionSelect = document.getElementById('bulkActionSelect');
-            const applyBulkAction = document.getElementById('applyBulkAction');
-            console.log('Select All Checkbox:', selectAllCheckbox);
-            console.log('Product Checkboxes (count):', productCheckboxes.length);
-            console.log('Bulk Actions Div:', bulkActions);
-            console.log('Bulk Action Select:', bulkActionSelect);
-            console.log('Apply Bulk Action Button:', applyBulkAction);
-
-
-            // Select all checkbox functionality
-            if (selectAllCheckbox) {
-                selectAllCheckbox.addEventListener('change', () => {
-                    const isChecked = selectAllCheckbox.checked;
-                    console.log('Select All Checkbox changed. Is checked:', isChecked);
-                    productCheckboxes.forEach(checkbox => {
-                        checkbox.checked = isChecked;
-                        const row = checkbox.closest('tr');
-                        if (isChecked) {
-                            row.classList.add('bg-blue-50'); // Highlight selected row
-                        } else {
-                            row.classList.remove('bg-blue-50');
-                        }
-                    });
-                    toggleBulkActions();
-                });
-            }
-
-            // Individual checkbox functionality
-            productCheckboxes.forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    console.log('Individual checkbox changed. ID:', this.value, 'Is checked:', this.checked);
-                    const row = this.closest('tr');
-                    if (this.checked) {
-                        row.classList.add('bg-blue-50'); // Highlight selected row
-                    } else {
-                        row.classList.remove('bg-blue-50');
-                    }
-                    const allChecked = Array.from(productCheckboxes).every(cb => cb.checked);
-                    if (selectAllCheckbox) { // Check if selectAllCheckbox exists before accessing it
-                        selectAllCheckbox.checked = allChecked;
-                    }
-                    toggleBulkActions();
-                });
-            });
-
-            function toggleBulkActions() {
-                const anyChecked = Array.from(productCheckboxes).some(cb => cb.checked);
-                console.log('toggleBulkActions called. Any checked:', anyChecked);
-                if (bulkActions) {
-                    bulkActions.classList.toggle('hidden', !anyChecked);
-                }
-            }
-
-            // Apply bulk action
-            if (applyBulkAction) {
-                applyBulkAction.addEventListener('click', () => {
-                    const action = bulkActionSelect.value;
-                    console.log('Apply Bulk Action button clicked. Action:', action);
-                    if (!action) return;
-
-                    const selectedIds = Array.from(productCheckboxes)
-                        .filter(cb => cb.checked)
-                        .map(cb => cb.value);
-
-                    if (selectedIds.length === 0) {
-                        console.log('No products selected for bulk action.');
-                        return;
-                    }
-
-                    let categoryIdsForBulk = [];
-                    let tagsForBulk = [];
-
-                    // Placeholder for getting categories/tags from a modal/input
-                    if (action === 'update-categories') {
-                        @php
-                            $categoryOptions = [];
-                            foreach ($categories as $category) {
-                                $categoryOptions[] = ['id' => $category->id, 'name' => $category->name];
-                                foreach ($category->children as $child) {
-                                    $categoryOptions[] = ['id' => $child->id, 'name' => '&nbsp;&nbsp;&nbsp;— ' . $child->name];
-                                }
-                            }
-                            $categoryOptionsJson = json_encode($categoryOptions);
-                        @endphp
-                        Swal.fire({
-                            title: 'Update Categories',
-                            html: '<select id="swal-categories" class="swal2-input" multiple></select>',
-                            didOpen: () => {
-                                const select = document.getElementById('swal-categories');
-                                const options = {!! $categoryOptionsJson !!};
-                                options.forEach(optionData => {
-                                    const option = document.createElement('option');
-                                    option.value = optionData.id;
-                                    option.innerHTML = optionData.name;
-                                    select.appendChild(option);
-                                });
-                            },
-                            focusConfirm: false,
-                            preConfirm: () => {
-                                const selectedOptions = Array.from(document.getElementById('swal-categories').selectedOptions);
-                                return selectedOptions.map(option => option.value);
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                categoryIdsForBulk = result.value;
-                                if (categoryIdsForBulk.length === 0) {
-                                    Swal.fire('Error', 'Please select at least one category.', 'error');
-                                    return;
-                                }
-                                performBulkAction(action, selectedIds, categoryIdsForBulk, tagsForBulk);
-                            }
-                        });
-                        return; // Exit to wait for Swal confirmation
-                    } else if (action === 'update-tags') {
-                        Swal.fire({
-                            title: 'Update Tags',
-                            input: 'text',
-                            inputLabel: 'Enter tags separated by commas',
-                            inputPlaceholder: 'tag1, tag2, tag3',
-                            showCancelButton: true,
-                            inputValidator: (value) => {
-                                if (!value) {
-                                    return 'Please enter tags!';
-                                }
-                            }
-                        }).then((result) => {
-                            if (result.isConfirmed) {
-                                tagsForBulk = result.value.split(',').map(tag => tag.trim());
-                                performBulkAction(action, selectedIds, categoryIdsForBulk, tagsForBulk);
-                            }
-                        });
-                        return; // Exit to wait for Swal confirmation
-                    }
-
-                    performBulkAction(action, selectedIds, categoryIdsForBulk, tagsForBulk);
-                });
-            }
-
-            function performBulkAction(action, selectedIds, categoryIdsForBulk, tagsForBulk) {
-                console.log('performBulkAction called with:', { action, selectedIds, categoryIdsForBulk, tagsForBulk });
-                Swal.fire({
-                    title: 'Confirm Bulk Action',
-                    text: `You are about to ${action} ${selectedIds.length} product(s). Continue?`,
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33', // Red for confirm
-                    cancelButtonColor: '#3085d6', // Blue for cancel
-                    confirmButtonText: 'Yes, proceed',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true, // Puts cancel on the left, confirm on the right
-                    focusConfirm: false // Ensures cancel is not the default focus
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        // Submit form or make AJAX request
-                        console.log(`Applying ${action} to:`, selectedIds);
-
-                        fetch('{{ route('products.bulk-action') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify({
-                                action: action,
-                                ids: selectedIds,
-                                // Add category_ids or tags if action is update-categories or update-tags
-                                ...((action === 'update-categories' && categoryIdsForBulk) && { category_ids: categoryIdsForBulk }),
-                                ...((action === 'update-tags' && tagsForBulk) && { tags: tagsForBulk })
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                Swal.fire(
-                                    'Success!',
-                                    data.message,
-                                    'success'
-                                ).then(() => {
-                                    window.location.reload();
-                                });
-                            } else {
-                                Swal.fire(
-                                    'Error!',
-                                    data.message || 'An error occurred.',
-                                    'error'
-                                );
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            Swal.fire(
-                                'Error!',
-                                'An error occurred while processing your request.',
-                                'error'
-                            );
-                        });
-                    }
-                });
-            }
-
-            // Copy SKU functionality
-            document.querySelectorAll('[data-copy-sku]').forEach(button => {
-                button.addEventListener('click', function() {
-                    const sku = this.getAttribute('data-copy-sku');
-                    navigator.clipboard.writeText(sku).then(() => {
-                        const originalHTML = this.innerHTML;
-                        this.innerHTML = `
-                    <svg class="h-4 w-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                    </svg>
-                `;
-                        setTimeout(() => {
-                            this.innerHTML = originalHTML;
-                        }, 2000);
-                    });
-                });
-            });
-
-            // Filter and Sort functionality
-            const searchInput = document.getElementById('searchInput');
-            const categoryFilter = document.getElementById('categoryFilter');
-            const brandFilter = document.getElementById('brandFilter');
-            const typeFilter = document.getElementById('typeFilter');
-            const statusFilter = document.getElementById('statusFilter');
-            const stockStatusFilter = document.getElementById('stockStatusFilter');
-            const priceMin = document.getElementById('priceMin');
-            const priceMax = document.getElementById('priceMax');
-            const dateFrom = document.getElementById('dateFrom');
-            const dateTo = document.getElementById('dateTo');
-            const sortSelect = document.getElementById('sortSelect');
-            const applyFiltersButton = document.getElementById('applyFiltersButton');
-            const clearFiltersButton = document.getElementById('clearFiltersButton');
-
-            console.log('Sort Select Element:', sortSelect);
-
-            // Apply filters when sort select changes
-            if (sortSelect) {
-                sortSelect.addEventListener('change', applyFilters);
-            }
-
-            function applyFilters() {
-                console.log('applyFilters function called.');
-                const params = new URLSearchParams();
-
-                // Add filters to params only if they have a value
-                if (searchInput && searchInput.value) params.append('search', searchInput.value);
-                if (categoryFilter && categoryFilter.value) params.append('category_id', categoryFilter.value);
-                if (brandFilter && brandFilter.value) params.append('brand_id', brandFilter.value);
-                if (typeFilter && typeFilter.value) params.append('type', typeFilter.value);
-                if (statusFilter && statusFilter.value) params.append('status', statusFilter.value);
-                if (stockStatusFilter && stockStatusFilter.value) params.append('stock_status', stockStatusFilter.value);
-                if (priceMin && priceMin.value) params.append('price_min', priceMin.value);
-                if (priceMax && priceMax.value) params.append('price_max', priceMax.value);
-                if (dateFrom && dateFrom.value) params.append('date_from', dateFrom.value);
-                if (dateTo && dateTo.value) params.append('date_to', dateTo.value);
-                if (sortSelect && sortSelect.value) params.append('sort', sortSelect.value);
-
-                console.log('Filter parameters:', params.toString());
-                window.location.href = '{{ route('products.index') }}?' + params.toString();
-            }
-
-            // Apply filters when button is clicked
-            if (applyFiltersButton) {
-                applyFiltersButton.addEventListener('click', applyFilters);
-            }
-
-            // Apply filters when Enter is pressed in search
-            if (searchInput) {
-                searchInput.addEventListener('keyup', function(e) {
-                    if (e.key === 'Enter') {
-                        console.log('Enter key pressed in search input.');
-                        applyFilters();
-                    }
-                });
-            }
-
-            // Clear all filters
-            if (clearFiltersButton) {
-                clearFiltersButton.addEventListener('click', function() {
-                    console.log('Clear Filters button clicked.');
-                    if (searchInput) searchInput.value = '';
-                    if (categoryFilter) categoryFilter.value = '';
-                    if (brandFilter) brandFilter.value = '';
-                    if (typeFilter) typeFilter.value = '';
-                    if (statusFilter) statusFilter.value = '';
-                    if (stockStatusFilter) stockStatusFilter.value = '';
-                    if (priceMin) priceMin.value = '';
-                    if (priceMax) priceMax.value = '';
-                    if (dateFrom) dateFrom.value = '';
-                    if (dateTo) dateTo.value = '';
-                    if (sortSelect) sortSelect.value = 'created_at:desc'; // Reset sort to default
-                    applyFilters();
-                });
-            }
-
-            // Set initial filter values from URL
-            const urlParams = new URLSearchParams(window.location.search);
-            console.log('URL Params on load:', urlParams.toString());
-            if (urlParams.has('search') && searchInput) searchInput.value = urlParams.get('search');
-            if (urlParams.has('category_id') && categoryFilter) categoryFilter.value = urlParams.get('category_id');
-            if (urlParams.has('brand_id') && brandFilter) brandFilter.value = urlParams.get('brand_id');
-            if (urlParams.has('type') && typeFilter) typeFilter.value = urlParams.get('type');
-            if (urlParams.has('status') && statusFilter) statusFilter.value = urlParams.get('status');
-            if (urlParams.has('stock_status') && stockStatusFilter) stockStatusFilter.value = urlParams.get('stock_status');
-            if (urlParams.has('price_min') && priceMin) priceMin.value = urlParams.get('price_min');
-            if (urlParams.has('price_max') && priceMax) priceMax.value = urlParams.get('price_max');
-            if (urlParams.has('date_from') && dateFrom) dateFrom.value = urlParams.get('date_from');
-            if (urlParams.has('date_to') && dateTo) dateTo.value = urlParams.get('date_to');
-            if (urlParams.has('sort') && sortSelect) sortSelect.value = urlParams.get('sort');
-
-            // Show filter section if any filters are active
-            if (urlParams.toString()) {
-                if (filterSection) {
-                    filterSection.classList.remove('hidden');
-                    console.log('Filter section shown due to active filters.');
-                }
+<script>
+    function confirmDelete(event) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            focusCancel: true // Focus on the cancel button by default
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit(); // Submit the form if confirmed
             }
         });
-    </script>
-@endpush
-
-@push('styles')
-    <style>
-        /* Custom styling for the pagination */
-        .pagination {
-            display: inline-flex;
-            border-radius: 0.375rem;
-            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-        }
-
-        .page-item {
-            margin: 0;
-        }
-
-        .page-item:first-child .page-link {
-            border-top-left-radius: 0.375rem;
-            border-bottom-left-radius: 0.375rem;
-        }
-
-        .page-item:last-child .page-link {
-            border-top-right-radius: 0.375rem;
-            border-bottom-right-radius: 0.375rem;
-        }
-
-        .page-link {
-            position: relative;
-            display: block;
-            padding: 0.5rem 0.75rem;
-            margin-left: -1px;
-            line-height: 1.25;
-            color: #3b82f6;
-            background-color: #fff;
-            border: 1px solid #d1d5db;
-        }
-
-        .page-link:hover {
-            z-index: 2;
-            color: #2563eb;
-            background-color: #f9fafb;
-            border-color: #d1d5db;
-        }
-
-        .page-item.active .page-link {
-            z-index: 3;
-            color: #fff;
-            background-color: #3b82f6;
-            border-color: #3b82f6;
-        }
-
-        .page-item.disabled .page-link {
-            color: #9ca3af;
-            pointer-events: none;
-            background-color: #fff;
-            border-color: #d1d5db;
-        }
-    </style>
+    }
+</script>
 @endpush

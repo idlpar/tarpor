@@ -69,7 +69,7 @@
                                         @if($brand->trashed())
                                             <form action="{{ route('brands.restore', $brand->id) }}" method="POST" class="restore-form inline-block">
                                                 @csrf
-                                                <button type="submit" class="w-4 transform hover:text-green-500 hover:scale-110" title="Restore">
+                                                <button type="submit" class="w-4 transform hover:text-green-500 hover:scale-110 custom-tooltip-trigger" data-tooltip="Restore Brand">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004 12m7-7v5h.582m-15.356 2A8.001 8.001 0 0020 12V8l-2.745 3.908C17.47 15.09 19.93 16 22 16c1.01 0 1.97-.11 2.9-.31M12 18v-6m0 0V6m0 6h6m-6 0H6" />
                                                     </svg>
@@ -79,30 +79,30 @@
                                             <form action="{{ route('brands.force-delete', $brand->id) }}" method="POST" class="force-delete-form inline-block">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="w-4 transform hover:text-red-500 hover:scale-110" title="Force Delete">
+                                                <button type="submit" class="w-4 transform hover:text-red-500 hover:scale-110 custom-tooltip-trigger" data-tooltip="Force Delete Brand">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                     </svg>
                                                 </button>
                                             </form>
                                         @else
-                                            <a href="{{ route('brands.show', $brand->id) }}" class="w-4 transform text-blue-500 hover:text-blue-700 hover:scale-110" title="View">
+                                            <a href="{{ route('brands.show', $brand->id) }}" class="w-4 transform text-blue-500 hover:text-blue-700 hover:scale-110 custom-tooltip-trigger" data-tooltip="View Brand">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                                 </svg>
                                             </a>
                                             <span class="text-gray-300">|</span>
-                                            <a href="{{ route('brands.edit', $brand->id) }}" class="w-4 transform text-green-500 hover:text-green-700 hover:scale-110" title="Edit">
+                                            <a href="{{ route('brands.edit', $brand->id) }}" class="w-4 transform text-green-500 hover:text-green-700 hover:scale-110 custom-tooltip-trigger" data-tooltip="Edit Brand">
                                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                                 </svg>
                                             </a>
                                             <span class="text-gray-300">|</span>
-                                            <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="delete-form inline-block">
+                                            <form action="{{ route('brands.destroy', $brand->id) }}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="w-4 transform text-red-500 hover:text-red-700 hover:scale-110" title="Delete">
+                                                <button type="submit" class="w-4 transform text-red-500 hover:text-red-700 hover:scale-110 custom-tooltip-trigger" data-tooltip="Delete Brand">
                                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                     </svg>
@@ -128,32 +128,26 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const deleteForms = document.querySelectorAll('.delete-form');
-            deleteForms.forEach(form => {
-                form.addEventListener('submit', function (e) {
-                    e.preventDefault();
-                    Swal.fire({
-                        title: 'Are you sure?',
-                        text: "You won't be able to revert this!",
-                        icon: 'warning',
-                        showCancelButton: true,
-                        confirmButtonColor: '#d33',
-                        cancelButtonColor: '#3085d6',
-                        confirmButtonText: 'Yes, delete it!',
-                        cancelButtonText: 'Cancel',
-                        reverseButtons: true,
-                        focusConfirm: false
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            form.submit();
-                        }
-                    });
-                });
+        function confirmDelete(event) {
+            event.preventDefault(); // Prevent the form from submitting immediately
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                focusCancel: true // Focus on the cancel button by default
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    event.target.submit(); // Submit the form if confirmed
+                }
             });
+        }
 
+        document.addEventListener('DOMContentLoaded', function () {
             const restoreForms = document.querySelectorAll('.restore-form');
             restoreForms.forEach(form => {
                 form.addEventListener('submit', function (e) {

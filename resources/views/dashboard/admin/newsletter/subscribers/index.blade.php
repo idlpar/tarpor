@@ -43,22 +43,22 @@
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $subscriber->created_at->format('M d, Y H:i A') }}</td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ route('admin.newsletter.subscribers.edit', $subscriber->id) }}" class="text-blue-600 hover:text-blue-900" title="Edit">
+                                        <a href="{{ route('admin.newsletter.subscribers.edit', $subscriber->id) }}" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Subscriber">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
                                         </a>
                                         <span class="text-gray-300">|</span>
-                                        <form action="{{ route('admin.newsletter.subscribers.toggle-status', $subscriber->id) }}" method="POST" class="inline-block toggle-status-form">
+                                        <form action="{{ route('admin.newsletter.subscribers.toggle-status', $subscriber->id) }}" method="POST" class="inline-block toggle-status-form" onsubmit="confirmAction(event, 'toggle')">
                                             @csrf
                                             @method('PATCH')
-                                            <button type="submit" class="text-purple-600 hover:text-purple-900" title="Toggle Status">
+                                            <button type="submit" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Toggle Status">
                                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path></svg>
                                             </button>
                                         </form>
                                         <span class="text-gray-300">|</span>
-                                        <form action="{{ route('admin.newsletter.subscribers.destroy', $subscriber->id) }}" method="POST" class="inline-block delete-form">
+                                        <form action="{{ route('admin.newsletter.subscribers.destroy', $subscriber->id) }}" method="POST" class="inline-block delete-form" onsubmit="confirmAction(event, 'delete')">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="text-red-600 hover:text-red-900" title="Delete">
+                                            <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Subscriber">
                                                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                             </button>
                                         </form>
@@ -88,52 +88,44 @@
 @endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+@push('scripts')
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Delete Confirmation
-        document.querySelectorAll('.delete-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You won't be able to revert this!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete it!',
-                    focusCancel: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
-        });
+    function confirmAction(event, type) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        let title = '';
+        let text = '';
+        let icon = '';
+        let confirmButtonText = '';
 
-        // Toggle Status Confirmation
-        document.querySelectorAll('.toggle-status-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const isSubscribed = this.querySelector('button').closest('tr').querySelector('.rounded-full').textContent.trim() === 'Subscribed';
-                const actionText = isSubscribed ? 'unsubscribe' : 'subscribe';
-                Swal.fire({
-                    title: `Confirm ${actionText}?`,
-                    text: `Are you sure you want to ${actionText} this subscriber?`,
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: `Yes, ${actionText} them!`,
-                    focusCancel: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
+        if (type === 'delete') {
+            title = 'Are you sure?';
+            text = "You won't be able to revert this!";
+            icon = 'warning';
+            confirmButtonText = 'Yes, delete it!';
+        } else if (type === 'toggle') {
+            const isSubscribed = event.target.querySelector('button').closest('tr').querySelector('.rounded-full').textContent.trim() === 'Subscribed';
+            const actionText = isSubscribed ? 'unsubscribe' : 'subscribe';
+            title = `Confirm ${actionText}?`;
+            text = `Are you sure you want to ${actionText} this subscriber?`;
+            icon = 'question';
+            confirmButtonText = `Yes, ${actionText} them!`;
+        }
+
+        Swal.fire({
+            title: title,
+            text: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: confirmButtonText,
+            focusCancel: true // Focus on the cancel button by default
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit(); // Submit the form if confirmed
+            }
         });
-    });
+    }
 </script>
+@endpush
 @endpush

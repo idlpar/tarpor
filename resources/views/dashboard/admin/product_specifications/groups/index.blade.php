@@ -88,7 +88,7 @@
                                     </a>
                                     <span class="text-gray-300">|</span>
                                     @if ($group->trashed())
-                                        <form action="{{ route('admin.product_specifications.groups.restore', $group->id) }}" method="POST" class="inline-block restore-form">
+                                        <form action="{{ route('admin.product_specifications.groups.restore', $group->id) }}" method="POST" class="inline-block restore-form" onsubmit="confirmRestore(event)">
                                             @csrf
                                             @method('PATCH')
                                             <button type="submit" class="text-green-600 hover:text-green-900 custom-tooltip-trigger" data-tooltip="Restore Group">
@@ -96,7 +96,7 @@
                                             </button>
                                         </form>
                                     @else
-                                        <form action="{{ route('admin.product_specifications.groups.destroy', $group->id) }}" method="POST" class="inline-block delete-form">
+                                        <form action="{{ route('admin.product_specifications.groups.destroy', $group->id) }}" method="POST" class="inline-block delete-form" onsubmit="confirmDelete(event)">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Group">
@@ -120,160 +120,42 @@
     </div>
 @endsection
 
-@push('styles')
-<style>
-    .custom-tooltip {
-        position: absolute;
-        background-color: #333;
-        color: #fff;
-        padding: 5px 8px;
-        border-radius: 4px;
-        font-size: 12px;
-        white-space: nowrap;
-        z-index: 1000;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.2s, visibility 0.2s;
-        pointer-events: none; /* Allows clicks to pass through */
-    }
-
-    .custom-tooltip.show {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .custom-tooltip::before {
-        content: '';
-        position: absolute;
-        border-width: 5px;
-        border-style: solid;
-    }
-
-    /* Tooltip on top */
-    .custom-tooltip.top::before {
-        top: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        border-color: #333 transparent transparent transparent;
-    }
-
-    /* Tooltip on bottom */
-    .custom-tooltip.bottom::before {
-        bottom: 100%;
-        left: 50%;
-        transform: translateX(-50%);
-        border-color: transparent transparent #333 transparent;
-    }
-</style>
-@endpush
-
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // Delete Confirmation
-        document.querySelectorAll('.delete-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "You won't be able to revert this!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete it!',
-                    focusCancel: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
+    function confirmDelete(event) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            focusCancel: true // Focus on the cancel button by default
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit(); // Submit the form if confirmed
+            }
         });
+    }
 
-        // Restore Confirmation
-        document.querySelectorAll('.restore-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault();
-                Swal.fire({
-                    title: 'Are you sure?',
-                    text: "This will restore the product specification group.",
-                    icon: 'info',
-                    showCancelButton: true,
-                    confirmButtonColor: '#3085d6',
-                    cancelButtonColor: '#d33',
-                    confirmButtonText: 'Yes, restore it!',
-                    focusCancel: true
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        form.submit();
-                    }
-                });
-            });
+    function confirmRestore(event) {
+        event.preventDefault(); // Prevent the form from submitting immediately
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "This will restore the item!",
+            icon: 'info',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Yes, restore it!',
+            focusCancel: true // Focus on the cancel button by default
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit(); // Submit the form if confirmed
+            }
         });
-
-        // Custom Tooltip Logic
-        const tooltipTriggers = document.querySelectorAll('.custom-tooltip-trigger');
-        let currentTooltip = null;
-
-        tooltipTriggers.forEach(trigger => {
-            trigger.addEventListener('mouseenter', function () {
-                const tooltipText = this.dataset.tooltip;
-                if (!tooltipText) return;
-
-                // Create tooltip element
-                currentTooltip = document.createElement('div');
-                currentTooltip.className = 'custom-tooltip';
-                currentTooltip.textContent = tooltipText;
-                document.body.appendChild(currentTooltip);
-
-                // Position tooltip
-                const triggerRect = this.getBoundingClientRect();
-                const tooltipHeight = currentTooltip.offsetHeight;
-                const tooltipWidth = currentTooltip.offsetWidth;
-
-                let top = triggerRect.top - tooltipHeight - 10; // 10px buffer
-                let left = triggerRect.left + (triggerRect.width / 2) - (tooltipWidth / 2);
-
-                // Check if there's enough space on top
-                if (top < 0) {
-                    // Not enough space on top, position on bottom
-                    top = triggerRect.bottom + 10; // 10px buffer
-                    currentTooltip.classList.add('bottom');
-                } else {
-                    currentTooltip.classList.add('top');
-                }
-
-                // Adjust for left/right screen edges
-                if (left < 0) {
-                    left = 0;
-                } else if (left + tooltipWidth > window.innerWidth) {
-                    left = window.innerWidth - tooltipWidth;
-                }
-
-                currentTooltip.style.top = `${top + window.scrollY}px`;
-                currentTooltip.style.left = `${left}px`;
-                currentTooltip.classList.add('show');
-            });
-
-            trigger.addEventListener('mouseleave', function () {
-                if (currentTooltip) {
-                    currentTooltip.classList.remove('show');
-                    currentTooltip.remove();
-                    currentTooltip = null;
-                }
-            });
-
-            // Clean up tooltip if mouse leaves window or element is removed
-            trigger.addEventListener('blur', function() {
-                if (currentTooltip) {
-                    currentTooltip.classList.remove('show');
-                    currentTooltip.remove();
-                    currentTooltip = null;
-                }
-            });
-        });
-    });
+    }
 </script>
 @endpush
