@@ -135,6 +135,13 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         // Coupon Management
         Route::resource('coupons', CouponController::class)->names('coupons');
 
+        // Product Specifications Management
+        Route::prefix('product-specifications')->name('admin.product_specifications.')->group(function () {
+            Route::resource('groups', App\Http\Controllers\ProductSpecificationGroupController::class)->names('groups');
+            Route::resource('attributes', App\Http\Controllers\ProductSpecificationAttributeController::class)->names('attributes');
+            Route::resource('tables', App\Http\Controllers\ProductSpecificationTableController::class)->names('tables');
+        });
+
     });
 
     // Admin-Only Routes

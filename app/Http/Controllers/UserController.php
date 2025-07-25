@@ -45,7 +45,7 @@ class UserController extends Controller
                         break;
                 }
             }, function ($query) {
-                $query->orderBy('created_at', 'desc'); // Default sort
+                $query->orderBy('id', 'desc'); // Default sort
             })
             ->paginate(10)
             ->withQueryString();

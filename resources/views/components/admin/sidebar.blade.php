@@ -49,6 +49,34 @@
             </div>
         </div>
 
+        <!-- Product Specifications Dropdown -->
+        <div class="relative" x-data="{ id: 'productSpecificationsDropdown' }"
+             x-bind:class="{ 'bg-gray-700': openDropdown === id }">
+            <button class="w-full flex items-center py-2.5 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 focus:outline-none"
+                    x-on:click="openDropdown = (openDropdown === id) ? null : id">
+                <div class="flex items-center flex-grow">
+                    <i class="fas fa-clipboard-list w-5 h-5 mr-3"></i>
+                    Product Specifications
+                </div>
+                <i class="fas fa-chevron-down w-4 h-4 ml-auto transition-transform duration-200"
+                   x-bind:class="{ 'rotate-180': openDropdown === id }"></i>
+            </button>
+            <div x-show="openDropdown === id" x-collapse class="pl-6 mt-1 space-y-2">
+                <a href="{{ route('admin.product_specifications.groups.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.product_specifications.groups.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-layer-group w-4 h-4 mr-3"></i>
+                    Groups
+                </a>
+                <a href="{{ route('admin.product_specifications.attributes.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.product_specifications.attributes.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-tags w-4 h-4 mr-3"></i>
+                    Attributes
+                </a>
+                <a href="{{ route('admin.product_specifications.tables.index') }}" class="flex items-center py-2 px-4 rounded transition duration-200 hover:bg-gray-700 hover:text-blue-400 {{ request()->routeIs('admin.product_specifications.tables.index') ? 'bg-gray-700 text-blue-400' : '' }}">
+                    <i class="fas fa-table w-4 h-4 mr-3"></i>
+                    Tables
+                </a>
+            </div>
+        </div>
+
         <!-- FAQs Dropdown -->
         <div class="relative" x-data="{ id: 'faqsDropdown' }"
              x-bind:class="{ 'bg-gray-700': openDropdown === id }">

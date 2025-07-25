@@ -25,7 +25,7 @@
         ]
     ])
     <section class="py-12 bg-gradient-to-b from-blue-50 to-white">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <!-- Page Header -->
             <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
                 <div class="mb-4 md:mb-0">
@@ -143,54 +143,36 @@
             <!-- Users Table -->
             <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-blue-gray-200">
                 <div class="overflow-x-auto">
-                    <table class="min-w-full divide-y divide-blue-gray-200">
+                    <table id="users-table" class="min-w-full divide-y divide-blue-gray-200">
                         <thead class="bg-green-100">
                         <tr>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                <a href="{{ route('users.index', array_merge(request()->query(), ['sort' => request('sort') === 'name_asc' ? 'name_desc' : 'name_asc'])) }}"
-                                   class="flex items-center group">
+                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider sortable-column"
+                                data-sort-by="name" data-sort-direction="asc">
+                                <div class="flex items-center group cursor-pointer">
                                     Name
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600"
+                                    <svg class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600 sort-icon"
                                          fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        @if(request('sort') === 'name_asc')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4"/>
-                                        @elseif(request('sort') === 'name_desc')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
-                                        @endif
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
                                     </svg>
-                                </a>
+                                </div>
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
                                 Email
                             </th>
                             <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                <a href="{{ route('users.index', array_merge(request()->query(), ['sort' => request('sort') === 'newest' ? 'oldest' : 'newest'])) }}"
-                                   class="flex items-center group">
+                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider sortable-column"
+                                data-sort-by="created_at" data-sort-direction="desc">
+                                <div class="flex items-center group cursor-pointer">
                                     Created
-                                    <svg xmlns="http://www.w3.org/2000/svg"
-                                         class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600"
+                                    <svg class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600 sort-icon"
                                          fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        @if(request('sort') === 'newest')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M19 9l-7 7-7-7"/>
-                                        @elseif(request('sort') === 'oldest')
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M5 15l7-7 7 7"/>
-                                        @else
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
-                                        @endif
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 9l-7 7-7-7"/>
                                     </svg>
-                                </a>
+                                </div>
                             </th>
                             <th scope="col"
                                 class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
@@ -257,7 +239,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                                             </svg>
                                         </a>
-                                        
+
                                         <span class="text-gray-300">|</span>
                                         <a href="{{ route('users.edit', $user) }}"
                                            class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150" title="Edit">
@@ -469,6 +451,66 @@
                             window.location.href = link.getAttribute('href');
                         }
                     });
+                });
+            });
+
+            // Client-side sorting logic
+            const usersTable = document.getElementById('users-table');
+            const tableBody = usersTable.querySelector('tbody');
+            const sortableColumns = usersTable.querySelectorAll('.sortable-column');
+
+            sortableColumns.forEach(header => {
+                header.addEventListener('click', () => {
+                    const sortBy = header.dataset.sortBy;
+                    let sortDirection = header.dataset.sortDirection;
+
+                    // Toggle sort direction
+                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+                    header.dataset.sortDirection = sortDirection;
+
+                    // Reset other sort icons
+                    sortableColumns.forEach(col => {
+                        if (col !== header) {
+                            const otherIcon = col.querySelector('.sort-icon');
+                            if (otherIcon) {
+                                otherIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>'; // Default icon
+                            }
+                        }
+                    });
+
+                    // Update current sort icon
+                    const currentIcon = header.querySelector('.sort-icon');
+                    if (currentIcon) {
+                        if (sortDirection === 'asc') {
+                            currentIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>'; // Up arrow
+                        } else {
+                            currentIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>'; // Down arrow
+                        }
+                    }
+
+                    const rows = Array.from(tableBody.querySelectorAll('tr'));
+
+                    rows.sort((a, b) => {
+                        let aValue, bValue;
+
+                        if (sortBy === 'name') {
+                            aValue = a.querySelector('td:nth-child(1) .text-sm.font-medium').textContent.trim().toLowerCase();
+                            bValue = b.querySelector('td:nth-child(1) .text-sm.font-medium').textContent.trim().toLowerCase();
+                        } else if (sortBy === 'created_at') {
+                            // For date sorting, parse the date string
+                            aValue = new Date(a.querySelector('td:nth-child(3)').textContent.trim());
+                            bValue = new Date(b.querySelector('td:nth-child(3)').textContent.trim());
+                        }
+
+                        if (sortDirection === 'asc') {
+                            return aValue > bValue ? 1 : -1;
+                        } else {
+                            return aValue < bValue ? 1 : -1;
+                        }
+                    });
+
+                    // Re-append sorted rows
+                    rows.forEach(row => tableBody.appendChild(row));
                 });
             });
         });

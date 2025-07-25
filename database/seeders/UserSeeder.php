@@ -13,7 +13,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Admin User',
             'email' => 'admin@tarpor.com',
-            'phone' => '01712345678',
+            'phone' => '01612233369',
             'password' => Hash::make('password'),
             'role' => 'admin',
             'verified_at' => now(),
@@ -24,7 +24,7 @@ class UserSeeder extends Seeder
         User::create([
             'name' => 'Staff User',
             'email' => 'staff@tarpor.com',
-            'phone' => '01712345679',
+            'phone' => '01551805527',
             'password' => Hash::make('password'),
             'role' => 'staff',
             'verified_at' => now(),
