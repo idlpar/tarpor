@@ -28,6 +28,10 @@ class DatabaseSeeder extends Seeder
             UnionSeeder::class,
             AddressSeeder::class,
             SeoSeeder::class,
+            ProductAttributeSeeder::class,
+            CollectionSeeder::class,
+            LabelSeeder::class,
+            ProductAttributeValueSeeder::class,
         ]);
     }
 }

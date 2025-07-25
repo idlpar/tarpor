@@ -12,7 +12,7 @@ class ProductAttributeController extends Controller
 {
     public function index()
     {
-        $attributes = ProductAttribute::with('values')->orderBy('name')->paginate(10);
+        $attributes = ProductAttribute::with('values')->orderBy('id', 'desc')->paginate(10);
         $links = [
             'Product Attributes' => route('product_attributes.index')
         ];
@@ -32,6 +32,8 @@ class ProductAttributeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:product_attributes,name',
+            'description' => 'nullable|string|max:1000',
+            'position' => 'nullable|integer',
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
@@ -54,8 +56,11 @@ class ProductAttributeController extends Controller
     {
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255', Rule::unique('product_attributes')->ignore($product_attribute->id)],
+            'description' => 'nullable|string|max:1000',
+            'position' => 'nullable|integer',
         ]);
 
+        $validated['slug'] = Str::slug($validated['name']);
         $product_attribute->update($validated);
 
         return redirect()->route('product_attributes.index')

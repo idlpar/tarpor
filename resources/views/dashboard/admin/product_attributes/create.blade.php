@@ -50,11 +50,46 @@
             <form action="{{ route('product_attributes.store') }}" method="POST">
                 @csrf
                 <div class="mb-5">
-                    <label for="name" class="block text-lg font-semibold text-gray-700 mb-2">Attribute Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name') }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="e.g., Size, Color, Material">
-                    @error('name')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
+                    <!-- Name -->
+                    <div>
+                        <label for="name" class="block text-sm font-medium text-gray-700">Attribute Name</label>
+                        <input type="text" name="name" id="name" value="{{ old('name') }}" required
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        @error('name')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Slug -->
+                    <div>
+                        <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                        <input type="text" name="slug" id="slug" value="{{ old('slug') }}" required
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 cursor-not-allowed sm:text-sm"
+                               readonly>
+                        @error('slug')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Description -->
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700">Description (Optional)</label>
+                        <textarea name="description" id="description" rows="3"
+                                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('description') }}</textarea>
+                        @error('description')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
+
+                    <!-- Position -->
+                    <div>
+                        <label for="position" class="block text-sm font-medium text-gray-700">Position (Optional)</label>
+                        <input type="number" name="position" id="position" value="{{ old('position') }}"
+                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                        @error('position')
+                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="flex justify-end mt-8">
@@ -66,3 +101,19 @@
         </div>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.getElementById('name');
+            const slugInput = document.getElementById('slug');
+
+            nameInput.addEventListener('input', function() {
+                slugInput.value = nameInput.value.toLowerCase()
+                    .replace(/[^a-z0-9 -]/g, '') // remove invalid chars
+                    .replace(/\s+/g, '-') // collapse whitespace and replace by -
+                    .replace(/-+/g, '-'); // collapse dashes
+            });
+        });
+    </script>
+@endpush

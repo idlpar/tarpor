@@ -4,53 +4,35 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\Label;
-use PhpParser\Node\Stmt\Label;
+use Illuminate\Support\Str;
 
 class LabelSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
         $labels = [
-            [
-                'name' => 'New Arrival',
-                'slug' => 'new-arrival',
-                'description' => 'Recently added products',
-                'image' => 'labels/new-arrival.png',
-                'status' => 'active',
-            ],
-            [
-                'name' => 'Best Seller',
-                'slug' => 'best-seller',
-                'description' => 'Top selling products',
-                'image' => 'labels/best-seller.png',
-                'status' => 'active',
-            ],
-            [
-                'name' => 'Limited Edition',
-                'slug' => 'limited-edition',
-                'description' => 'Exclusive, limited availability',
-                'image' => 'labels/limited-edition.png',
-                'status' => 'active',
-            ],
-            [
-                'name' => 'Organic',
-                'slug' => 'organic',
-                'description' => 'Made from organic materials',
-                'image' => 'labels/organic.png',
-                'status' => 'active',
-            ],
-            [
-                'name' => 'Sale',
-                'slug' => 'sale',
-                'description' => 'Products currently on discount',
-                'image' => 'labels/sale.png',
-                'status' => 'active',
-            ],
-            // Add other labels similarly...
+            ['name' => 'New Arrival', 'description' => 'Recently added to our collection.', 'status' => true],
+            ['name' => 'Limited Edition', 'description' => 'Exclusive and rare pieces.', 'status' => true],
+            ['name' => 'Best Seller', 'description' => 'Our most popular items.', 'status' => true],
+            ['name' => 'On Sale', 'description' => 'Special discounted price.', 'status' => true],
+            ['name' => "Editor's Pick", 'description' => 'Curated by our fashion experts.', 'status' => true],
+            ['name' => 'Sustainable', 'description' => 'Made with eco-friendly materials.', 'status' => true],
+            ['name' => 'Handcrafted', 'description' => 'Artisan-made with unique details.', 'status' => true],
+            ['name' => 'Pre-Order', 'description' => 'Available for purchase before release.', 'status' => true],
+            ['name' => 'Exclusive Online', 'description' => 'Only available on our website.', 'status' => true],
+            ['name' => 'Back in Stock', 'description' => 'Popular items that have been restocked.', 'status' => true],
         ];
 
-        foreach ($labels as $label) {
-            Label::create($label);
+        foreach ($labels as $labelData) {
+            Label::create([
+                'name' => $labelData['name'],
+                'slug' => Str::slug($labelData['name']),
+                'description' => $labelData['description'],
+                'status' => $labelData['status'],
+            ]);
         }
     }
 }

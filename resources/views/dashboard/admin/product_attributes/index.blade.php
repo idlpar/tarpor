@@ -31,12 +31,13 @@
             </a>
         </div>
 
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full bg-white">
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-6 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Attribute Name</th>
+                            <th scope="col" class="px-6 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Position</th>
                             <th scope="col" class="px-6 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">Values</th>
                             <th scope="col" class="px-6 py-3 text-right text-sm font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                         </tr>
@@ -45,6 +46,7 @@
                         @forelse ($attributes as $attribute)
                             <tr class="hover:bg-gray-50 transition-colors duration-200">
                                 <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{ $attribute->name }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-base text-gray-900">{{ $attribute->position }}</td>
                                 <td class="px-6 py-4">
                                     <div class="flex flex-wrap gap-2">
                                         @forelse ($attribute->values as $value)
@@ -104,7 +106,7 @@
                 </table>
             </div>
 
-            <div class="mt-4">
+            <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 sm:px-6">
                 {{ $attributes->links() }}
             </div>
         </div>
