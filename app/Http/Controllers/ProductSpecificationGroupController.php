@@ -10,7 +10,7 @@ class ProductSpecificationGroupController extends Controller
 {
     public function index(Request $request)
     {
-        $groups = ProductSpecificationGroup::withTrashed()->orderBy('id', 'desc')->get();
+        $groups = ProductSpecificationGroup::withTrashed()->orderBy('id', 'desc')->paginate(10);
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Groups' => null

@@ -13,8 +13,7 @@
         @endif
     </title>
 
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
+    </head>
 <body class="font-['Urbanist'] bg-[var(--light)] text-gray-900 flex flex-col min-h-screen pt-16">
 <div id="cookie-consent" class="fixed inset-x-0 bottom-0 bg-white shadow-lg z-50 transform transition-transform duration-300 translate-y-full">
     <div class="container mx-auto px-4 py-4">
