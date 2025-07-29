@@ -15,7 +15,7 @@ class BrandController extends Controller
      */
     public function index()
     {
-        $brands = Brand::latest()->paginate(10); // Fetch all brands, including soft deleted ones
+        $brands = Brand::orderBy('id', 'desc')->paginate(10); // Fetch all brands, including soft deleted ones
         $links = [
             'Brands' => route('brands.index')
         ];

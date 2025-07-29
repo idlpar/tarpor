@@ -139,6 +139,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
         Route::prefix('product-specifications')->name('admin.product_specifications.')->group(function () {
             Route::resource('groups', App\Http\Controllers\ProductSpecificationGroupController::class)->names('groups');
             Route::patch('groups/{group}/restore', [App\Http\Controllers\ProductSpecificationGroupController::class, 'restore'])->name('groups.restore');
+            Route::delete('groups/{group}/force-delete', [App\Http\Controllers\ProductSpecificationGroupController::class, 'forceDelete'])->name('groups.forceDelete');
             Route::resource('attributes', App\Http\Controllers\ProductSpecificationAttributeController::class)->names('attributes');
             Route::resource('tables', App\Http\Controllers\ProductSpecificationTableController::class)->names('tables');
         });

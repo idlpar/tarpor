@@ -30,14 +30,14 @@
             )
             <x-ui.table :headers="$headers">
                 @forelse ($groups as $group)
-                    <tr>
-                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                    <tr class="border-b border-gray-200 text-sm hover:bg-amber-50">
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
                             {{ $group->name }}
                         </td>
-                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
                             {{ $group->description ?? 'N/A' }}
                         </td>
-                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm">
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
                             @if ($group->trashed())
                                 <span class="relative inline-block px-3 py-1 font-semibold text-red-900 leading-tight">
                                     <span aria-hidden="true" class="absolute inset-0 bg-red-200 opacity-50 rounded-full"></span>
@@ -50,13 +50,13 @@
                                 </span>
                             @endif
                         </td>
-                        <td class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-right">
+                        <td class="px-5 py-5 border-b border-gray-200 text-sm text-right">
                             <x-ui.table-actions :item="$group" baseRoute="admin.product_specifications.groups" />
                         </td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="px-5 py-5 border-b border-gray-200 bg-white text-sm text-center">
+                        <td colspan="4" class="px-5 py-5 border-b border-gray-200 text-sm text-center">
                             No product specification groups found.
                         </td>
                     </tr>

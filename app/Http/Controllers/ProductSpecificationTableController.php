@@ -11,7 +11,7 @@ class ProductSpecificationTableController extends Controller
 {
     public function index(Request $request)
     {
-        $tables = ProductSpecificationTable::withTrashed()->get();
+        $tables = ProductSpecificationTable::withTrashed()->orderBy('id', 'desc')->paginate(10);
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Tables' => null

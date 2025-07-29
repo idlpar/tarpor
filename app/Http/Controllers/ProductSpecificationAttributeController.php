@@ -11,7 +11,7 @@ class ProductSpecificationAttributeController extends Controller
 {
     public function index(Request $request)
     {
-        $attributes = ProductSpecificationAttribute::withTrashed()->get();
+        $attributes = ProductSpecificationAttribute::withTrashed()->orderBy('id', 'desc')->paginate(10);
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Attributes' => null

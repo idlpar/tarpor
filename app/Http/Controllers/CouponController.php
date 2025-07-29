@@ -11,7 +11,7 @@ class CouponController extends Controller
 {
     public function index()
     {
-        $coupons = Coupon::all();
+        $coupons = Coupon::orderBy('id', 'desc')->paginate(10);
         $links = [
             'Coupons' => route('coupons.index')
         ];
