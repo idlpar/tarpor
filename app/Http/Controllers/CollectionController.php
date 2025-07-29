@@ -10,7 +10,7 @@ class CollectionController extends Controller
 {
     public function index()
     {
-        $collections = Collection::latest()->paginate(10);
+        $collections = Collection::orderBy('id', 'desc')->paginate(10);
         $links = [
             'Collections' => route('collections.index')
         ];

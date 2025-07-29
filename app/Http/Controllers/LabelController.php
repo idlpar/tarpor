@@ -10,7 +10,7 @@ class LabelController extends Controller
 {
     public function index()
     {
-        $labels = Label::latest()->paginate(10);
+        $labels = Label::orderBy('id', 'desc')->paginate(10);
         $links = [
             'Labels' => route('labels.index')
         ];
