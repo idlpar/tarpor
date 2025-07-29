@@ -4,12 +4,29 @@
     </a>
     <span class="text-gray-300">|</span>
 
+    @if ($showToggle ?? false)
+        <form action="{{ $toggleRoute }}" method="POST" class="inline-block toggle-status-form">
+            @csrf
+            @method('PATCH')
+            <button type="button" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger toggle-button"
+                    data-tooltip="Toggle Status"
+                    data-toggle-title="{{ $toggleTitle ?? 'Confirm action?' }}"
+                    data-toggle-text="{{ $toggleText ?? 'Are you sure you want to change the status?' }}"
+                    data-is-toggled="{{ $isToggled ? 'true' : 'false' }}">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"></path>
+                </svg>
+            </button>
+        </form>
+        <span class="text-gray-300">|</span>
+    @endif
+
     @if ($showRestore ?? false)
         <form action="{{ route($baseRoute . '.restore', $item->id) }}" method="POST" class="inline-block restore-form">
             @csrf
             @method('PATCH')
             <button type="button" class="text-green-600 hover:text-green-900 custom-tooltip-trigger restore-button" data-tooltip="Restore" data-restore-title="{{ $restoreTitle ?? 'Are you sure?' }}" data-restore-text="{{ $restoreText ?? 'This will restore the item!' }}">
-                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"/></svg>
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3"></path></svg>
             </button>
         </form>
         <span class="text-gray-300">|</span>
@@ -107,7 +124,32 @@
                 });
             });
         });
+
+        // New toggle button logic
+        document.querySelectorAll('.toggle-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const form = this.closest('form');
+                const isToggled = this.dataset.isToggled === 'true';
+                const actionText = isToggled ? 'unsubscribe' : 'subscribe';
+                const title = this.dataset.toggleTitle || `Confirm ${actionText}?`;
+                const text = this.dataset.toggleText || `Are you sure you want to ${actionText} this item?`;
+
+                Swal.fire({
+                    title: title,
+                    text: text,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: '#3085d6',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: `Yes, ${actionText} it!`,
+                    focusCancel: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        form.submit();
+                    }
+                });
+            });
+        });
     });
 </script>
 @endpush
-
