@@ -30,7 +30,8 @@
             )
             <x-ui.table :headers="$headers">
                 @forelse($coupons as $coupon)
-                    <tr class="border-b border-gray-200 text-sm hover:bg-amber-0">
+                    <tr class="border-b border-gray-200 text-sm hover:bg-amber-
+                    0">
                         <td class="px-5 py-5 border-b border-gray-200 text-sm">
                             {{ $coupon->code }}
                         </td>
