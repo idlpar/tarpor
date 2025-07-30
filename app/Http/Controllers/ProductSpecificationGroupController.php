@@ -35,9 +35,13 @@ class ProductSpecificationGroupController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        ProductSpecificationGroup::create($request->all());
+        $group = ProductSpecificationGroup::create($request->all());
 
-        return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group created successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.groups.edit', $group)->with('success', 'Group created successfully.');
     }
 
     public function edit(ProductSpecificationGroup $group)
