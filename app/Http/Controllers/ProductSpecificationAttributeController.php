@@ -38,9 +38,13 @@ class ProductSpecificationAttributeController extends Controller
             'unit' => 'nullable|string|max:255',
         ]);
 
-        ProductSpecificationAttribute::create($request->all());
+        $attribute = ProductSpecificationAttribute::create($request->all());
 
-        return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute created successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.attributes.edit', $attribute)->with('success', 'Attribute created successfully.');
     }
 
     public function edit(ProductSpecificationAttribute $attribute)
@@ -64,7 +68,11 @@ class ProductSpecificationAttributeController extends Controller
 
         $attribute->update($request->all());
 
-        return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute updated successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.attributes.edit', $attribute)->with('success', 'Attribute updated successfully.');
     }
 
     public function destroy(ProductSpecificationAttribute $attribute)

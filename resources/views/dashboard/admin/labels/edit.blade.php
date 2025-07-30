@@ -3,7 +3,7 @@
 @section('title', 'Edit Label')
 
 @section('admin_content')
-    <div class="container mx-auto">
+    <div class="container mx-auto px-4 py-4">
         @include('components.breadcrumbs', [
             'links' => [
                 'Labels' => route('labels.index'),
@@ -11,77 +11,77 @@
             ]
         ])
 
-        <!-- Page Header -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-            <div class="mb-4 md:mb-0">
-                <div class="flex items-center">
-                    <a href="{{ route('labels.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </a>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Edit Label</h1>
-                        <p class="mt-1 text-sm text-gray-600">Modify the details of an existing label</p>
-                    </div>
+        <x-ui.page-header title="Edit Label" description="Update the details of the label.">
+            <a href="{{ route('labels.index') }}" class="ml-4 flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                View All Labels
+            </a>
+        </x-ui.page-header>
+
+        <x-ui.session-messages />
+
+        <form action="{{ route('labels.update', $label) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Left Column -->
+                <div class="w-full lg:w-9/12">
+                    <x-ui.content-card class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
+                                <input type="text" id="name" name="name" value="{{ old('name', $label->name) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Name">
+                                @error('name')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="slug" class="block text-sm font-semibold text-gray-700 mb-2">Slug *</label>
+                                <input type="text" id="slug" name="slug" value="{{ old('slug', $label->slug) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="label-slug">
+                                @error('slug')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
+                                <textarea id="description" name="description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Description">{{ old('description', $label->description) }}</textarea>
+                                @error('description')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+                                <select id="status" name="status" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
+                                    <option value="active" {{ old('status', $label->status) == 'active' ? 'selected' : '' }}>Active</option>
+                                    <option value="inactive" {{ old('status', $label->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                </select>
+                                @error('status')
+                                <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </x-ui.content-card>
+                </div>
+
+                <!-- Right Column -->
+                <div class="w-full lg:w-3/12 sticky top-6">
+                    <x-ui.content-card class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Publish</h3>
+                        <div class="pt-4 border-t border-gray-200 flex gap-4">
+                            <button type="submit" id="saveButton" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">Update</button>
+                            <button type="submit" name="save_exit" value="1" id="saveExitButton" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">Update & Exit</button>
+                        </div>
+                    </x-ui.content-card>
                 </div>
             </div>
-            <div>
-                <a href="{{ route('labels.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
-                    View All Labels
-                </a>
-            </div>
-        </div>
-
-        <div class="bg-white p-8 rounded-lg shadow-lg">
-            <form action="{{ route('labels.update', $label->id) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="mb-5">
-                    <label for="name" class="block text-sm font-semibold text-gray-700 mb-2">Name *</label>
-                    <input type="text" id="name" name="name" value="{{ old('name', $label->name) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Name">
-                    @error('name')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="mb-5">
-                    <label for="slug" class="block text-sm font-semibold text-gray-700 mb-2">Slug *</label>
-                    <input type="text" id="slug" name="slug" value="{{ old('slug', $label->slug) }}" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="label-slug">
-                    @error('slug')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="mb-5">
-                    <label for="description" class="block text-sm font-semibold text-gray-700 mb-2">Description</label>
-                    <textarea id="description" name="description" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200" placeholder="Label Description">{{ old('description', $label->description) }}</textarea>
-                    @error('description')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="mb-6">
-                    <label for="status" class="block text-sm font-semibold text-gray-700 mb-2">Status</label>
-                    <select id="status" name="status" class="block w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-md shadow-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200">
-                        <option value="active" {{ old('status', $label->status) == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ old('status', $label->status) == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                    @error('status')
-                    <p class="text-red-600 text-sm mt-1">{{ $message }}</p>
-                    @enderror
-                </div>
-
-                <div class="flex justify-end mt-8">
-                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">Update Label</button>
-                </div>
-            </form>
-        </div>
+        </form>
     </div>
 @endsection
 
 @push('scripts')
-    @push('scripts')
     <!-- Utility Functions -->
     <script>
         // Reusable debounce function
@@ -101,7 +101,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             const nameInput = document.getElementById('name');
             const slugInput = document.getElementById('slug');
-            const labelId = '{{ $label->id }}';
             let manualSlugEdit = false; // Flag to track manual edits
 
             const checkSlug = debounce(async (slugToCheck, isManual = false) => {
@@ -110,7 +109,7 @@
                 }
 
                 try {
-                    const response = await fetch(`/api/label/slug/check?name=${encodeURIComponent(slugToCheck)}&id=${labelId}`);
+                    const response = await fetch(`/api/label/slug/check?name=${encodeURIComponent(slugToCheck)}&id={{ $label->id }}`);
                     if (!response.ok) {
                         const errorText = await response.text();
                         console.error('Error checking slug:', response.status, errorText);
@@ -156,11 +155,6 @@
                     manualSlugEdit = false;
                 }
             });
-
-            // Initial check on page load
-            if (nameInput.value) {
-                checkSlug(createSlug(nameInput.value), true); // Pass true for isManual to ensure it checks against existing slug
-            }
         });
     </script>
 @endpush

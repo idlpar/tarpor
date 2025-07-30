@@ -1,105 +1,85 @@
 @extends('layouts.admin')
 
-@section('title', 'Edit Product Attribute | ' . strtoupper(config('app.name')))
+@section('title', 'Edit Product Attribute')
 
 @section('admin_content')
-    <div class="container mx-auto px-4 py-8">
-        <!-- Display Success/Error Messages -->
-        @if (session('success'))
-            <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
-                {{ session('success') }}
-            </div>
-        @endif
-        @if (session('error'))
-            <div class="mb-4 p-4 bg-red-100 text-red-700 rounded-lg">
-                {{ session('error') }}
-            </div>
-        @endif
-
-        <!-- Breadcrumb Navigation -->
+    <div class="container mx-auto px-4 py-4">
         @include('components.breadcrumbs', [
             'links' => [
                 'Product Attributes' => route('product_attributes.index'),
-                'Edit Attribute' => null
+                'Edit' => null
             ]
         ])
 
-        <!-- Page Header -->
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
-            <div class="mb-4 md:mb-0">
-                <div class="flex items-center">
-                    <a href="{{ route('product_attributes.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-                        </svg>
-                    </a>
-                    <div>
-                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Edit Product Attribute</h1>
-                        <p class="mt-1 text-sm text-gray-600">Modify the details of an existing product attribute</p>
-                    </div>
+        <x-ui.page-header title="Edit Product Attribute" description="Update the details of the product attribute.">
+            <a href="{{ route('product_attributes.index') }}" class="ml-4 flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                View All Attributes
+            </a>
+        </x-ui.page-header>
+
+        <x-ui.session-messages />
+
+        <form action="{{ route('product_attributes.update', $product_attribute) }}" method="POST">
+            @csrf
+            @method('PUT')
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Left Column -->
+                <div class="w-full lg:w-9/12">
+                    <x-ui.content-card class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Attribute Name</label>
+                                <input type="text" name="name" id="name" value="{{ old('name', $product_attribute->name) }}" required
+                                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                @error('name')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                                <input type="text" name="slug" id="slug" value="{{ old('slug', $product_attribute->slug) }}" required
+                                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 cursor-not-allowed sm:text-sm"
+                                       readonly>
+                                @error('slug')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div class="md:col-span-2">
+                                <label for="description" class="block text-sm font-medium text-gray-700">Description (Optional)</label>
+                                <textarea name="description" id="description" rows="3"
+                                          class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('description', $product_attribute->description) }}</textarea>
+                                @error('description')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="position" class="block text-sm font-medium text-gray-700">Position (Optional)</label>
+                                <input type="number" name="position" id="position" value="{{ old('position', $product_attribute->position) }}"
+                                       class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+                                @error('position')
+                                <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </x-ui.content-card>
+                </div>
+
+                <!-- Right Column -->
+                <div class="w-full lg:w-3/12 sticky top-6">
+                    <x-ui.content-card class="p-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-2">Publish</h3>
+                        <div class="pt-4 border-t border-gray-200 flex gap-4">
+                            <button type="submit" id="saveButton" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">Update</button>
+                            <button type="submit" name="save_exit" value="1" id="saveExitButton" class="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">Update & Exit</button>
+                        </div>
+                    </x-ui.content-card>
                 </div>
             </div>
-            <div>
-                <a href="{{ route('product_attributes.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
-                    View All Attributes
-                </a>
-            </div>
-        </div>
-
-        <div class="max-w-3xl mx-auto bg-white p-8 rounded-lg shadow-lg">
-            <form action="{{ route('product_attributes.update', $product_attribute->id) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <div class="mb-5">
-                    <!-- Name -->
-                    <div>
-                        <label for="name" class="block text-sm font-medium text-gray-700">Attribute Name</label>
-                        <input type="text" name="name" id="name" value="{{ old('name', $product_attribute->name) }}" required
-                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        @error('name')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Slug -->
-                    <div>
-                        <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
-                        <input type="text" name="slug" id="slug" value="{{ old('slug', $product_attribute->slug) }}" required
-                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 bg-gray-50 cursor-not-allowed sm:text-sm"
-                               readonly>
-                        @error('slug')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Description -->
-                    <div>
-                        <label for="description" class="block text-sm font-medium text-gray-700">Description (Optional)</label>
-                        <textarea name="description" id="description" rows="3"
-                                  class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">{{ old('description', $product_attribute->description) }}</textarea>
-                        @error('description')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-
-                    <!-- Position -->
-                    <div>
-                        <label for="position" class="block text-sm font-medium text-gray-700">Position (Optional)</label>
-                        <input type="number" name="position" id="position" value="{{ old('position', $product_attribute->position) }}"
-                               class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
-                        @error('position')
-                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="flex justify-end mt-8">
-                    <button type="submit" class="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:-translate-y-0.5 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75">
-                        Update Attribute
-                    </button>
-                </div>
-            </form>
-        </div>
+        </form>
     </div>
 @endsection
 

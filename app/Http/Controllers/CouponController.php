@@ -38,9 +38,13 @@ class CouponController extends Controller
             'max_discount_amount' => 'nullable|numeric|min:0',
         ]);
 
-        Coupon::create($request->all());
+        $coupon = Coupon::create($request->all());
 
-        return redirect()->route('coupons.index')->with('success', 'Coupon created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('coupons.index')->with('success', 'Coupon created successfully.');
+        }
+
+        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon created successfully.');
     }
 
     public function edit(Coupon $coupon)
@@ -65,7 +69,11 @@ class CouponController extends Controller
 
         $coupon->update($request->all());
 
-        return redirect()->route('coupons.index')->with('success', 'Coupon updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('coupons.index')->with('success', 'Coupon updated successfully.');
+        }
+
+        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon updated successfully.');
     }
 
     public function destroy(Coupon $coupon)

@@ -63,7 +63,11 @@ class ProductSpecificationGroupController extends Controller
 
         $group->update($request->all());
 
-        return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group updated successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.groups.edit', $group)->with('success', 'Group updated successfully.');
     }
 
     public function destroy(ProductSpecificationGroup $group)

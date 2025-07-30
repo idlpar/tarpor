@@ -49,7 +49,11 @@ class ProductSpecificationTableController extends Controller
             $table->groups()->sync($groupSyncData);
         }
 
-        return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table created successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.tables.edit', $table)->with('success', 'Table created successfully.');
     }
 
     public function edit(ProductSpecificationTable $table)
@@ -85,7 +89,11 @@ class ProductSpecificationTableController extends Controller
             $table->groups()->detach();
         }
 
-        return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table updated successfully.');
+        }
+
+        return redirect()->route('admin.product_specifications.tables.edit', $table)->with('success', 'Table updated successfully.');
     }
 
     public function destroy(ProductSpecificationTable $table)

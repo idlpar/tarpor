@@ -35,14 +35,18 @@ class LabelController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        Label::create([
+        $label = Label::create([
             'name' => $request->name,
             'slug' => $request->slug,
             'description' => $request->description,
             'status' => $request->status,
         ]);
 
-        return redirect()->route('labels.index')->with('success', 'Label created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('labels.index')->with('success', 'Label created successfully.');
+        }
+
+        return redirect()->route('labels.edit', $label)->with('success', 'Label created successfully.');
     }
 
     public function edit(Label $label)
@@ -70,7 +74,11 @@ class LabelController extends Controller
             'status' => $request->status,
         ]);
 
-        return redirect()->route('labels.index')->with('success', 'Label updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('labels.index')->with('success', 'Label updated successfully.');
+        }
+
+        return redirect()->route('labels.edit', $label)->with('success', 'Label updated successfully.');
     }
 
     public function destroy(Label $label)

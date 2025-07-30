@@ -37,10 +37,13 @@ class ProductAttributeController extends Controller
         ]);
 
         $validated['slug'] = Str::slug($validated['name']);
-        ProductAttribute::create($validated);
+        $attribute = ProductAttribute::create($validated);
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Product attribute created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('product_attributes.index')->with('success', 'Product attribute created successfully.');
+        }
+
+        return redirect()->route('product_attributes.edit', $attribute)->with('success', 'Product attribute created successfully.');
     }
 
     public function edit(ProductAttribute $product_attribute)
@@ -63,8 +66,11 @@ class ProductAttributeController extends Controller
         $validated['slug'] = Str::slug($validated['name']);
         $product_attribute->update($validated);
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Product attribute updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('product_attributes.index')->with('success', 'Product attribute updated successfully.');
+        }
+
+        return redirect()->route('product_attributes.edit', $product_attribute)->with('success', 'Product attribute updated successfully.');
     }
 
     public function destroy(ProductAttribute $product_attribute)

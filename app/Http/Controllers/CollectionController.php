@@ -35,14 +35,18 @@ class CollectionController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        Collection::create([
+        $collection = Collection::create([
             'name' => $request->name,
             'slug' => $request->slug,
             'description' => $request->description,
             'status' => $request->status,
         ]);
 
-        return redirect()->route('collections.index')->with('success', 'Collection created successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('collections.index')->with('success', 'Collection created successfully.');
+        }
+
+        return redirect()->route('collections.edit', $collection)->with('success', 'Collection created successfully.');
     }
 
     public function edit(Collection $collection)
@@ -70,7 +74,11 @@ class CollectionController extends Controller
             'status' => $request->status,
         ]);
 
-        return redirect()->route('collections.index')->with('success', 'Collection updated successfully.');
+        if ($request->has('save_exit')) {
+            return redirect()->route('collections.index')->with('success', 'Collection updated successfully.');
+        }
+
+        return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.');
     }
 
     public function destroy(Collection $collection)
