@@ -3,7 +3,7 @@
 @section('title', 'Manage Variants for ' . $product->name . ' | ' . strtoupper(config('app.name')))
 
 @section('admin_content')
-    <div class="min-h-screen bg-gray-100 p-6 md:p-8">
+    <div class="min-h-screen bg-gray-100 px-4 md:px-6">
         <!-- Display Success/Error Messages -->
         @if (session('success'))
             <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">

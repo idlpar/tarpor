@@ -87,7 +87,7 @@
 @endpush
 
 @section('admin_content')
-    <div class="min-h-screen bg-gray-100 p-6 md:p-8">
+    <div class="min-h-screen bg-gray-100 px-4 md:px-6">
         <!-- Display Success/Error Messages -->
         @if (session('success'))
             <div class="mb-4 p-4 bg-green-100 text-green-700 rounded-lg">
@@ -109,6 +109,16 @@
                 'Create Product' => null
             ]
         ])
+
+        <x-ui.page-header title="Create New Product" description="Add a new product to your catalog.">
+            <a href="{{ route('products.index') }}" class="ml-4 flex items-center gap-2 bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                View All Products
+            </a>
+        </x-ui.page-header>
 
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
             <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">

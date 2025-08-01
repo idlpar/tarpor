@@ -130,7 +130,12 @@ class ProductController extends Controller
         $collections = Collection::orderBy('name')->get();
         $labels = Label::orderBy('name')->get();
 
-        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes', 'collections', 'labels'));
+        $links = [
+            'Products' => route('products.index'),
+            'Add New' => null
+        ];
+
+        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes', 'collections', 'labels', 'links'));
     }
 
     public function store(Request $request)
