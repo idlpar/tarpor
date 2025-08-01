@@ -66,7 +66,7 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
 
     // Verified User Routes
     Route::middleware('verified')->group(function () {
-        Route::get('/my-rewards', [RewardController::class, 'showMyRewards'])->name('my.rewards');
+        // Route::get('/my-rewards', [RewardController::class, 'showMyRewards'])->name('my.rewards');
         Route::get('/orders', [OrderController::class, 'userOrders'])->name('orders.index');
         Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
         Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
@@ -86,6 +86,8 @@ Route::middleware(['auth', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
+        Route::post('products/update/{id}', [ProductController::class, 'update'])->name('products.update.post');
+        Route::post('products/{product}', [ProductController::class, 'update'])->name('products.update.post');
         Route::get('/admin/products/{product:id}', [ProductController::class, 'show'])->name('products.show');
         Route::get('/products/{product:id}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');
@@ -211,7 +213,7 @@ Route::post('/coupons/apply', [CouponController::class, 'apply'])->name('coupons
 Route::delete('/coupons/remove', [CouponController::class, 'remove'])->name('coupons.remove');
 
 // Reward Points
-Route::post('/rewards/apply', [RewardController::class, 'apply'])->name('rewards.apply');
+// Route::post('/rewards/apply', [RewardController::class, 'apply'])->name('rewards.apply');
 
 // Newsletter Routes (Public/Guest access if needed, otherwise move inside auth middleware)
 Route::post('/newsletter/subscribe', [App\Http\Controllers\NewsletterController::class, 'subscribe'])->name('newsletter.subscribe');

@@ -1958,7 +1958,7 @@
 
                 this.showProgress('Inserting Media...');
                 const fetchPromises = items.map(item =>
-                    fetch(`{{ url("gallery/file/for-insertion") }}/${item.id}`, {
+                    fetch(`{{ url('gallery/file') }}/${item.id}/for-insertion`, {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json',

@@ -65,7 +65,7 @@ class Product extends Model
 
     public function media()
     {
-        return $this->belongsToMany(Media::class, 'product_media')->withPivot('type', 'order')->withTimestamps()->orderBy('pivot_order');
+        return $this->belongsToMany(Media::class, 'product_media')->withPivot('type', 'order')->withTimestamps()->orderBy('product_media.order');
     }
 
     public function variants()

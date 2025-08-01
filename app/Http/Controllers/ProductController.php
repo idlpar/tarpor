@@ -332,23 +332,30 @@ class ProductController extends Controller
 
         $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes', 'collections', 'labels']);
 
+        $links = [
+            'Products' => route('products.index'),
+            'Edit: ' . Str::limit($product->name, 20) => null
+        ];
+
         return view('dashboard.admin.products.edit', compact(
             'product',
             'brands',
             'categories',
             'attributes',
             'collections',
-            'labels'
+            'labels',
+            'links'
         ));
     }
 
-    public function update(Request $request, Product $product)
+    public function update(Request $request, $id)
     {
-
+        $product = Product::findOrFail($id);
         $validated = $this->validateProduct($request, $product);
 
         DB::transaction(function () use ($product, $validated, $request) {
             $product->fill($validated);
+            $product->save();
 
             // Handle product images
             $this->handleProductImages($product, $request->file('images_new'), $request->input('images_existing', []));
@@ -357,7 +364,11 @@ class ProductController extends Controller
             $this->handleThumbnail($product, $request->file('thumbnail_new'), $request->input('thumbnail_existing'));
 
             // Handle categories
-            $product->categories()->sync($validated['categories'] ?? []);
+            if (!empty($validated['category_ids'])) {
+                $product->categories()->sync($validated['category_ids']);
+            } else {
+                $product->categories()->detach();
+            }
 
             $tagsToSync = is_string($validated['tags']) ? json_decode($validated['tags'], true) : ($validated['tags'] ?? []);
             if (!empty($tagsToSync)) {
@@ -460,13 +471,23 @@ class ProductController extends Controller
             $response = [
                 'success' => true,
                 'message' => 'Product updated successfully.',
-                'redirect' => route('products.index')
             ];
+
+            if ($request->has('save_exit')) {
+                $response['redirect'] = route('products.index');
+            } else {
+                $response['redirect'] = route('products.edit', $product->id);
+            }
 
             return response()->json($response);
         }
 
-        return redirect()->route('products.index')
+        if ($request->has('save_exit')) {
+            return redirect()->route('products.index')
+                ->with('success', 'Product updated successfully');
+        }
+
+        return redirect()->route('products.edit', $product->id)
             ->with('success', 'Product updated successfully');
     }
 
@@ -832,48 +853,35 @@ class ProductController extends Controller
 
     protected function handleProductImages(Product $product, $newFiles = [], $existingIds = [])
     {
-        Log::info('handleProductImages: Method Entry - newFiles:', ['newFiles' => $newFiles]);
-        Log::info('handleProductImages: Method Entry - existingIds:', ['existingIds' => $existingIds]);
-
         $newFiles = $newFiles ?? [];
         $existingIds = $existingIds ?? [];
 
-        Log::info('handleProductImages: Start', ['product_id' => $product->id, 'newFiles_count' => count($newFiles), 'existingIds' => $existingIds]);
-
-        $currentMediaIds = $product->media->pluck('id')->toArray();
-        Log::info('handleProductImages: Current media IDs on product', ['currentMediaIds' => $currentMediaIds]);
+        // Get the IDs of all media currently associated with the product of type 'gallery'
+        $currentMediaIds = $product->media()->wherePivot('type', 'gallery')->pluck('media.id')->toArray();
 
         $retainedMediaIds = [];
 
-        // Process existing media IDs (from frontend hidden input)
+        // Process existing media IDs from the form
         if (is_array($existingIds)) {
             foreach ($existingIds as $id) {
                 $retainedMediaIds[] = (int)$id;
             }
         }
-        Log::info('handleProductImages: Retained media IDs after processing existingIds', ['retainedMediaIds_after_existing' => $retainedMediaIds]);
 
-        // Log the type and content of $existingIds before processing
-        Log::info('handleProductImages: Type of existingIds: ' . gettype($existingIds));
-        Log::info('handleProductImages: Content of existingIds: ' . print_r($existingIds, true));
-
-        // Log the type and content of $newFiles before processing
-        Log::info('handleProductImages: Type of newFiles: ' . gettype($newFiles));
-        Log::info('handleProductImages: Content of newFiles: ' . print_r($newFiles, true));
-
-        // Process new files (uploaded via file input)
+        // Process newly uploaded files
         if (is_array($newFiles)) {
             foreach ($newFiles as $file) {
                 if ($file instanceof \Illuminate\Http\UploadedFile) {
                     try {
-                        $fileName = $file->hashName(); // Generate a unique file name
+                        $fileName = $file->hashName();
                         $directory = 'products/' . $product->id;
-                        $path = Storage::disk('public')->putFileAs($directory, $file, $fileName);
-                        $media = $product->media()->create([ // Use the relationship to create media
+                        Storage::disk('public')->putFileAs($directory, $file, $fileName);
+
+                        $media = $product->media()->create([
                             'disk' => 'public',
                             'collection_name' => 'products',
                             'name' => $file->getClientOriginalName(),
-                            'file_name' => $fileName, // Use the unique file name
+                            'file_name' => $fileName,
                             'directory' => $directory,
                             'mime_type' => $file->getMimeType(),
                             'size' => $file->getSize(),
@@ -881,34 +889,29 @@ class ProductController extends Controller
                             'responsive_images' => [],
                         ]);
                         $retainedMediaIds[] = $media->id;
-                        Log::info('handleProductImages: New file uploaded and media record created', ['media_id' => $media->id, 'file_name' => $fileName]);
                     } catch (\Exception $e) {
                         Log::error("Error handling new product image: " . $e->getMessage(), ['file_name' => $file->getClientOriginalName()]);
-                        continue; // Skip to the next file
+                        continue;
                     }
                 }
             }
         }
-        Log::info('handleProductImages: Retained media IDs after processing newFiles', ['retainedMediaIds_final' => $retainedMediaIds]);
 
-        // Detach media that are no longer retained (i.e., removed from the frontend)
+        // Determine which media to detach
         $mediaToDetach = array_diff($currentMediaIds, $retainedMediaIds);
         if (!empty($mediaToDetach)) {
             $product->media()->detach($mediaToDetach);
-            Log::info('handleProductImages: Detached media IDs from pivot table', ['detachedMediaIds' => $mediaToDetach]);
         }
 
-        // Sync all retained media to the product with pivot data
+        // Sync all retained media with the correct pivot data
         $syncData = [];
         $order = 0;
         foreach ($retainedMediaIds as $mediaId) {
-            Log::info('handleProductImages: Processing mediaId for sync', ['mediaId' => $mediaId, 'type' => 'gallery', 'order' => $order]);
             $syncData[$mediaId] = ['type' => 'gallery', 'order' => $order++];
         }
 
-        Log::info('handleProductImages: Final syncData array before sync', ['syncData' => $syncData]);
-        $product->media()->sync($syncData);
-        Log::info('handleProductImages: Synced media IDs to pivot table', ['syncedMediaIds' => array_keys($syncData)]);
+        // Use sync to update the pivot table for all retained media
+        $product->media()->sync($syncData, false); // `false` prevents detaching other types like 'featured'
 
         return $retainedMediaIds;
     }
