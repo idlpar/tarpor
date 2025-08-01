@@ -127,9 +127,6 @@
                 <div class="w-full lg:w-9/12">
                     <!-- Product Details -->
                     <div class="bg-white p-8 rounded-lg shadow-lg">
-                        <h2 class="text-3xl font-bold mb-6 text-gray-800">New Product</h2>
-
-
 
                         <!-- Name -->
                         <div class="mb-6">

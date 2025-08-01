@@ -1451,6 +1451,14 @@
                 const selectedFolder = singleSelection && Array.from(this.state.selectedItems)[0].startsWith('folder:');
                 this.elements.openFolderButton.classList.toggle('hidden', !selectedFolder || isTrashView);
 
+                const allSelectableItemsCount = this.elements.itemsContainer.querySelectorAll('.gallery-item:not([data-id="go-up"])').length;
+
+                if (allSelectableItemsCount > 0 && this.state.selectedItems.size === allSelectableItemsCount) {
+                    this.elements.selectAllButton.innerHTML = '<i class="fas fa-minus-square"></i><span>Deselect All</span>';
+                } else {
+                    this.elements.selectAllButton.innerHTML = '<i class="fas fa-check-double"></i><span>Select All</span>';
+                }
+
                 if (singleSelection && Array.from(this.state.selectedItems)[0].startsWith('file:')) {
                     const fileId = Array.from(this.state.selectedItems)[0].split(':')[1];
                     this.fetchFileDetails(fileId);
@@ -1460,10 +1468,18 @@
             },
 
             selectAllItems() {
-                this.elements.itemsContainer.querySelectorAll('.gallery-item').forEach(item => {
-                    const id = item.dataset.id;
-                    const type = item.dataset.type;
-                    if (id !== 'go-up') { // Exclude "Go Up" folder
+                const allItems = this.elements.itemsContainer.querySelectorAll('.gallery-item:not([data-id="go-up"])');
+                const allSelectableItemsCount = allItems.length;
+                const selectedItemsCount = this.state.selectedItems.size;
+
+                if (allSelectableItemsCount > 0 && selectedItemsCount === allSelectableItemsCount) {
+                    // If all are selected, deselect all
+                    this.clearSelections();
+                } else {
+                    // Otherwise, select all
+                    allItems.forEach(item => {
+                        const id = item.dataset.id;
+                        const type = item.dataset.type;
                         const itemKey = `${type}:${id}`;
                         if (!this.state.selectedItems.has(itemKey)) {
                             this.state.selectedItems.add(itemKey);
@@ -1471,9 +1487,9 @@
                             const checkbox = item.querySelector('.item-checkbox input');
                             if (checkbox) checkbox.checked = true;
                         }
-                    }
-                });
-                this.updateSelectionDisplay();
+                    });
+                    this.updateSelectionDisplay();
+                }
             },
 
             // Preview Management
@@ -1616,7 +1632,7 @@
             },
 
             fetchFileDetails(fileId) {
-                fetch(`{{ route("gallery.file.show", "0") }}`.replace('0', fileId), {
+                fetch(`{{ url("gallery/file") }}/${fileId}`, {
                     headers: {
                         'Accept': 'application/json',
                         'X-Requested-With': 'XMLHttpRequest'
@@ -1942,7 +1958,7 @@
 
                 this.showProgress('Inserting Media...');
                 const fetchPromises = items.map(item =>
-                    fetch(`{{ route("gallery.file.for-insertion", ":id") }}`.replace(':id', item.id), {
+                    fetch(`{{ url("gallery/file/for-insertion") }}/${item.id}`, {
                         method: 'GET',
                         headers: {
                             'Accept': 'application/json',
