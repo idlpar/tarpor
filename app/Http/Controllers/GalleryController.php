@@ -148,9 +148,16 @@ class GalleryController extends Controller
         }
 
         // Get files with pagination
-        $filesQuery = Media::where('directory', $path)
-            ->whereNull('deleted_at')
-            ->orderBy('name');
+        $filesQuery = Media::query();
+        if (empty($path)) {
+            $filesQuery->where(function ($q) {
+                $q->where('directory', '')->orWhereNull('directory');
+            });
+        } else {
+            $filesQuery->where('directory', $path);
+        }
+
+        $filesQuery->whereNull('deleted_at')->orderBy('name');
 
         $totalFiles = $filesQuery->count();
         $files = $filesQuery->skip(($page - 1) * $perPage)
@@ -297,7 +304,7 @@ class GalleryController extends Controller
         ]);
     }
 
-    
+
 
     /**
      * Create a new folder
