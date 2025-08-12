@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+
+    <!-- Home Icon -->
+    <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="M12 3L2 12h3v8h6v-6h2v6h6v-8h3z"/>
+    </symbol>
+
+    <!-- User Icon -->
+    <symbol id="icon-user" viewBox="0 0 24 24">
+        <path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-4 0-8 2-8 5v3h16v-3c0-3-4-5-8-5z"/>
+    </symbol>
+
+    <!-- Shopping Cart Icon -->
+    <symbol id="icon-cart" viewBox="0 0 24 24">
+        <path d="M17 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM7 18a2 2 0 1 1-4 0 2 2 0 0 1 4 0zM.5 3h3l2.5 13h11l2.5-13H23"/>
+    </symbol>
+
+    <!-- Search Icon -->
+    <symbol id="icon-search" viewBox="0 0 24 24">
+        <path d="M11 2a9 9 0 1 0 5.6 16.1l4.7 4.7 1.4-1.4-4.7-4.7A9 9 0 0 0 11 2zm0 2a7 7 0 1 1 0 14 7 7 0 0 1 0-14z"/>
+    </symbol>
+
+    <!-- Settings Icon -->
+    <symbol id="icon-settings" viewBox="0 0 24 24">
+        <path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20zm0 18a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm-1-6h2v2h-2v-2zm0-8h2v6h-2V6z"/>
+    </symbol>
+
+    <!-- Notification Icon -->
+    <symbol id="icon-notification" viewBox="0 0 24 24">
+        <path d="M12 22a2 2 0 0 1-2-2h4a2 2 0 0 1-2 2zm6-6v-5c0-3-2-5-5-5V5a1 1 0 1 0-2 0v1c-3 0-5 2-5 5v5l-2 2v1h16v-1l-2-2z"/>
+    </symbol>
+
+    <!-- Heart Icon -->
+    <symbol id="icon-heart" viewBox="0 0 24 24">
+        <path d="M12 21l-1.45-1.3C5.4 15.4 2 12.3 2 8.5 2 5.4 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.4 22 8.5c0 3.8-3.4 6.9-8.55 11.2L12 21z"/>
+    </symbol>
+
+    <!-- Star Icon -->
+    <symbol id="icon-star" viewBox="0 0 24 24">
+        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+    </symbol>
+
+    <!-- Calendar Icon -->
+    <symbol id="icon-calendar" viewBox="0 0 24 24">
+        <path d="M19 4h-1V2h-2v2H8V2H6v2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z"/>
+    </symbol>
+
+    <!-- Message Icon -->
+    <symbol id="icon-message" viewBox="0 0 24 24">
+        <path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2zm0 14H6l-2 2V4h16v12z"/>
+    </symbol>
+
+    <!-- Camera Icon -->
+    <symbol id="icon-camera" viewBox="0 0 24 24">
+        <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zm0 6a2 2 0 1 1 0-4 2 2 0 0 1 0 4zm8-10h-3l-2-2H9L7 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 14H4V6h3l2 2h6l2-2h3v12z"/>
+    </symbol>
+
+    <!-- Phone Icon -->
+    <symbol id="icon-phone" viewBox="0 0 24 24">
+        <path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/>
+    </symbol>
+
+    <!-- Mail Icon -->
+    <symbol id="icon-mail" viewBox="0 0 24 24">
+        <path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
+    </symbol>
+
+    <!-- Lock Icon -->
+    <symbol id="icon-lock" viewBox="0 0 24 24">
+        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zM9 6c0-1.66 1.34-3 3-3s3 1.34 3 3v2H9V6zm9 14H6V10h12v10z"/>
+    </symbol>
+
+    <!-- Unlock Icon -->
+    <symbol id="icon-unlock" viewBox="0 0 24 24">
+        <path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6h2c0-1.66 1.34-3 3-3s3 1.34 3 3v2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V10a2 2 0 0 0-2-2zm0 12H6V10h12v10z"/>
+    </symbol>
+
+    <!-- Download Icon -->
+    <symbol id="icon-download" viewBox="0 0 24 24">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+    </symbol>
+
+    <!-- Upload Icon -->
+    <symbol id="icon-upload" viewBox="0 0 24 24">
+        <path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>
+    </symbol>
+
+    <!-- Trash Icon -->
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+    </symbol>
+
+    <!-- Edit Icon -->
+    <symbol id="icon-edit" viewBox="0 0 24 24">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+    </symbol>
+
+    <!-- More Icons... -->
+</svg>
