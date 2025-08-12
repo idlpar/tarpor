@@ -53,6 +53,37 @@
 
     </head>
 <body class="font-['Urbanist'] bg-[var(--light)] text-gray-900 flex flex-col min-h-screen pt-16">
+
+<!-- Animate.css -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+
+<style>
+    .swal2-popup-custom {
+        border-radius: 1rem; /* Rounded corners */
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05); /* Subtle shadow */
+    }
+    .swal2-title-custom {
+        color: #1f2937; /* Dark gray text */
+        font-weight: 700; /* Bold */
+    }
+    .swal2-html-container-custom {
+        color: #4b5563; /* Medium gray text */
+    }
+
+    /* Responsive SweetAlert2 styles */
+    @media (max-width: 768px) {
+        .swal2-popup {
+            width: 90% !important; /* Make it wider on small screens */
+            margin: 1em auto !important; /* Center it with some margin */
+            top: 20px !important; /* Position it near the top */
+            transform: translate(-50%, 0) !important; /* Adjust for centering */
+            left: 50% !important;
+        }
+        .swal2-container {
+            align-items: flex-start !important; /* Align to top */
+        }
+    }
+</style>
 <div id="cookie-consent" class="fixed inset-x-0 bottom-0 bg-white shadow-lg z-50 transform transition-transform duration-300 translate-y-full">
     <div class="container mx-auto px-4 py-4">
         <div class="flex flex-col md:flex-row items-center justify-between gap-4">

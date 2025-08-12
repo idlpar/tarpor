@@ -189,7 +189,7 @@
                                             <p class="text-xs text-gray-400">Qty: {{ $details['quantity'] }}</p>
                                         </div>
                                     </div>
-                                    <p class="text-gray-800 font-medium">BDT {{ number_format($details['price'] * $details['quantity'], 2) }}</p>
+                                    <p class="text-gray-800 font-medium">{{ format_taka($details['price'] * $details['quantity']) }}</p>
                                 </div>
                             @endforeach
                         @else
@@ -207,7 +207,7 @@
                                     <span class="font-medium text-gray-800">Standard Shipping</span>
                                     <p class="text-sm text-gray-500">4-5 business days</p>
                                 </div>
-                                <span class="font-semibold text-gray-800">৳50.00</span>
+                                <span class="font-semibold text-gray-800">৳50</span>
                             </label>
                             <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
                                 <input type="radio" name="shipping_option" value="120" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" {{ $deliveryCharge == 120 ? 'checked' : '' }}>
@@ -215,7 +215,7 @@
                                     <span class="font-medium text-gray-800">Express Shipping</span>
                                     <p class="text-sm text-gray-500">1-2 business days</p>
                                 </div>
-                                <span class="font-semibold text-gray-800">৳120.00</span>
+                                <span class="font-semibold text-gray-800">৳120</span>
                             </label>
                         </div>
                     </div>
@@ -223,10 +223,10 @@
                     <!-- Coupon Code -->
                     <div class="mb-6">
                         <label for="coupon-code" class="block text-sm font-medium text-gray-700 mb-2">Have a coupon?</label>
-                        <form id="apply-coupon-form" class="flex">
-                            <input type="text" id="coupon-code" name="code" placeholder="Enter coupon code" class="flex-grow px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300" value="{{ $coupon['code'] ?? '' }}">
-                            <button type="submit" id="apply-coupon-btn" class="bg-gray-800 text-white py-3 px-5 rounded-r-lg font-medium hover:bg-gray-700 transition-colors duration-200 flex items-center">
-                                <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <form id="apply-coupon-form" class="flex w-full">
+                            <input type="text" id="coupon-code" name="code" placeholder="Enter coupon code" class="flex-grow px-3 py-2 text-gray-900 bg-white border border-gray-200 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300" value="{{ $coupon['code'] ?? '' }}">
+                            <button type="submit" id="apply-coupon-btn" class="bg-gray-800 text-white py-2 px-4 rounded-r-lg font-medium hover:bg-gray-700 transition-colors duration-200 flex items-center text-sm">
+                                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
                                 </svg>
                                 Apply
@@ -239,17 +239,17 @@
                     <div class="mt-8 space-y-3">
                         <div class="flex justify-between py-3">
                             <p class="text-gray-600">Subtotal</p>
-                            <p class="text-gray-900 font-medium" id="summary-subtotal">BDT {{ number_format($subtotal, 2) }}</p>
+                            <p class="text-gray-900 font-medium" id="summary-subtotal">{{ format_taka($subtotal) }}</p>
                         </div>
 
                         <div class="flex justify-between py-3" id="summary-delivery-charge-row">
                             <p class="text-gray-600">Shipping</p>
-                            <p class="text-gray-900 font-medium" id="summary-delivery-charge">BDT {{ number_format($deliveryCharge, 2) }}</p>
+                            <p class="text-gray-900 font-medium" id="summary-delivery-charge">{{ format_taka($deliveryCharge) }}</p>
                         </div>
 
                         <div class="flex justify-between py-3 bg-blue-50 -mx-4 px-4 rounded-lg {{ (isset($coupon) && !empty($coupon)) ? '' : 'hidden' }}" id="summary-coupon-display">
                             <p class="text-gray-600" id="coupon-display-text">Coupon ({{ $coupon['code'] ?? '' }})</p>
-                            <p class="text-red-500 font-medium" id="coupon-discount-display">- BDT {{ number_format($coupon['discount'] ?? 0, 2) }}
+                            <p class="text-red-500 font-medium" id="coupon-discount-display">- {{ format_taka($coupon['discount'] ?? 0) }}
                                 <button type="button" id="remove-coupon-btn" class="ml-2 text-red-400 hover:text-red-600 focus:outline-none">
                                     <svg class="w-4 h-4 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
@@ -262,7 +262,7 @@
                                 $finalTotal = $subtotal - ($coupon['discount'] ?? 0) + $deliveryCharge;
                                 if ($finalTotal < 0) $finalTotal = 0;
                             @endphp
-                            <p class="text-xl font-bold text-blue-600" id="order-total">BDT {{ number_format($finalTotal, 2) }}</p>
+                            <p class="text-xl font-bold text-blue-600" id="order-total">{{ format_taka($finalTotal) }}</p>
                         </div>
                     </div>
 
@@ -338,7 +338,7 @@
 
             // Function to format currency (assuming BDT)
             function formatCurrency(amount) {
-                return `BDT ${parseFloat(amount).toFixed(2)}`;
+                return `৳${parseInt(amount)}`;
             }
 
             // Initial values from Blade
@@ -416,29 +416,27 @@
             document.querySelectorAll('input[name="shipping_option"]').forEach(radio => {
                 radio.addEventListener('change', function() {
                     deliveryCharge = parseFloat(this.value);
-                    fetch('{{ route('checkout.updateDeliveryCharge') }}', {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
+                    updateOrderSummary();
+                    Swal.fire({
+                        iconHtml: '<svg class="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17H5a2 2 0 00-2 2h16a2 2 0 002-2v-3a2 2 0 00-2-2H6a2 2 0 00-2 2v3h15zM19 17V9a2 2 0 00-2-2H5a2 2 0 00-2 2v8h16z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 9V5a2 2 0 00-2-2H5a2 2 0 00-2 2v4"></path></svg>',
+                        title: this.nextElementSibling.querySelector('span').textContent + ' Selected',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        customClass: {
+                            popup: 'swal2-popup-custom p-4 sm:p-6',
+                            title: 'swal2-title-custom text-lg sm:text-xl',
+                            htmlContainer: 'swal2-html-container-custom',
                         },
-                        body: JSON.stringify({ delivery_charge: deliveryCharge })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            updateOrderSummary();
-                        } else {
-                            alert(data.message);
+                        showClass: {
+                            popup: 'animate__animated animate__fadeInDown'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__fadeOutUp'
                         }
-                    })
-                    .catch(error => {
-                        console.error('Error updating delivery charge:', error);
-                        alert('Failed to update delivery charge.');
                     });
                 });
             });
+
 
             // Event listener for coupon application form submission
             if (applyCouponForm) {

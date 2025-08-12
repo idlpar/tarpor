@@ -26,10 +26,10 @@
         <div class="mt-2 flex justify-between items-center">
             <p class="text-sm font-semibold text-gray-900">
                 @if($product->sale_price && $product->sale_price < $product->price)
-                    <span class="text-red-600">${{ number_format($product->sale_price, 2) }}</span>
-                    <span class="text-gray-500 text-xs line-through">${{ number_format($product->price, 2) }}</span>
+                    <span class="text-red-600">{{ format_taka($product->sale_price) }}</span>
+                    <span class="text-gray-500 text-xs line-through">{{ format_taka($product->price) }}</span>
                 @else
-                    ${{ number_format($product->price, 2) }}
+                    {{ format_taka($product->price) }}
                 @endif
             </p>
             @if($product->is_featured)

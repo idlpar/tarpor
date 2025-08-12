@@ -56,7 +56,7 @@
                         </div>
 
                         <div class="mb-4">
-                            <p id="product-price" class="text-xl font-bold text-gray-900">BDT {{ number_format($product->price, 2) }}</p>
+                            <p id="product-price" class="text-xl font-bold text-gray-900">{{ format_taka($product->price) }}</p>
                             <p id="product-sale-price" class="text-sm text-gray-500 line-through"></p>
                         </div>
 
@@ -93,7 +93,7 @@
                                                     {{ $variant->attributes_list }}
                                                 </span>
                                                 <span class="variant-price text-xs text-gray-500 block mt-1">
-                                                    BDT {{ number_format($variant->sale_price ?? $variant->price, 2) }}
+                                                    {{ format_taka($variant->sale_price ?? $variant->price) }}
                                                 </span>
                                             </label>
                                         </div>
@@ -128,14 +128,24 @@
                             </div>
                         </div>
 
-                        <!-- Action Buttons -->
-                        <div id="action-buttons" class="flex space-x-4 mb-6">
+                        <div id="action-buttons" class="hidden md:flex space-x-4 mb-6">
                             <button type="button" id="add-to-cart-btn" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
                                 <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
                                 Add to Cart
                             </button>
                             <button type="button" id="buy-now-btn" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
                                 Buy Now
+                            </button>
+                            <button type="button" class="add-to-wishlist bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200" data-product-id="{{ $product->id }}">
+                                <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
+                            </button>
+                        </div>
+                        <div id="action-buttons-mobile" class="flex space-x-4 mb-6 md:hidden">
+                            <button type="button" id="add-to-cart-btn-mobile" class="flex-1 bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
+                                <i class="fas fa-shopping-cart"></i> Add to Cart
+                            </button>
+                            <button type="button" id="buy-now-btn-mobile" class="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-green-700 transition-colors duration-200" @if($product->type === 'simple' && $product->stock_quantity <= 0) disabled @endif>
+                                <i class="fas fa-bolt"></i> Buy Now
                             </button>
                             <button type="button" class="add-to-wishlist bg-gray-200 text-gray-700 py-3 px-6 rounded-lg font-semibold hover:bg-gray-300 transition-colors duration-200" data-product-id="{{ $product->id }}">
                                 <svg class="w-5 h-5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path></svg>
@@ -232,7 +242,7 @@
                                     </a>
                                     <div>
                                         <a href="{{ route('products.show.frontend', $relatedProduct->slug) }}" class="text-gray-800 hover:text-blue-600 font-medium">{{ $relatedProduct->name }}</a>
-                                        <p class="text-gray-600">BDT {{ number_format($relatedProduct->price, 2) }}</p>
+                                        <p class="text-gray-600">{{ format_taka($relatedProduct->price) }}</p>
                                     </div>
                                 </div>
                             @endforeach
@@ -251,7 +261,7 @@
                                     </a>
                                     <div>
                                         <a href="{{ route('products.show.frontend', $crossSellingProduct->slug) }}" class="text-gray-800 hover:text-blue-600 font-medium">{{ $crossSellingProduct->name }}</a>
-                                        <p class="text-gray-600">BDT {{ number_format($crossSellingProduct->price, 2) }}</p>
+                                        <p class="text-gray-600">{{ format_taka($crossSellingProduct->price) }}</p>
                                     </div>
                                 </div>
                             @endforeach
@@ -346,6 +356,8 @@
         const actionButtons = document.getElementById('action-buttons');
         const addToCartBtn = document.getElementById('add-to-cart-btn');
         const buyNowBtn = document.getElementById('buy-now-btn');
+        const addToCartBtnMobile = document.getElementById('add-to-cart-btn-mobile');
+        const buyNowBtnMobile = document.getElementById('buy-now-btn-mobile');
 
         // --- IMAGE GALLERY ---
         thumbnailImages.forEach(thumbnail => {
@@ -393,7 +405,7 @@
             const stock = parseInt(radio.dataset.stock);
             const stockStatus = radio.dataset.stockStatus;
 
-            priceDisplay.textContent = `BDT ${parseFloat(price).toFixed(2)}`;
+            priceDisplay.textContent = `৳${parseInt(price)}`;
             salePriceDisplay.textContent = '';
 
             if (stockStatus === 'in_stock') {
@@ -567,6 +579,18 @@
         buyNowBtn.addEventListener('click', function() {
             addToCart(this, true);
         });
+
+        if (addToCartBtnMobile) {
+            addToCartBtnMobile.addEventListener('click', function() {
+                addToCart(this, false);
+            });
+        }
+
+        if (buyNowBtnMobile) {
+            buyNowBtnMobile.addEventListener('click', function() {
+                addToCart(this, true);
+            });
+        }
 
         // --- IMAGE ZOOM ---
         const zoomOverlay = document.getElementById('zoomOverlay');

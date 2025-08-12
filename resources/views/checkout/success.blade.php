@@ -11,7 +11,7 @@
             <h2 class="text-2xl font-semibold text-gray-800 mb-4">Order Details</h2>
             <div class="text-left space-y-2">
                 <p><strong>Order ID:</strong> {{ $order->id }}</p>
-                <p><strong>Total Amount:</strong> BDT {{ number_format($order->total, 2) }}</p>
+                <p><strong>Total Amount:</strong> {{ format_taka($order->total) }}</p>
                 <p><strong>Status:</strong> {{ ucfirst($order->status) }}</p>
                 <p><strong>Order Date:</strong> {{ $order->created_at->format('M d, Y H:i A') }}</p>
             </div>
@@ -19,7 +19,7 @@
             <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3">Items Ordered:</h3>
             <ul class="text-left space-y-2">
                 @foreach($order->products as $item)
-                    <li>{{ $item->pivot->quantity }} x {{ $item->name ?? 'N/A' }} (BDT {{ number_format($item->pivot->price, 2) }} each)</li>
+                    <li>{{ $item->pivot->quantity }} x {{ $item->name ?? 'N/A' }} ({{ format_taka($item->pivot->price) }} each)</li>
                 @endforeach
             </ul>
 

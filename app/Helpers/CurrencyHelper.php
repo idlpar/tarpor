@@ -9,19 +9,15 @@ if (!function_exists('format_taka')) {
      * @param bool $include_decimal (optional) Whether to include decimal places
      * @return string
      */
-    function format_taka(float $amount, string $symbol = 'Tk.', bool $include_decimal = false): string
+    function format_taka(float $amount, string $symbol = '৳', bool $include_decimal = false): string
     {
         // Handle negative values
         $is_negative = $amount < 0;
-        $amount = (float) abs($amount); // Explicitly cast to float
-
-        // Split into whole and decimal parts
-        $whole_number = (int) $amount;
-        $decimal_part = $include_decimal ? explode('.', number_format($amount, 2, '.', ''))[1] : '';
+        $amount = (int) abs($amount); // Cast to int to remove decimal
 
         // Format the whole number part with Bangladeshi separators
         $formatted_whole_number = '';
-        $whole_number_str = (string) $whole_number; // Cast to string for array access
+        $whole_number_str = (string) $amount; // Cast to string for array access
         $length = strlen($whole_number_str);
 
         // Start from the end and work backwards
@@ -38,14 +34,8 @@ if (!function_exists('format_taka')) {
             }
         }
 
-        // Combine whole and decimal parts
-        $formatted_amount = $formatted_whole_number;
-        if ($include_decimal && !empty($decimal_part)) {
-            $formatted_amount .= '.' . $decimal_part;
-        }
-
         // Add the currency symbol
-        return $symbol . ($is_negative ? ' -' : ' ') . $formatted_amount;
+        return $symbol . ($is_negative ? '-' : '') . $formatted_whole_number;
     }
 }
 

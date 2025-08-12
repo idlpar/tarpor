@@ -122,7 +122,7 @@
                             <div class="mb-4">
                                 <div class="flex justify-between text-sm text-gray-600 mb-2">
                                     <span>BDT 0</span>
-                                    <span>BDT {{ number_format($maxPrice, 2) }}</span>
+                                    <span>{{ format_taka($maxPrice) }}</span>
                                 </div>
                                 <div class="relative h-1 bg-gray-200 rounded-full">
                                     <div class="absolute h-1 bg-blue-500 rounded-full" id="price-range-progress"></div>
@@ -142,7 +142,7 @@
                                 <div class="flex-1">
                                     <label for="min-price-input" class="block text-xs text-gray-500 mb-1">Min</label>
                                     <div class="relative">
-                                        <span class="absolute left-3 top-2 text-sm text-gray-400">BDT</span>
+                                        <span class="absolute left-3 top-2 text-sm text-gray-400">৳</span>
                                         <input type="number" id="min-price-input" min="0" max="{{ $maxPrice }}"
                                                value="{{ request('min_price', 0) }}"
                                                class="w-full pl-10 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -151,7 +151,7 @@
                                 <div class="flex-1">
                                     <label for="max-price-input" class="block text-xs text-gray-500 mb-1">Max</label>
                                     <div class="relative">
-                                        <span class="absolute left-3 top-2 text-sm text-gray-400">BDT</span>
+                                        <span class="absolute left-3 top-2 text-sm text-gray-400">৳</span>
                                         <input type="number" id="max-price-input" min="0" max="{{ $maxPrice }}"
                                                value="{{ request('max_price', $maxPrice) }}"
                                                class="w-full pl-10 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -255,7 +255,7 @@
                             @endif
                             @if(request('min_price') || request('max_price'))
                                 <span class="inline-flex items-center bg-purple-50 text-purple-700 text-sm px-3 py-1 rounded-full">
-                                    Price: BDT {{ request('min_price', 0) }} - BDT {{ request('max_price', $maxPrice) }}
+                                    Price: {{ format_taka(request('min_price', 0)) }} - {{ format_taka(request('max_price', $maxPrice)) }}
                                     <a href="{{ route('shop.index', array_except(request()->query(), ['min_price', 'max_price'])) }}" class="ml-1.5 inline-flex items-center justify-center w-4 h-4 rounded-full hover:bg-purple-100">
                                         <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/></svg>
                                     </a>
@@ -367,16 +367,16 @@
                                         <div class="mb-3">
                                             @if($product->sale_price && $product->sale_price < $product->price)
                                                 <div class="flex items-center gap-2">
-                                                    <span class="text-base font-bold text-gray-900">BDT {{ number_format($product->sale_price, 2) }}</span>
-                                                    <span class="text-xs text-gray-500 line-through">BDT {{ number_format($product->price, 2) }}</span>
+                                                    <span class="text-base font-bold text-gray-900">{{ format_taka($product->sale_price) }}</span>
+                                                    <span class="text-xs text-gray-500 line-through">{{ format_taka($product->price) }}</span>
                                                 </div>
                                             @else
-                                                <span class="text-base font-bold text-gray-900">BDT {{ number_format($product->price, 2) }}</span>
+                                                <span class="text-base font-bold text-gray-900">{{ format_taka($product->price) }}</span>
                                             @endif
                                         </div>
 
                                         <!-- Stock & Buttons -->
-                                        <div class="flex gap-2">
+                                        <div class="hidden md:flex gap-2">
                                             <button class="add-to-cart-btn w-1/2 bg-gray-100 hover:bg-blue-600 text-gray-800 hover:text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
                                                     data-product-id="{{ $product->id }}"
                                                     data-product-type="{{ $product->type }}"
@@ -391,6 +391,20 @@
                                                     data-product-type="{{ $product->type }}"
                                                 {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
                                                 Buy Now
+                                            </button>
+                                        </div>
+                                        <div class="flex gap-2 md:hidden">
+                                            <button class="add-to-cart-btn w-1/2 bg-gray-100 hover:bg-blue-600 text-gray-800 hover:text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
+                                                    data-product-id="{{ $product->id }}"
+                                                    data-product-type="{{ $product->type }}"
+                                                {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
+                                                <i class="fas fa-shopping-cart"></i>
+                                            </button>
+                                            <button class="buy-now-btn w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
+                                                    data-product-id="{{ $product->id }}"
+                                                    data-product-type="{{ $product->type }}"
+                                                {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
+                                                <i class="fas fa-bolt"></i>
                                             </button>
                                         </div>
                                     </div>
@@ -497,7 +511,7 @@
                             <div class="mb-4">
                                 <div class="flex justify-between text-sm text-gray-600 mb-2">
                                     <span>BDT 0</span>
-                                    <span>BDT {{ number_format($maxPrice, 2) }}</span>
+                                    <span>{{ format_taka($maxPrice) }}</span>
                                 </div>
                                 <div class="relative h-1 bg-gray-200 rounded-full">
                                     <div class="absolute h-1 bg-blue-500 rounded-full" id="mobile-price-range-progress"></div>
@@ -517,7 +531,7 @@
                                 <div class="flex-1">
                                     <label for="mobile-min-price-input" class="block text-xs text-gray-500 mb-1">Min</label>
                                     <div class="relative">
-                                        <span class="absolute left-3 top-2 text-sm text-gray-400">BDT</span>
+                                        <span class="absolute left-3 top-2 text-sm text-gray-400">৳</span>
                                         <input type="number" id="mobile-min-price-input" min="0" max="{{ $maxPrice }}"
                                                value="{{ request('min_price', 0) }}"
                                                class="w-full pl-10 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500">
@@ -526,7 +540,7 @@
                                 <div class="flex-1">
                                     <label for="mobile-max-price-input" class="block text-xs text-gray-500 mb-1">Max</label>
                                     <div class="relative">
-                                        <span class="absolute left-3 top-2 text-sm text-gray-400">BDT</span>
+                                        <span class="absolute left-3 top-2 text-sm text-gray-400">৳</span>
                                         <input type="number" id="mobile-max-price-input" min="0" max="{{ $maxPrice }}"
                                                value="{{ request('max_price', $maxPrice) }}"
                                                class="w-full pl-10 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500">

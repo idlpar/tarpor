@@ -107,7 +107,7 @@
                                     @if(isset($details['attributes']) && $details['attributes'] !== 'N/A')
                                         <p class="text-sm text-gray-500">{{ $details['attributes'] }}</p>
                                     @endif
-                                    <p class="text-md text-gray-800 font-bold">৳{{ number_format($details['price'], 2) }}</p>
+                                    <p class="text-md text-gray-800 font-bold">{{ format_taka($details['price']) }}</p>
                                 </div>
                             </div>
                             <div class="flex items-center justify-between mt-4 lg:mt-0">
@@ -144,7 +144,7 @@
                                         <span class="font-medium text-gray-800">Standard Shipping</span>
                                         <p class="text-sm text-gray-500">4-5 business days</p>
                                     </div>
-                                    <span class="font-semibold text-gray-800">৳50.00</span>
+                                    <span class="font-semibold text-gray-800">৳50</span>
                                 </label>
                                 <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
                                     <input type="radio" name="shipping" value="120" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
@@ -152,7 +152,7 @@
                                         <span class="font-medium text-gray-800">Express Shipping</span>
                                         <p class="text-sm text-gray-500">1-2 business days</p>
                                     </div>
-                                    <span class="font-semibold text-gray-800">৳120.00</span>
+                                    <span class="font-semibold text-gray-800">৳120</span>
                                 </label>
                             </div>
                         </div>
@@ -167,7 +167,7 @@
                         <div class="space-y-4 text-gray-600 font-medium border-t pt-6">
                             <div class="flex justify-between">
                                 <span>Subtotal</span>
-                                <span id="subtotal">৳{{ number_format(collect(session('cart'))->sum(function($item) { return $item['price'] * $item['quantity']; }), 2) }}</span>
+                                <span id="subtotal">{{ format_taka(collect(session('cart'))->sum(function($item) { return $item['price'] * $item['quantity']; })) }}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span>Shipping</span>
@@ -212,14 +212,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Bangladeshi Currency Formatter ---
     function formatCurrencyBD(num) {
-        const numStr = parseFloat(num).toFixed(2).toString();
-        let [integerPart, decimalPart] = numStr.split('.');
+        const numStr = parseInt(num).toString(); // Convert to integer and then string
+        let integerPart = numStr;
         const lastThree = integerPart.slice(-3);
         const otherNumbers = integerPart.slice(0, -3);
         if (otherNumbers !== '') {
             integerPart = otherNumbers.replace(/\B(?=(\d{2})+(?!\d))/g, ",") + ',' + lastThree;
         }
-        return `৳${integerPart}.${decimalPart}`;
+        return `৳${integerPart}`;
     }
 
     // --- DOM Elements ---
