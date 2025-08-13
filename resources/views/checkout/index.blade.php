@@ -25,68 +25,73 @@
 
             <div class="lg:grid lg:grid-cols-3 lg:gap-8 max-w-screen-xl mx-auto">
                 <!-- Billing Information - Elegant Card -->
-                <div class="lg:col-span-2 bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8 lg:mb-0 transform transition-all hover:shadow-2xl">
-                    <div class="flex items-center mb-6">
-                        <div class="bg-blue-100 p-2 rounded-full mr-4">
-                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                            </svg>
+                <div class="lg:col-span-2">
+                    <!-- Address Management Section -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8 transform transition-all hover:shadow-2xl">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-blue-100 p-2 rounded-full mr-4">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900">Billing Information</h2>
                         </div>
-                        <h2 class="text-2xl font-bold text-gray-900">Billing Information</h2>
-                    </div>
 
-                    <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
-                        @csrf
                         @guest
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <!-- First Name -->
-                            <div class="space-y-1">
-                                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
-                                <div class="relative">
-                                    <input type="text" name="first_name" id="first_name"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('first_name') border-red-500 @enderror"
-                                           value="{{ old('first_name') }}" required>
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                        </svg>
+                            <!-- Guest Checkout Form -->
+                            <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
+                                @csrf
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <!-- First Name -->
+                                    <div class="space-y-1">
+                                        <label for="first_name" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" name="first_name" id="first_name"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('first_name') border-red-500 @enderror"
+                                                   value="{{ old('first_name') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('first_name')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Last Name -->
+                                    <div class="space-y-1">
+                                        <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
+                                        <input type="text" name="last_name" id="last_name"
+                                               class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('last_name') border-red-500 @enderror"
+                                               value="{{ old('last_name') }}" required>
+                                        @error('last_name')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Email -->
+                                    <div class="md:col-span-2 space-y-1">
+                                        <label for="email" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="email" name="email" id="email"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('email') border-red-500 @enderror"
+                                                   value="{{ old('email') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('email')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
                                     </div>
                                 </div>
-                                @error('first_name')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Last Name -->
-                            <div class="space-y-1">
-                                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
-                                <input type="text" name="last_name" id="last_name"
-                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('last_name') border-red-500 @enderror"
-                                       value="{{ old('last_name') }}" required>
-                                @error('last_name')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <!-- Email -->
-                            <div class="md:col-span-2 space-y-1">
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
-                                <div class="relative">
-                                    <input type="email" name="email" id="email"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('email') border-red-500 @enderror"
-                                           value="{{ old('email') }}" required>
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                                @error('email')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                        </div>
+                            </form>
                         @else
+                            <!-- Address Management for Logged-in Users -->
                             <div class="mb-6">
                                 <h3 class="text-lg font-semibold text-gray-800 mb-4">Your Saved Addresses</h3>
                                 <div id="saved-addresses-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -123,24 +128,21 @@
                                     @endif
                                 </button>
                             </div>
-                        <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
+                            <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
                         @endguest
+                    </div>
 
-
-
-                        <!-- Submit Button -->
-                        <div class="mt-10">
-                            <button type="submit"
-                                    class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
-                                <svg class="w-5 h-5 mr-2 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                    <!-- Address Form (Initially Hidden) -->
+                    <div id="address-form-container" class="hidden bg-white rounded-2xl shadow-xl p-8 border border-gray-100 mb-8 transform transition-all hover:shadow-2xl">
+                        <div class="flex items-center mb-6">
+                            <div class="bg-blue-100 p-2 rounded-full mr-4">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                 </svg>
-                                Complete Secure Payment
-                            </button>
+                            </div>
+                            <h2 class="text-2xl font-bold text-gray-900" id="address-form-title">Add New Address</h2>
                         </div>
-                    </form>
-                    <div id="address-form-container" class="hidden mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
-                        <h3 class="text-lg font-semibold text-gray-800 mb-4" id="address-form-title">Add New Address</h3>
+
                         <form id="ajax-address-form" method="POST">
                             @csrf
                             <input type="hidden" name="_method" id="address-form-method" value="POST">
@@ -233,6 +235,25 @@
                             <div class="mt-6 flex justify-end space-x-3">
                                 <button type="button" id="cancel-address-form-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">Cancel</button>
                                 <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Save Address</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Order Submission Form -->
+                    <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 transform transition-all hover:shadow-2xl">
+                        <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
+                            @csrf
+                            <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
+
+                            <!-- Submit Button -->
+                            <div class="mt-10">
+                                <button type="submit"
+                                        class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
+                                    <svg class="w-5 h-5 mr-2 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                    Complete Secure Payment
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -394,13 +415,13 @@
                     value: checkoutValue,
                     currency: currency,
                     items: [
-                        @foreach($cart as $id => $details)
-                            {
-                                item_id: '{{ $id }}',
-                                item_name: '{{ $details['name'] }}',
-                                price: {{ $details['price'] }},
-                                quantity: {{ $details['quantity'] }}
-                            },
+                            @foreach($cart as $id => $details)
+                        {
+                            item_id: '{{ $id }}',
+                            item_name: '{{ $details['name'] }}',
+                            price: {{ $details['price'] }},
+                            quantity: {{ $details['quantity'] }}
+                        },
                         @endforeach
                     ]
                 });
@@ -469,24 +490,24 @@
                             'Accept': 'application/json'
                         }
                     })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            couponDiscount = 0;
-                            couponCode = ''; // Clear coupon code
-                            couponCodeInput.value = ''; // Clear coupon input field
-                            updateOrderSummary();
-                            // Use a less intrusive notification if possible in a real app
-                            couponFeedbackEl.textContent = data.message;
-                            couponFeedbackEl.className = 'text-sm mt-2 text-green-600';
-                        } else {
-                            alert(data.message);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error removing coupon:', error);
-                        alert('Failed to remove coupon.');
-                    });
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                couponDiscount = 0;
+                                couponCode = ''; // Clear coupon code
+                                couponCodeInput.value = ''; // Clear coupon input field
+                                updateOrderSummary();
+                                // Use a less intrusive notification if possible in a real app
+                                couponFeedbackEl.textContent = data.message;
+                                couponFeedbackEl.className = 'text-sm mt-2 text-green-600';
+                            } else {
+                                alert(data.message);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error removing coupon:', error);
+                            alert('Failed to remove coupon.');
+                        });
                 }
             });
 
@@ -582,7 +603,7 @@
                 district_id: document.getElementById('address-district'), // Hidden input for ID
                 upazila: document.getElementById('address-upazila'),
                 union: document.getElementById('address-union'),
-                street_address: document.getElementById('address-street_address'),
+                street_address: document.getElementById('street_address'),
                 postal_code: document.getElementById('address-postal_code'),
                 is_default: document.getElementById('address-is_default'),
             };
@@ -624,8 +645,6 @@
                                 districtAutocompleteInput.value = this.dataset.name;
                                 addressFields.district_id.value = this.dataset.id; // Update hidden input
                                 districtSuggestionsContainer.classList.add('hidden');
-                                // Optionally load upazilas for the selected district immediately
-                                // Removed loadUpazilas call
                             });
                             districtSuggestionsContainer.appendChild(div);
                         });
@@ -643,18 +662,6 @@
                 });
             }
 
-            // Modified loadDistricts to use the autocomplete input
-            function loadDistricts(selectedDistrictId = null) {
-                // This function is now primarily for setting the initial value if an address is being edited
-                if (selectedDistrictId && allDistricts.length > 0) { // Ensure allDistricts is loaded
-                    const selectedDistrict = allDistricts.find(d => d.id == selectedDistrictId);
-                    if (selectedDistrict) {
-                        districtAutocompleteInput.value = selectedDistrict.name;
-                        addressFields.district_id.value = selectedDistrict.id;
-                    }
-                }
-            }
-
             function clearAddressForm() {
                 for (const key in addressFields) {
                     if (addressFields.hasOwnProperty(key)) {
@@ -665,7 +672,6 @@
                             } else if (field.tagName === 'SELECT') {
                                 if (key !== 'label') {
                                     field.value = '';
-                                    // Removed disabling of district_id, upazila_id, union_id
                                 }
                             } else {
                                 field.value = '';
@@ -696,12 +702,6 @@
                     }
                 }
             }
-
-            // Dynamic Selects Logic
-            // The original districtSelect, upazilaSelect, unionSelect are now defined above
-            // and used by the autocomplete logic.
-
-            
 
             // Show/Hide Address Form
             if (addAddressBtn) {
@@ -911,8 +911,8 @@
                                 addressFields.street_address.value = address.street_address || '';
                                 addressFields.postal_code.value = address.postal_code || '';
                                 addressFields.is_default.checked = address.is_default;
-                                addressFields.upazila.value = address.upazila || ''; // Populate upazila
-                                addressFields.union.value = address.union || '';   // Populate union
+                                addressFields.upazila.value = address.upazila || '';
+                                addressFields.union.value = address.union || '';
 
                                 // Populate district autocomplete and hidden ID
                                 if (districtAutocompleteInput) {
@@ -978,128 +978,8 @@
 
             // Initial fetch of addresses for authenticated users
             @auth
-                fetchAddresses();
+            fetchAddresses();
             @endauth
-
-            // Guest Checkout Address Logic (modified to use autocomplete input for district)
-            const guestDistrictAutocompleteInput = document.getElementById('address-district-autocomplete'); // Assuming this is the same input for guest
-            const guestDistrictHiddenInput = document.getElementById('district_id'); // Hidden input for guest form
-            const guestUpazilaSelect = document.getElementById('upazila_id');
-            const guestUnionSelect = document.getElementById('union_id');
-
-            // Load Districts on page load for guest form
-            if (guestDistrictAutocompleteInput && guestDistrictHiddenInput && guestUpazilaSelect && guestUnionSelect) {
-                // For guest, we also need to load all districts for autocomplete
-                loadAllDistricts();
-
-                guestDistrictAutocompleteInput.addEventListener('input', function() {
-                    const query = this.value.toLowerCase();
-                    const guestDistrictSuggestionsContainer = document.getElementById('address-district-suggestions'); // Assuming same container
-                    guestDistrictSuggestionsContainer.innerHTML = '';
-
-                    if (query.length > 0) {
-                        const filteredDistricts = allDistricts.filter(district =>
-                            district.name.toLowerCase().includes(query) ||
-                            district.bn_name.toLowerCase().includes(query)
-                        );
-
-                        filteredDistricts.forEach(district => {
-                            const div = document.createElement('div');
-                            div.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
-                            div.textContent = `${district.name} (${district.bn_name})`;
-                            div.dataset.id = district.id;
-                            div.dataset.name = district.name;
-                            div.addEventListener('click', function() {
-                                guestDistrictAutocompleteInput.value = this.dataset.name;
-                                guestDistrictHiddenInput.value = this.dataset.id; // Update hidden guest district ID
-                                guestDistrictSuggestionsContainer.classList.add('hidden');
-                                // Removed loadGuestUpazilas call
-                            });
-                            guestDistrictSuggestionsContainer.appendChild(div);
-                        });
-                        guestDistrictSuggestionsContainer.classList.remove('hidden');
-                    } else {
-                        guestDistrictSuggestionsContainer.classList.add('hidden');
-                    }
-                });
-
-                // Hide suggestions when clicking outside for guest form
-                document.addEventListener('click', function(event) {
-                    if (!guestDistrictAutocompleteInput.contains(event.target) && !document.getElementById('address-district-suggestions').contains(event.target)) {
-                        document.getElementById('address-district-suggestions').classList.add('hidden');
-                    }
-                });
-
-                // Initial load for guest form if old value exists
-                if ("{{ old('district') }}" && "{{ old('district_id') }}") { // Check for both text and ID
-                    const oldDistrictId = "{{ old('district_id') }}";
-                    const oldUpazilaId = "{{ old('upazila_id') }}";
-                    const oldUnionId = "{{ old('union_id') }}";
-                    const oldDistrictName = "{{ old('district') }}";
-
-                    // Need to wait for allDistricts to be loaded
-                    loadAllDistricts().then(() => {
-                        const selectedDistrict = allDistricts.find(d => d.id == oldDistrictId);
-                        if (selectedDistrict) {
-                            guestDistrictAutocompleteInput.value = selectedDistrict.name;
-                            guestDistrictHiddenInput.value = selectedDistrict.id;
-                            loadGuestUpazilas(oldDistrictId, oldUpazilaId, oldUnionId);
-                        } else {
-                            // Fallback if ID not found, but name exists (e.g., if district was manually typed)
-                            guestDistrictAutocompleteInput.value = oldDistrictName;
-                            guestDistrictHiddenInput.value = ''; // Clear ID if not found in list
-                        }
-                    });
-                }
-
-                guestUpazilaSelect.addEventListener('change', function() {
-                    loadGuestUnions(this.value);
-                });
-            }
-
-            function loadGuestUpazilas(districtId, selectedUpazilaId = null, selectedUnionId = null) {
-                if (!guestUpazilaSelect || !guestUnionSelect) return; // Defensive check
-                guestUpazilaSelect.innerHTML = '<option value="">Select Thana/Upazila</option>';
-                guestUnionSelect.innerHTML = '<option value="">Select Union/Village</option>';
-                guestUpazilaSelect.disabled = true;
-                guestUnionSelect.disabled = true;
-
-                if (!districtId) return;
-
-                fetch(`/api/upazilas/${districtId}`)
-                    .then(response => response.json())
-                    .then(upazilas => {
-                        upazilas.forEach(upazila => {
-                            guestUpazilaSelect.innerHTML += `<option value="${upazila.id}">${upazila.name}</option>`;
-                        });
-                        guestUpazilaSelect.disabled = false;
-                        if (selectedUpazilaId) {
-                            guestUpazilaSelect.value = selectedUpazilaId;
-                            loadGuestUnions(selectedUpazilaId, selectedUnionId);
-                        }
-                    });
-            }
-
-            function loadGuestUnions(upazilaId, selectedUnionId = null) {
-                if (!guestUnionSelect) return; // Defensive check
-                guestUnionSelect.innerHTML = '<option value="">Select Union/Village</option>';
-                guestUnionSelect.disabled = true;
-
-                if (!upazilaId) return;
-
-                fetch(`/api/unions/${upazilaId}`)
-                    .then(response => response.json())
-                    .then(unions => {
-                        unions.forEach(union => {
-                            unionSelect.innerHTML += `<option value="${union.id}">${union.name}</option>`;
-                        });
-                        unionSelect.disabled = false;
-                        if (selectedUnionId) {
-                            unionSelect.value = selectedUnionId;
-                        }
-                    });
-            }
-
         });
     </script>
 @endpush
