@@ -14,22 +14,36 @@ class CheckoutController extends Controller
         $cart = session()->get('cart', []);
         $coupon = session()->get('coupon');
         $deliveryCharge = session()->get('delivery_charge', 0);
-        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge'));
+        $addresses = collect();
+        $defaultAddress = null;
+
+        if (Auth::check()) {
+            $addresses = Auth::user()->addresses()->orderByDesc('is_default')->get();
+            $defaultAddress = $addresses->where('is_default', true)->first() ?? $addresses->first();
+        }
+
+        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge', 'addresses', 'defaultAddress'));
     }
 
     public function placeOrder(Request $request)
     {
-        $request->validate([
-            'first_name' => 'required|string|max:255',
-            'last_name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+        $rules = [
             'phone' => 'required|string|max:20',
-            'address' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
-            'state' => 'required|string|max:255',
-            'zip' => 'required|string|max:10',
-            'country' => 'required|string|max:255',
-        ]);
+            'street_address' => 'required|string|max:255',
+            'district' => 'required|string|max:255',
+            'upazila' => 'required|string|max:255',
+            'union' => 'required|string|max:255',
+            'postal_code' => 'required|string|max:10',
+            'note' => 'nullable|string',
+        ];
+
+        if (!Auth::check()) {
+            $rules['first_name'] = 'required|string|max:255';
+            $rules['last_name'] = 'required|string|max:255';
+            $rules['email'] = 'required|email|max:255';
+        }
+
+        $request->validate($rules);
 
         $cart = session()->get('cart', []);
         if (empty($cart)) {
@@ -51,6 +65,28 @@ class CheckoutController extends Controller
             $finalTotal = 0;
         }
 
+        $addressData = [
+            'phone' => $request->phone,
+            'street_address' => $request->street_address,
+            'district' => $request->district,
+            'upazila' => $request->upazila,
+            'union' => $request->union,
+            'postal_code' => $request->postal_code,
+            'note' => $request->note,
+        ];
+
+        if (Auth::check()) {
+            $addressData['user_id'] = Auth::id();
+            if ($request->has('is_default')) {
+                Auth::user()->addresses()->update(['is_default' => false]);
+                $addressData['is_default'] = true;
+            }
+            $address = \App\Models\Address::create($addressData);
+        } else {
+            // For guests, create an address record without a user_id
+            $address = \App\Models\Address::create($addressData);
+        }
+
         foreach ($cart as $id => $details) {
             $productId = is_numeric($id) ? $id : (int) str_replace('product_', '', $id);
 
@@ -59,7 +95,7 @@ class CheckoutController extends Controller
                 'product_id' => $productId,
                 'quantity' => $details['quantity'],
                 'total_price' => $details['price'] * $details['quantity'],
-                'address' => $request->address,
+                'address_id' => $address->id, // Store the address ID
                 'status' => 'pending',
                 'attribution_data' => json_encode(session()->get('ad_tracking_data', [])),
             ]);
@@ -141,7 +177,7 @@ class CheckoutController extends Controller
 
     public function showOrderSuccess($order_id)
     {
-        $order = Order::with('products')->findOrFail($order_id);
+        $order = Order::with(['products', 'address'])->findOrFail($order_id);
         return view('checkout.success', compact('order'));
     }
 }

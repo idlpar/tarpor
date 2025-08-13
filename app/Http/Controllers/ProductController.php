@@ -143,7 +143,8 @@ class ProductController extends Controller
 
         $validated = $this->validateProduct($request);
 
-        DB::transaction(function () use ($validated, $request) {
+        $product = null; // Declare $product outside the transaction
+        DB::transaction(function () use ($validated, $request, &$product) {
             $product = new Product();
             $product->fill($validated);
             $product->save();
@@ -268,13 +269,27 @@ class ProductController extends Controller
         });
 
         if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
+            $response = [
                 'success' => true,
                 'message' => 'Product created successfully.',
-                'redirect' => route('products.index')
-            ]);
+            ];
+
+            if ($request->has('save_exit')) {
+                $response['redirect'] = route('products.index');
+            } else {
+                $response['redirect'] = route('products.edit', $product->id);
+            }
+
+            return response()->json($response);
         }
-        return redirect()->route('products.index')->with('success', 'Product created successfully.');
+
+        if ($request->has('save_exit')) {
+            return redirect()->route('products.index')
+                ->with('success', 'Product created successfully');
+        }
+
+        return redirect()->route('products.edit', $product->id)
+            ->with('success', 'Product created successfully');
     }
 
     public function show(Request $request, Product $product)

@@ -37,115 +37,191 @@
 
                     <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
                         @csrf
+                        @guest
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <!-- First Name -->
                             <div class="space-y-1">
-                                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name</label>
+                                <label for="first_name" class="block text-sm font-medium text-gray-700">First Name <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input type="text" name="first_name" id="first_name"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                           required>
+                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('first_name') border-red-500 @enderror"
+                                           value="{{ old('first_name') }}" required>
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                                         </svg>
                                     </div>
                                 </div>
+                                @error('first_name')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <!-- Last Name -->
                             <div class="space-y-1">
-                                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name</label>
+                                <label for="last_name" class="block text-sm font-medium text-gray-700">Last Name <span class="text-red-500">*</span></label>
                                 <input type="text" name="last_name" id="last_name"
-                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                       required>
+                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('last_name') border-red-500 @enderror"
+                                       value="{{ old('last_name') }}" required>
+                                @error('last_name')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <!-- Email -->
                             <div class="md:col-span-2 space-y-1">
-                                <label for="email" class="block text-sm font-medium text-gray-700">Email Address</label>
+                                <label for="email" class="block text-sm font-medium text-gray-700">Email Address <span class="text-red-500">*</span></label>
                                 <div class="relative">
                                     <input type="email" name="email" id="email"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                           required>
+                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('email') border-red-500 @enderror"
+                                           value="{{ old('email') }}" required>
                                     <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
                                         </svg>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Phone -->
-                            <div class="md:col-span-2 space-y-1">
-                                <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number</label>
-                                <div class="relative">
-                                    <input type="text" name="phone" id="phone"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                           required>
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Address -->
-                            <div class="md:col-span-2 space-y-1">
-                                <label for="address" class="block text-sm font-medium text-gray-700">Street Address</label>
-                                <div class="relative">
-                                    <input type="text" name="address" id="address"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                           required>
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- City -->
-                            <div class="space-y-1">
-                                <label for="city" class="block text-sm font-medium text-gray-700">City</label>
-                                <input type="text" name="city" id="city"
-                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                       required>
-                            </div>
-
-                            <!-- State -->
-                            <div class="space-y-1">
-                                <label for="state" class="block text-sm font-medium text-gray-700">State/Province</label>
-                                <input type="text" name="state" id="state"
-                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                       required>
-                            </div>
-
-                            <!-- ZIP -->
-                            <div class="space-y-1">
-                                <label for="zip" class="block text-sm font-medium text-gray-700">ZIP/Postal Code</label>
-                                <input type="text" name="zip" id="zip"
-                                       class="w-full px-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                       required>
-                            </div>
-
-                            <!-- Country -->
-                            <div class="space-y-1">
-                                <label for="country" class="block text-sm font-medium text-gray-700">Country</label>
-                                <div class="relative">
-                                    <input type="text" name="country" id="country"
-                                           class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300"
-                                           required>
-                                    <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                        </svg>
-                                    </div>
-                                </div>
+                                @error('email')
+                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
+                        @else
+                            <div class="mb-6">
+                                <h3 class="text-lg font-semibold text-gray-800 mb-4">Your Saved Addresses</h3>
+                                <div id="saved-addresses-container" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    @forelse($addresses as $address)
+                                        <div class="border rounded-lg p-4 flex flex-col justify-between address-item {{ $defaultAddress && $defaultAddress->id === $address->id ? 'bg-blue-50 border-blue-500' : 'border-gray-200' }}" data-address-id="{{ $address->id }}">
+                                            <div>
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <p class="font-medium text-gray-900">{{ $address->label }}</p>
+                                                    @if($address->is_default)
+                                                        <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>
+                                                    @endif
+                                                </div>
+                                                <p class="text-gray-700 text-sm">{{ $address->street_address }}, {{ $address->union }}, {{ $address->upazila }}, {{ $address->district }}, {{ $address->division }} - {{ $address->postal_code }}</p>
+                                            </div>
+                                            <div class="flex space-x-2 mt-4">
+                                                <button type="button" class="use-address-btn w-full px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="{{ $address->id }}">Deliver to this Address</button>
+                                                <button type="button" class="edit-address-btn px-3 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 transition-colors" data-address-id="{{ $address->id }}"><i class="fas fa-edit"></i></button>
+                                                @if(!$address->is_default)
+                                                    <button type="button" class="make-default-btn px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300 transition-colors" data-address-id="{{ $address->id }}"><i class="fas fa-star"></i></button>
+                                                @endif
+                                                <button type="button" class="delete-address-btn px-3 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors" data-address-id="{{ $address->id }}"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    @empty
+                                        <p class="text-gray-600 md:col-span-2">No saved addresses. Please add one.</p>
+                                    @endforelse
+                                </div>
+                                <button type="button" id="add-new-address-btn" class="mt-4 px-4 py-2 bg-green-500 text-white rounded-md hover:bg-green-600 transition-colors">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    @if($addresses->isEmpty())
+                                        Add New Address
+                                    @else
+                                        Add Another Address
+                                    @endif
+                                </button>
+                            </div>
+
+                        <div id="address-form-container" class="hidden mt-6 p-4 border border-gray-200 rounded-lg bg-gray-50">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-4" id="address-form-title">Add New Address</h3>
+                            <form id="ajax-address-form" method="POST">
+                                @csrf
+                                <input type="hidden" name="_method" id="address-form-method" value="POST">
+                                <input type="hidden" name="address_id" id="address-form-id">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label for="label" class="block text-sm font-medium text-gray-700">Label</label>
+                                        <select name="label" id="address-label" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2">
+                                            <option value="Home" selected>Home</option>
+                                            <option value="Work">Work</option>
+                                        </select>
+                                        <p class="text-red-500 text-sm mt-1" id="error-label"></p>
+                                    </div>
+
+                                    <div class="md:col-span-2 space-y-1">
+                                        <label for="phone" class="block text-sm font-medium text-gray-700">Phone Number <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" name="phone" id="phone"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('phone') border-red-500 @enderror"
+                                                   value="{{ old('phone', Auth::user()->phone ?? '') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('phone')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div class="md:col-span-2 space-y-1">
+                                        <label for="street_address" class="block text-sm font-medium text-gray-700">House, Street, Area <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" name="street_address" id="street_address"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-300 @error('street_address') border-red-500 @enderror"
+                                                   value="{{ old('street_address') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('street_address')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <div>
+                                        <label for="address-union" class="block text-sm font-medium text-gray-700">Union/Village <span class="text-red-500">*</span></label>
+                                        <input type="text" name="union" id="address-union" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2" required>
+                                        <p class="text-red-500 text-sm mt-1" id="error-union"></p>
+                                    </div>
+
+                                    <div>
+                                        <label for="address-upazila" class="block text-sm font-medium text-gray-700">Thana/Upazila <span class="text-red-500">*</span></label>
+                                        <input type="text" name="upazila" id="address-upazila" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2" required>
+                                        <p class="text-red-500 text-sm mt-1" id="error-upazila"></p>
+                                    </div>
+
+                                    <div>
+                                        <label for="address-district" class="block text-sm font-medium text-gray-700">District <span class="text-red-500">*</span></label>
+                                        <input type="text" name="district" id="address-district" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2" required>
+                                        <p class="text-red-500 text-sm mt-1" id="error-district"></p>
+                                    </div>
+
+                                    <div>
+                                        <label for="address-postal_code" class="block text-sm font-medium text-gray-700">Postal Code <span class="text-red-500">*</span></label>
+                                        <input type="text" name="postal_code" id="address-postal_code" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2" required>
+                                        <p class="text-red-500 text-sm mt-1" id="error-postal_code"></p>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <label for="note" class="block text-sm font-medium text-gray-700">Note or Specific Instruction</label>
+                                        <textarea name="note" id="note" rows="3" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 p-2"></textarea>
+                                    </div>
+
+                                    <div class="md:col-span-2">
+                                        <div class="flex items-center">
+                                            <input type="checkbox" name="is_default" id="address-is_default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                            <label for="address-is_default" class="ml-2 block text-sm text-gray-900">Set as default address</label>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex justify-end space-x-3">
+                                    <button type="button" id="cancel-address-form-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 transition-colors">Cancel</button>
+                                    <button type="submit" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors">Save Address</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
+                        @endguest
+
+
 
                         <!-- Submit Button -->
                         <div class="mt-10">
@@ -487,6 +563,460 @@
 
             // Initial call to update summary on page load
             updateOrderSummary();
+
+            // New Address Management Logic
+            const addAddressBtn = document.getElementById('add-new-address-btn');
+            const addressFormContainer = document.getElementById('address-form-container');
+            const cancelAddressFormBtn = document.getElementById('cancel-address-form-btn');
+            const ajaxAddressForm = document.getElementById('ajax-address-form');
+            const addressFormTitle = document.getElementById('address-form-title');
+            const addressFormMethod = document.getElementById('address-form-method');
+            const addressFormId = document.getElementById('address-form-id');
+            const savedAddressesContainer = document.getElementById('saved-addresses-container');
+            const selectedAddressIdInput = document.getElementById('selected-address-id');
+
+            const addressFields = {
+                label: document.getElementById('address-label'),
+                district_id: document.getElementById('address-district'),
+                upazila_id: document.getElementById('address-upazila'),
+                union_id: document.getElementById('address-union'),
+                street_address: document.getElementById('address-street_address'),
+                postal_code: document.getElementById('address-postal_code'),
+                is_default: document.getElementById('address-is_default'),
+            };
+
+            function clearAddressForm() {
+                for (const key in addressFields) {
+                    if (addressFields.hasOwnProperty(key)) {
+                        const field = addressFields[key];
+                        if (field.type === 'checkbox') {
+                            field.checked = false;
+                        } else if (field.tagName === 'SELECT') {
+                            if (key !== 'label') {
+                                field.value = '';
+                                if (key !== 'district_id') {
+                                    field.disabled = true;
+                                }
+                            }
+                        } else {
+                            field.value = '';
+                        }
+                    }
+                }
+                addressFormTitle.textContent = 'Add New Address';
+                addressFormMethod.value = 'POST';
+                addressFormId.value = '';
+                clearValidationErrors();
+            }
+
+            function clearValidationErrors() {
+                document.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
+            }
+
+            function displayValidationErrors(errors) {
+                clearValidationErrors();
+                for (const field in errors) {
+                    if (errors.hasOwnProperty(field)) {
+                        const errorElement = document.getElementById(`error-${field}`);
+                        if (errorElement) {
+                            errorElement.textContent = errors[field][0];
+                        }
+                    }
+                }
+            }
+
+            // Dynamic Selects Logic
+            const districtSelect = addressFields.district_id;
+            const upazilaSelect = addressFields.upazila_id;
+            const unionSelect = addressFields.union_id;
+
+            function loadDistricts(selectedDistrictId = null) {
+                fetch('/api/districts')
+                    .then(response => response.json())
+                    .then(districts => {
+                        districtSelect.innerHTML = '<option value="">Select District</option>';
+                        districts.forEach(district => {
+                            districtSelect.innerHTML += `<option value="${district.id}">${district.name}</option>`;
+                        });
+                        if (selectedDistrictId) {
+                            districtSelect.value = selectedDistrictId;
+                        }
+                    });
+            }
+
+            function loadUpazilas(districtId, selectedUpazilaId = null, selectedUnionId = null) {
+                fetch(`/api/upazilas/${districtId}`)
+                    .then(response => response.json())
+                    .then(upazilas => {
+                        upazilaSelect.innerHTML = '<option value="">Select Thana/Upazila</option>';
+                        upazilas.forEach(upazila => {
+                            upazilaSelect.innerHTML += `<option value="${upazila.id}">${upazila.name}</option>`;
+                        });
+                        upazilaSelect.disabled = false;
+                        if (selectedUpazilaId) {
+                            upazilaSelect.value = selectedUpazilaId;
+                            loadUnions(selectedUpazilaId, selectedUnionId);
+                        }
+                        unionSelect.innerHTML = '<option value="">Select Union/Village</option>';
+                        unionSelect.disabled = true;
+                    });
+            }
+
+            function loadUnions(upazilaId, selectedUnionId = null) {
+                fetch(`/api/unions/${upazilaId}`)
+                    .then(response => response.json())
+                    .then(unions => {
+                        unionSelect.innerHTML = '<option value="">Select Union/Village</option>';
+                        unions.forEach(union => {
+                            unionSelect.innerHTML += `<option value="${union.id}">${union.name}</option>`;
+                        });
+                        unionSelect.disabled = false;
+                        if (selectedUnionId) {
+                            unionSelect.value = selectedUnionId;
+                        }
+                    });
+            }
+
+            // Show/Hide Address Form
+            if (addAddressBtn) {
+                addAddressBtn.addEventListener('click', function() {
+                    addressFormContainer.classList.remove('hidden');
+                    addAddressBtn.classList.add('hidden');
+                    clearAddressForm();
+                    loadDistricts();
+                });
+            }
+
+            if (cancelAddressFormBtn) {
+                cancelAddressFormBtn.addEventListener('click', function() {
+                    addressFormContainer.classList.add('hidden');
+                    addAddressBtn.classList.remove('hidden');
+                    clearAddressForm();
+                });
+            }
+
+            // Handle AJAX Address Form Submission
+            if (ajaxAddressForm) {
+                ajaxAddressForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+
+                    const formData = new FormData(this);
+                    const method = addressFormMethod.value;
+                    const addressId = addressFormId.value;
+                    let url = '{{ route('profile.addresses.store') }}';
+
+                    if (method === 'PUT') {
+                        url = `/profile/addresses/${addressId}`;
+                    }
+
+                    try {
+                        const response = await fetch(url, {
+                            method: 'POST', // Always POST for Laravel, _method handles PUT
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'application/json',
+                            },
+                            body: formData,
+                        });
+
+                        const data = await response.json();
+
+                        if (!response.ok) {
+                            if (response.status === 422 && data.errors) {
+                                displayValidationErrors(data.errors);
+                            } else {
+                                Swal.fire('Error', data.message || 'An unexpected error occurred.', 'error');
+                            }
+                            return;
+                        }
+
+                        Swal.fire('Success', data.message, 'success');
+                        addressFormContainer.classList.add('hidden');
+                        addAddressBtn.classList.remove('hidden');
+                        clearAddressForm();
+                        // Reload addresses or dynamically add/update them
+                        fetchAddresses();
+
+                    } catch (error) {
+                        console.error('Error saving address:', error);
+                        Swal.fire('Error', 'Failed to save address.', 'error');
+                    }
+                });
+            }
+
+            // Fetch and Render Addresses
+            async function fetchAddresses() {
+                try {
+                    const response = await fetch('/api/user/addresses', {
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest',
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (data.success) {
+                        savedAddressesContainer.innerHTML = '';
+                        if (data.addresses.length === 0) {
+                            savedAddressesContainer.innerHTML = '<p class="text-gray-600 md:col-span-2">No saved addresses. Please add one.</p>';
+                            addAddressBtn.textContent = 'Add New Address';
+                            selectedAddressIdInput.value = '';
+                        } else {
+                            addAddressBtn.innerHTML = '<i class="fas fa-plus mr-2"></i> Add Another Address';
+                            data.addresses.forEach(address => {
+                                const isDefault = address.is_default;
+                                const isSelected = selectedAddressIdInput.value == address.id;
+                                const addressHtml = `
+                                    <div class="border rounded-lg p-4 flex flex-col justify-between address-item ${isSelected ? 'bg-blue-50 border-blue-500' : 'border-gray-200'}" data-address-id="${address.id}">
+                                        <div>
+                                            <div class="flex justify-between items-center mb-2">
+                                                <p class="font-medium text-gray-900">${address.label || ''}</p>
+                                                ${isDefault ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>' : ''}
+                                            </div>
+                                            <p class="text-gray-700 text-sm">${address.street_address}, ${address.union.name}, ${address.upazila.name}, ${address.district.name} - ${address.postal_code}</p>
+                                        </div>
+                                        <div class="flex space-x-2 mt-4">
+                                            <button type="button" class="use-address-btn w-full px-3 py-2 ${isSelected ? 'bg-blue-600' : 'bg-blue-500'} text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="${address.id}">${isSelected ? 'Selected' : 'Deliver to this Address'}</button>
+                                            <button type="button" class="edit-address-btn px-3 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-edit"></i></button>
+                                            ${!isDefault ? `<button type="button" class="make-default-btn px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300 transition-colors" data-address-id="${address.id}"><i class="fas fa-star"></i></button>` : ''}
+                                            <button type="button" class="delete-address-btn px-3 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-trash"></i></button>
+                                        </div>
+                                    </div>
+                                `;
+                                savedAddressesContainer.insertAdjacentHTML('beforeend', addressHtml);
+                            });
+                            // Ensure a default address is selected if available
+                            if (data.defaultAddress && !selectedAddressIdInput.value) {
+                                selectedAddressIdInput.value = data.defaultAddress.id;
+                                highlightSelectedAddress(data.defaultAddress.id);
+                            }
+                        }
+                    } else {
+                        Swal.fire('Error', data.message || 'Failed to load addresses.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Error fetching addresses:', error);
+                    Swal.fire('Error', 'Failed to load addresses.', 'error');
+                }
+            }
+
+            // Highlight selected address
+            function highlightSelectedAddress(addressId) {
+                document.querySelectorAll('.address-item').forEach(item => {
+                    item.classList.remove('bg-blue-50', 'border-blue-500');
+                    const useBtn = item.querySelector('.use-address-btn');
+                    useBtn.textContent = 'Deliver to this Address';
+                    useBtn.classList.remove('bg-blue-600');
+                    useBtn.classList.add('bg-blue-500');
+                });
+                const selectedItem = document.querySelector(`.address-item[data-address-id="${addressId}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('bg-blue-50', 'border-blue-500');
+                    const useBtn = selectedItem.querySelector('.use-address-btn');
+                    useBtn.textContent = 'Selected';
+                    useBtn.classList.remove('bg-blue-500');
+                    useBtn.classList.add('bg-blue-600');
+                }
+            }
+
+            // Event delegation for Use, Make Default, Edit, Delete buttons
+            if (savedAddressesContainer) {
+                savedAddressesContainer.addEventListener('click', async function(event) {
+                    const target = event.target.closest('button');
+                    if (!target) return;
+
+                    const addressId = target.dataset.addressId;
+
+                    // Use Address
+                    if (target.classList.contains('use-address-btn')) {
+                        selectedAddressIdInput.value = addressId;
+                        highlightSelectedAddress(addressId);
+                        Swal.fire('Address Selected', 'Your chosen address has been set for this order.', 'success');
+                    }
+
+                    // Make Default
+                    if (target.classList.contains('make-default-btn')) {
+                        try {
+                            const response = await fetch(`/api/user/addresses/${addressId}/set-default`, {
+                                method: 'POST',
+                                headers: {
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            });
+                            const data = await response.json();
+                            if (data.success) {
+                                Swal.fire('Success', data.message, 'success');
+                                fetchAddresses(); // Re-fetch to update UI
+                            } else {
+                                Swal.fire('Error', data.message || 'Failed to set default address.', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error setting default address:', error);
+                            Swal.fire('Error', 'Failed to set default address.', 'error');
+                        }
+                    }
+
+                    // Edit Address
+                    if (target.classList.contains('edit-address-btn')) {
+                        try {
+                            const response = await fetch(`/api/user/addresses/${addressId}`, {
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                },
+                            });
+                            const data = await response.json();
+
+                            if (data.success && data.address) {
+                                const address = data.address;
+                                addressFormContainer.classList.remove('hidden');
+                                addAddressBtn.classList.add('hidden');
+                                addressFormTitle.textContent = 'Edit Address';
+                                addressFormMethod.value = 'PUT';
+                                addressFormId.value = address.id;
+
+                                // Populate form fields
+                                addressFields.label.value = address.label || '';
+                                addressFields.street_address.value = address.street_address || '';
+                                addressFields.postal_code.value = address.postal_code || '';
+                                addressFields.is_default.checked = address.is_default;
+
+                                // Handle dynamic selects for existing address
+                                loadDistricts(address.district_id);
+                                loadUpazilas(address.district_id, address.upazila_id, address.union_id);
+
+                                clearValidationErrors();
+
+                            } else {
+                                Swal.fire('Error', data.message || 'Failed to load address for editing.', 'error');
+                            }
+                        } catch (error) {
+                            console.error('Error fetching address for edit:', error);
+                            Swal.fire('Error', 'Failed to load address for editing.', 'error');
+                        }
+                    }
+
+                    // Delete Address
+                    if (target.classList.contains('delete-address-btn')) {
+                        Swal.fire({
+                            title: 'Are you sure?',
+                            text: "You won't be able to revert this!",
+                            icon: 'warning',
+                            showCancelButton: true,
+                            confirmButtonColor: '#d33',
+                            cancelButtonColor: '#3085d6',
+                            confirmButtonText: 'Yes, delete it!',
+                            focusCancel: true
+                        }).then(async (result) => {
+                            if (result.isConfirmed) {
+                                try {
+                                    const response = await fetch(`/profile/addresses/${addressId}`, {
+                                        method: 'DELETE',
+                                        headers: {
+                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                            'Accept': 'application/json',
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                        },
+                                    });
+                                    const data = await response.json();
+                                    if (data.success) {
+                                        Swal.fire(
+                                            'Deleted!',
+                                            'Your address has been deleted.',
+                                            'success'
+                                        )
+                                        fetchAddresses(); // Re-fetch to update UI
+                                    } else {
+                                        Swal.fire('Error', data.message || 'Failed to delete address.', 'error');
+                                    }
+                                } catch (error) {
+                                    console.error('Error deleting address:', error);
+                                    Swal.fire('Error', 'Failed to delete address.', 'error');
+                                }
+                            }
+                        })
+                    }
+                });
+            }
+
+            // Initial fetch of addresses for authenticated users
+            @auth
+                fetchAddresses();
+            @endauth
+
+            // Guest Checkout Address Logic
+            const guestDistrictSelect = document.getElementById('district_id');
+            const guestUpazilaSelect = document.getElementById('upazila_id');
+            const guestUnionSelect = document.getElementById('union_id');
+
+            // Load Districts on page load for guest form
+            if (guestDistrictSelect) {
+                fetch('/api/districts')
+                    .then(response => response.json())
+                    .then(districts => {
+                        districts.forEach(district => {
+                            guestDistrictSelect.innerHTML += `<option value="${district.id}">${district.name}</option>`;
+                        });
+                        // Pre-select old value if available
+                        if ("{{ old('district_id') }}") {
+                            guestDistrictSelect.value = "{{ old('district_id') }}";
+                            loadGuestUpazilas("{{ old('district_id') }}", "{{ old('upazila_id') }}", "{{ old('union_id') }}");
+                        }
+                    });
+
+                guestDistrictSelect.addEventListener('change', function() {
+                    loadGuestUpazilas(this.value);
+                });
+            }
+
+            function loadGuestUpazilas(districtId, selectedUpazilaId = null, selectedUnionId = null) {
+                guestUpazilaSelect.innerHTML = '<option value="">Select Thana/Upazila</option>';
+                guestUnionSelect.innerHTML = '<option value="">Select Union/Village</option>';
+                guestUpazilaSelect.disabled = true;
+                guestUnionSelect.disabled = true;
+
+                if (!districtId) return;
+
+                fetch(`/api/upazilas/${districtId}`)
+                    .then(response => response.json())
+                    .then(upazilas => {
+                        upazilas.forEach(upazila => {
+                            guestUpazilaSelect.innerHTML += `<option value="${upazila.id}">${upazila.name}</option>`;
+                        });
+                        guestUpazilaSelect.disabled = false;
+                        if (selectedUpazilaId) {
+                            guestUpazilaSelect.value = selectedUpazilaId;
+                            loadGuestUnions(selectedUpazilaId, selectedUnionId);
+                        }
+                    });
+            }
+
+            guestUpazilaSelect.addEventListener('change', function() {
+                loadGuestUnions(this.value);
+            });
+
+            function loadGuestUnions(upazilaId, selectedUnionId = null) {
+                guestUnionSelect.innerHTML = '<option value="">Select Union/Village</option>';
+                guestUnionSelect.disabled = true;
+
+                if (!upazilaId) return;
+
+                fetch(`/api/unions/${upazilaId}`)
+                    .then(response => response.json())
+                    .then(unions => {
+                        unions.forEach(union => {
+                            unionSelect.innerHTML += `<option value="${union.id}">${union.name}</option>`;
+                        });
+                        unionSelect.disabled = false;
+                        if (selectedUnionId) {
+                            guestUnionSelect.value = selectedUnionId;
+                        }
+                    });
+            }
+
         });
     </script>
 @endpush

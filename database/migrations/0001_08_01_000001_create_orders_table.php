@@ -18,6 +18,8 @@ return new class extends Migration
             $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->json('attribution_data')->nullable();
             $table->timestamps();
+
+            $table->foreignId('address_id')->nullable()->constrained()->onDelete('set null');
         });
     }
 

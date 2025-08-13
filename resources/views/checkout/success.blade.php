@@ -1,30 +1,119 @@
 @extends('layouts.app')
 
-@section('title', 'Order Confirmation')
+@section('title', 'Order Confirmation & Voucher')
 
 @section('content')
-    <div class="container mx-auto px-4 py-8 text-center">
-        <h1 class="text-4xl font-bold text-green-600 mb-4">Thank You for Your Order!</h1>
-        <p class="text-lg text-gray-700 mb-8">Your order #{{ $order->id }} has been successfully placed.</p>
+    <div class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-8 print:shadow-none print:p-0">
+                <!-- Voucher Header -->
+                <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b-2 print:border-gray-800">
+                    <div class="text-left">
+                        <h1 class="text-3xl font-bold text-gray-800">Order Voucher</h1>
+                        <p class="text-sm text-gray-600">#{{ $order->id }}</p>
+                    </div>
+                    <div class="text-right">
+                        <!-- Replace with your actual logo -->
+                        <img src="/logos/logo.png" alt="Company Logo" class="h-12 w-auto inline-block">
+                    </div>
+                </div>
 
-        <div class="bg-white shadow-md rounded-lg p-6 max-w-2xl mx-auto">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Order Details</h2>
-            <div class="text-left space-y-2">
-                <p><strong>Order ID:</strong> {{ $order->id }}</p>
-                <p><strong>Total Amount:</strong> {{ format_taka($order->total) }}</p>
-                <p><strong>Status:</strong> {{ ucfirst($order->status) }}</p>
-                <p><strong>Order Date:</strong> {{ $order->created_at->format('M d, Y H:i A') }}</p>
-            </div>
+                <!-- Order & Customer Details -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <div class="text-left">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Order Information</h2>
+                        <p class="text-gray-700"><strong>Order Date:</strong> {{ $order->created_at->format('M d, Y H:i A') }}</p>
+                        <p class="text-gray-700"><strong>Status:</strong> <span class="font-medium text-blue-600">{{ ucfirst($order->status) }}</span></p>
+                        <p class="text-gray-700"><strong>Payment Status:</strong> <span class="font-medium text-green-600">Paid</span></p>
+                    </div>
+                    <div class="text-left">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-2">Customer Information</h2>
+                        <p class="text-gray-700"><strong>Name:</strong> {{ $order->user->name ?? 'Guest' }}</p>
+                        <p class="text-gray-700"><strong>Email:</strong> {{ $order->user->email ?? 'N/A' }}</p>
+                        <p class="text-gray-700"><strong>Phone:</strong> {{ $order->address->phone ?? 'N/A' }}</p>
+                    </div>
+                </div>
 
-            <h3 class="text-xl font-semibold text-gray-800 mt-6 mb-3">Items Ordered:</h3>
-            <ul class="text-left space-y-2">
-                @foreach($order->products as $item)
-                    <li>{{ $item->pivot->quantity }} x {{ $item->name ?? 'N/A' }} ({{ format_taka($item->pivot->price) }} each)</li>
-                @endforeach
-            </ul>
+                <!-- Shipping Address -->
+                <div class="mb-6 text-left">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-2">Shipping Address</h2>
+                    <p class="text-gray-700">{{ $order->address->street_address ?? 'N/A' }}</p>
+                    <p class="text-gray-700">{{ $order->address->union ?? 'N/A' }}, {{ $order->address->upazila ?? 'N/A' }}</p>
+                    <p class="text-gray-700">{{ $order->address->district ?? 'N/A' }} - {{ $order->address->postal_code ?? 'N/A' }}</p>
+                    @if($order->address->note)
+                        <p class="text-gray-700 mt-2"><strong>Note:</strong> {{ Str::limit($order->address->note, 100) }}</p>
+                    @endif
+                </div>
 
-            <div class="mt-8">
-                <a href="{{ route('home') }}" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200">Continue Shopping</a>
+                <!-- Order Items Table -->
+                <div class="mb-6">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-3">Items Ordered</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full bg-white border border-gray-200 rounded-lg">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal print:bg-gray-200">
+                                    <th class="py-3 px-6 text-left">Product</th>
+                                    <th class="py-3 px-6 text-center">Qty</th>
+                                    <th class="py-3 px-6 text-right">Price</th>
+                                    <th class="py-3 px-6 text-right">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-gray-700 text-sm font-light">
+                                @foreach($order->products as $item)
+                                    <tr class="border-b border-gray-200 hover:bg-gray-50 print:border-gray-400">
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ $item->name ?? 'N/A' }}</td>
+                                        <td class="py-3 px-6 text-center">{{ $item->pivot->quantity }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->pivot->price) }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->pivot->quantity * $item->pivot->price) }}</td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Order Summary -->
+                <div class="flex justify-end mb-6">
+                    <div class="w-full md:w-1/2">
+                        <div class="flex justify-between py-2 border-b border-gray-200">
+                            <span class="text-gray-700">Subtotal:</span>
+                            <span class="font-medium">{{ format_taka($order->total_price - ($order->delivery_charge ?? 0) - ($order->coupon_discount ?? 0)) }}</span>
+                        </div>
+                        <div class="flex justify-between py-2 border-b border-gray-200">
+                            <span class="text-gray-700">Shipping:</span>
+                            <span class="font-medium">{{ format_taka($order->delivery_charge ?? 0) }}</span>
+                        </div>
+                        @if($order->coupon_discount)
+                            <div class="flex justify-between py-2 border-b border-gray-200">
+                                <span class="text-gray-700">Coupon Discount:</span>
+                                <span class="font-medium text-red-500">- {{ format_taka($order->coupon_discount) }}</span>
+                            </div>
+                        @endif
+                        <div class="flex justify-between py-3 mt-2 border-t-2 border-gray-800 print:border-t-2 print:border-gray-800">
+                            <span class="text-xl font-bold text-gray-900">Grand Total:</span>
+                            <span class="text-xl font-bold text-blue-600">{{ format_taka($order->total_price) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Barcode/QR Code Placeholder -->
+                <div class="text-center mb-6 print:hidden">
+                    <p class="text-gray-600 text-sm mb-2">Scan for quick order lookup</p>
+                    <!-- Replace with actual barcode/QR code generation -->
+                    <img src="https://via.placeholder.com/150x50?text=ORDER-{{ $order->id }}" alt="Order Barcode" class="mx-auto">
+                </div>
+
+                <!-- Thank You Message -->
+                <div class="text-center text-gray-700 text-lg mb-6">
+                    <p>Thank you for your purchase! We appreciate your business.</p>
+                </div>
+
+                <!-- Print Button -->
+                <div class="text-center print:hidden">
+                    <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-lg font-semibold">
+                        <i class="fas fa-print mr-2"></i> Print Voucher
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -35,15 +124,15 @@
         document.addEventListener('DOMContentLoaded', function() {
             const orderData = {
                 id: '{{ $order->id }}',
-                total: {{ $order->total }},
+                total: {{ $order->total_price ?? 0 }},
                 currency: 'BDT',
                 items: [
                     @foreach($order->products as $item)
                         {
                             item_id: '{{ $item->id ?? 'N/A' }}',
                             item_name: '{{ $item->name ?? 'N/A' }}',
-                            price: {{ $item->pivot->price }},
-                            quantity: {{ $item->pivot->quantity }}
+                            price: {{ $item->pivot->price ?? 0 }},
+                            quantity: {{ $item->pivot->quantity ?? 0 }}
                         },
                     @endforeach
                 ]

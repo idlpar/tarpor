@@ -25,23 +25,10 @@
                             @enderror
                         </div>
 
-                        <div>
-                            <label class="block text-sm font-medium text-text-dark">Division</label>
-                            <select name="division_id" id="division" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('division_id') border-error @enderror" required>
-                                <option value="">Select Division</option>
-                                @foreach($divisions as $division)
-                                    <option value="{{ $division->id }}" {{ old('division_id', $address->division_id) == $division->id ? 'selected' : '' }}>{{ $division->name }}</option>
-                                @endforeach
-                            </select>
-                            @error('division_id')
-                            <p class="text-error text-sm mt-1">{{ $message }}</p>
-                            @enderror
-                            <small class="text-text-light mt-2 block">Or enter manually:</small>
-                            <input type="text" name="manual_division" id="manual_division" class="mt-2 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2" value="{{ old('manual_division', $address->division_id ? '' : $address->division) }}" placeholder="Enter division manually">
-                        </div>
+                        
 
                         <div>
-                            <label class="block text-sm font-medium text-text-dark">District</label>
+                            <label class="block text-sm font-medium text-text-dark">District <span class="text-red-500">*</span></label>
                             <select name="district_id" id="district" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('district_id') border-error @enderror" {{ $address->division_id ? '' : 'disabled' }} required>
                                 <option value="">Select District</option>
                                 @foreach($districts as $district)
@@ -56,7 +43,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-text-dark">Upazila/Thana</label>
+                            <label class="block text-sm font-medium text-text-dark">Upazila/Thana <span class="text-red-500">*</span></label>
                             <select name="upazila_id" id="upazila" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('upazila_id') border-error @enderror" {{ $address->district_id ? '' : 'disabled' }}>
                                 <option value="">Select Upazila/Thana</option>
                                 @foreach($upazilas as $upazila)
@@ -71,7 +58,7 @@
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-text-dark">Union/Ward</label>
+                            <label class="block text-sm font-medium text-text-dark">Union/Village <span class="text-red-500">*</span></label>
                             <select name="union_id" id="union" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('union_id') border-error @enderror" {{ $address->upazila_id ? '' : 'disabled' }}>
                                 <option value="">Select Union/Ward</option>
                                 @foreach($unions as $union)
@@ -86,7 +73,7 @@
                         </div>
 
                         <div>
-                            <label for="street_address" class="block text-sm font-medium text-text-dark">Street Address</label>
+                            <label for="street_address" class="block text-sm font-medium text-text-dark">House, Street, Area <span class="text-red-500">*</span></label>
                             <textarea id="street_address" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('street_address') border-error @enderror" name="street_address">{{ old('street_address', $address->street_address) }}</textarea>
                             @error('street_address')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -94,7 +81,7 @@
                         </div>
 
                         <div>
-                            <label for="postal_code" class="block text-sm font-medium text-text-dark">Postal Code</label>
+                            <label for="postal_code" class="block text-sm font-medium text-text-dark">Postal Code <span class="text-red-500">*</span></label>
                             <input id="postal_code" type="text" class="mt-1 block w-full rounded-md border-input-border bg-input-bg text-text-dark shadow-sm focus:border-primary focus:ring focus:ring-primary focus:ring-opacity-50 p-2 @error('postal_code') border-error @enderror" name="postal_code" value="{{ old('postal_code', $address->postal_code) }}">
                             @error('postal_code')
                             <p class="text-error text-sm mt-1">{{ $message }}</p>
@@ -126,31 +113,15 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const divisionSelect = document.getElementById('division');
             const districtSelect = document.getElementById('district');
             const upazilaSelect = document.getElementById('upazila');
             const unionSelect = document.getElementById('union');
 
-            const manualDivision = document.getElementById('manual_division');
             const manualDistrict = document.getElementById('manual_district');
             const manualUpazila = document.getElementById('manual_upazila');
             const manualUnion = document.getElementById('manual_union');
 
             // Toggle between select and manual input
-            [divisionSelect, manualDivision].forEach(el => {
-                el.addEventListener('input', function() {
-                    if (this.value && this === manualDivision) {
-                        divisionSelect.value = '';
-                        districtSelect.disabled = true;
-                        upazilaSelect.disabled = true;
-                        unionSelect.disabled = true;
-                    } else if (this.value && this === divisionSelect) {
-                        manualDivision.value = '';
-                        loadDistricts(this.value);
-                    }
-                });
-            });
-
             [districtSelect, manualDistrict].forEach(el => {
                 el.addEventListener('input', function() {
                     if (this.value && this === manualDistrict) {
@@ -184,22 +155,7 @@
                 });
             });
 
-            // Load districts when division is selected
-            function loadDistricts(divisionId) {
-                fetch(`/api/districts/${divisionId}`)
-                    .then(response => response.json())
-                    .then(districts => {
-                        districtSelect.innerHTML = '<option value="">Select District</option>';
-                        districts.forEach(district => {
-                            districtSelect.innerHTML += `<option value="${district.id}">${district.name}</option>`;
-                        });
-                        districtSelect.disabled = false;
-                        upazilaSelect.innerHTML = '<option value="">Select Upazila/Thana</option>';
-                        upazilaSelect.disabled = true;
-                        unionSelect.innerHTML = '<option value="">Select Union/Ward</option>';
-                        unionSelect.disabled = true;
-                    });
-            }
+            
 
             // Load upazilas when district is selected
             function loadUpazilas(districtId) {
@@ -230,10 +186,8 @@
             }
 
             // If the address was created with manual entry, disable the selects
-            @if(!$address->division_id)
-                divisionSelect.value = '';
-            manualDivision.value = '{{ $address->division }}';
-            districtSelect.disabled = true;
+            @if(!$address->district_id)
+            districtSelect.value = '';
             manualDistrict.value = '{{ $address->district }}';
             upazilaSelect.disabled = true;
             manualUpazila.value = '{{ $address->upazila }}';

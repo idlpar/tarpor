@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Order extends Model
 {
-    protected $fillable = ['user_id', 'product_id', 'quantity', 'total_price', 'address', 'status', 'attribution_data'];
+    protected $fillable = ['user_id', 'product_id', 'quantity', 'total_price', 'status', 'attribution_data', 'address_id'];
 
     protected $casts = [
         'attribution_data' => 'json',
@@ -21,7 +21,11 @@ class Order extends Model
         return $this->belongsTo(User::class);
     }
 
-// Order.php
+    public function address()
+    {
+        return $this->belongsTo(Address::class);
+    }
+
     public function products()
     {
         return $this->belongsToMany(Product::class)

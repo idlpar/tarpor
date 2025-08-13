@@ -3,15 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\Address;
-use App\Models\Division;
 use App\Models\District;
 use App\Models\Upazila;
 use App\Models\Union;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AddressController extends Controller
 {
+    use AuthorizesRequests;
+
     public function index()
     {
         $this->authorize('viewAny', Address::class);
@@ -22,8 +24,8 @@ class AddressController extends Controller
     public function create()
     {
         $this->authorize('create', Address::class);
-        $divisions = Division::all();
-        return view('profile.addresses.create', compact('divisions'));
+        // Divisions are no longer used
+        return view('profile.addresses.create');
     }
 
     public function store(Request $request)
@@ -32,14 +34,12 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
-            'division_id' => 'required_without:manual_division|exists:divisions,id',
             'district_id' => 'required_without:manual_district|exists:districts,id',
-            'upazila_id' => 'nullable|exists:upazilas,id',
-            'union_id' => 'nullable|exists:unions,id',
-            'street_address' => 'nullable|string',
-            'postal_code' => 'nullable|string|max:20',
+            'upazila_id' => 'required_without:manual_upazila|exists:upazilas,id',
+            'union_id' => 'required_without:manual_union|exists:unions,id',
+            'street_address' => 'required|string',
+            'postal_code' => 'required|string|max:20',
             'is_default' => 'boolean',
-            'manual_division' => 'nullable|string|max:255|required_without:division_id',
             'manual_district' => 'nullable|string|max:255|required_without:district_id',
             'manual_upazila' => 'nullable|string|max:255',
             'manual_union' => 'nullable|string|max:255',
@@ -48,10 +48,9 @@ class AddressController extends Controller
         $addressData = [
             'user_id' => Auth::id(),
             'label' => $validated['label'],
-            'division' => $validated['manual_division'] ?? Division::find($validated['division_id'])->name,
-            'district' => $validated['manual_district'] ?? District::find($validated['district_id'])->name,
-            'upazila' => $validated['manual_upazila'] ?? ($validated['upazila_id'] ? Upazila::find($validated['upazila_id'])->name : null),
-            'union' => $validated['manual_union'] ?? ($validated['union_id'] ? Union::find($validated['union_id'])->name : null),
+            'district' => $validated['manual_district'] ?? (isset($validated['district_id']) ? District::find($validated['district_id'])->name : null),
+            'upazila' => $validated['manual_upazila'] ?? (isset($validated['upazila_id']) ? Upazila::find($validated['upazila_id'])->name : null),
+            'union' => $validated['manual_union'] ?? (isset($validated['union_id']) ? Union::find($validated['union_id'])->name : null),
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
             'is_default' => $validated['is_default'] ?? false,
@@ -61,7 +60,11 @@ class AddressController extends Controller
             Auth::user()->addresses()->update(['is_default' => false]);
         }
 
-        Address::create($addressData);
+        $address = Address::create($addressData);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Address added successfully.', 'address' => $address]);
+        }
 
         return redirect()->route('profile.addresses.index')
             ->with('success', 'Address added successfully.');
@@ -70,12 +73,12 @@ class AddressController extends Controller
     public function edit(Address $address)
     {
         $this->authorize('update', $address);
-        $divisions = Division::all();
-        $districts = $address->division_id ? District::where('division_id', $address->division_id)->get() : collect();
+        // Divisions are no longer used
+        $districts = $address->district_id ? District::where('district_id', $address->district_id)->get() : collect(); // Adjusted
         $upazilas = $address->district_id ? Upazila::where('district_id', $address->district_id)->get() : collect();
         $unions = $address->upazila_id ? Union::where('upazila_id', $address->upazila_id)->get() : collect();
 
-        return view('profile.addresses.edit', compact('address', 'divisions', 'districts', 'upazilas', 'unions'));
+        return view('profile.addresses.edit', compact('address', 'districts', 'upazilas', 'unions'));
     }
 
     public function update(Request $request, Address $address)
@@ -84,32 +87,35 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
-            'division_id' => 'required_without:manual_division|exists:divisions,id',
             'district_id' => 'required_without:manual_district|exists:districts,id',
-            'upazila_id' => 'nullable|exists:upazilas,id',
-            'union_id' => 'nullable|exists:unions,id',
-            'street_address' => 'nullable|string',
-            'postal_code' => 'nullable|string|max:20',
+            'upazila_id' => 'required_without:manual_upazila|exists:upazilas,id',
+            'union_id' => 'required_without:manual_union|exists:unions,id',
+            'street_address' => 'required|string',
+            'postal_code' => 'required|string|max:20',
             'is_default' => 'boolean',
-            'manual_division' => 'nullable|string|max:255|required_without:division_id',
             'manual_district' => 'nullable|string|max:255|required_without:district_id',
             'manual_upazila' => 'nullable|string|max:255',
             'manual_union' => 'nullable|string|max:255',
         ]);
 
-        $address->update([
+        $addressData = [
             'label' => $validated['label'],
-            'division' => $validated['manual_division'] ?? Division::find($validated['division_id'])->name,
-            'district' => $validated['manual_district'] ?? District::find($validated['district_id'])->name,
-            'upazila' => $validated['manual_upazila'] ?? ($validated['upazila_id'] ? Upazila::find($validated['upazila_id'])->name : null),
-            'union' => $validated['manual_union'] ?? ($validated['union_id'] ? Union::find($validated['union_id'])->name : null),
+            'district' => $validated['manual_district'] ?? (isset($validated['district_id']) ? District::find($validated['district_id'])->name : null),
+            'upazila' => $validated['manual_upazila'] ?? (isset($validated['upazila_id']) ? Upazila::find($validated['upazila_id'])->name : null),
+            'union' => $validated['manual_union'] ?? (isset($validated['union_id']) ? Union::find($validated['union_id'])->name : null),
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
             'is_default' => $validated['is_default'] ?? false,
-        ]);
+        ];
+
+        $address->update($addressData);
 
         if ($address->is_default) {
             Auth::user()->addresses()->where('id', '!=', $address->id)->update(['is_default' => false]);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Address updated successfully.', 'address' => $address]);
         }
 
         return redirect()->route('profile.addresses.index')
@@ -118,25 +124,49 @@ class AddressController extends Controller
 
     public function destroy(Address $address)
     {
-        $this->authorize('delete', $address);
+        if (Auth::id() !== $address->user_id) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized action.'], 403);
+        }
+
+        // Prevent deletion if it's the only address or the only default address
+        $userAddresses = Auth::user()->addresses;
+        if ($userAddresses->count() === 1) {
+            return response()->json(['success' => false, 'message' => 'You cannot delete your only address.'], 400);
+        }
+
+        if ($address->is_default && $userAddresses->where('is_default', true)->count() === 1) {
+            // If this is the only default address, and there are other addresses, set another as default
+            $otherAddress = $userAddresses->where('id', '!=', $address->id)->first();
+            if ($otherAddress) {
+                $otherAddress->is_default = true;
+                $otherAddress->save();
+            }
+        }
+
         $address->delete();
-        return redirect()->route('profile.addresses.index')
-            ->with('success', 'Address deleted successfully.');
+
+        return response()->json(['success' => true, 'message' => 'Address deleted successfully.']);
     }
 
-    public function setDefault(Address $address)
+    public function setDefault(Address $address, Request $request)
     {
         $this->authorize('update', $address);
         Auth::user()->addresses()->update(['is_default' => false]);
         $address->update(['is_default' => true]);
+
+        if ($request->expectsJson()) {
+            return response()->json(['success' => true, 'message' => 'Default address updated successfully.']);
+        }
+
         return redirect()->route('profile.addresses.index')
             ->with('success', 'Default address updated successfully.');
     }
 
-    public function getDistricts($divisionId)
-    {
-        return response()->json(District::where('division_id', $divisionId)->get());
-    }
+    // Removed getDistricts method
+    // public function getDistricts($divisionId)
+    // {
+    //     return response()->json(District::where('division_id', $divisionId)->get());
+    // }
 
     public function getUpazilas($districtId)
     {
@@ -146,5 +176,22 @@ class AddressController extends Controller
     public function getUnions($upazilaId)
     {
         return response()->json(Union::where('upazila_id', $upazilaId)->get());
+    }
+
+    // New methods for API
+    public function getUserAddresses(Request $request)
+    {
+        if (!Auth::check()) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 401);
+        }
+        $addresses = Auth::user()->addresses()->orderBy('is_default', 'desc')->get();
+        $defaultAddress = $addresses->where('is_default', true)->first();
+        return response()->json(['success' => true, 'addresses' => $addresses, 'defaultAddress' => $defaultAddress]);
+    }
+
+    public function showUserAddress(Address $address, Request $request)
+    {
+        $this->authorize('view', $address); // Ensure user owns the address
+        return response()->json(['success' => true, 'address' => $address]);
     }
 }

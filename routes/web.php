@@ -76,6 +76,16 @@ Route::middleware(['auth', 'auth.session', 'auto.logout'])->group(function () {
         Route::delete('/profile/{user}/avatar', [UserController::class, 'deleteAvatar'])->name('profile.avatar.destroy');
         Route::put('/profile/address', [UserController::class, 'updateAddress'])->name('profile.address.update');
 
+        // User Addresses
+        Route::resource('profile/addresses', App\Http\Controllers\AddressController::class)->except(['show'])->names('profile.addresses');
+
+        // User Addresses API
+        Route::prefix('api')->name('api.')->group(function () {
+            Route::get('user/addresses', [App\Http\Controllers\AddressController::class, 'getUserAddresses']);
+            Route::get('user/addresses/{address}', [App\Http\Controllers\AddressController::class, 'showUserAddress']);
+            Route::post('user/addresses/{address}/set-default', [App\Http\Controllers\AddressController::class, 'setDefault']);
+        });
+
         // Wishlist
         Route::post('/wishlist/add', [WishlistController::class, 'add'])->name('wishlist.add');
         Route::delete('/wishlist/remove', [WishlistController::class, 'remove'])->name('wishlist.remove');

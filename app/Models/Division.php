@@ -8,8 +8,5 @@ class Division extends Model
 {
     protected $fillable = ['name', 'bn_name', 'url'];
 
-    public function districts()
-    {
-        return $this->hasMany(District::class);
-    }
+    public $timestamps = false;
 }

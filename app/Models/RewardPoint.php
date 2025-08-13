@@ -6,5 +6,5 @@ use Illuminate\Database\Eloquent\Model;
 
 class RewardPoint extends Model
 {
-    //
+    protected $fillable = ['user_id', 'points', 'reason', 'order_id'];
 }
