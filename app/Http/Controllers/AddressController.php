@@ -34,22 +34,26 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
+            'phone' => 'required|string|digits:11',
             'district' => 'required|string|max:255',
             'upazila' => 'required|string|max:255',
             'union' => 'required|string|max:255',
             'street_address' => 'required|string',
             'postal_code' => 'required|string|max:20',
+            'note' => 'nullable|string',
             'is_default' => 'boolean',
         ]);
 
         $addressData = [
             'user_id' => Auth::id(),
             'label' => $validated['label'],
+            'phone' => $validated['phone'],
             'district' => $validated['district'],
             'upazila' => $validated['upazila'],
             'union' => $validated['union'],
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
+            'note' => $validated['note'],
             'is_default' => $validated['is_default'] ?? false,
         ];
 
@@ -84,21 +88,25 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
+            'phone' => 'required|string|digits:11',
             'district' => 'required|string|max:255',
             'upazila' => 'required|string|max:255',
             'union' => 'required|string|max:255',
             'street_address' => 'required|string',
             'postal_code' => 'required|string|max:20',
+            'note' => 'nullable|string',
             'is_default' => 'boolean',
         ]);
 
         $addressData = [
             'label' => $validated['label'],
+            'phone' => $validated['phone'],
             'district' => $validated['district'],
             'upazila' => $validated['upazila'],
             'union' => $validated['union'],
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
+            'note' => $validated['note'],
             'is_default' => $validated['is_default'] ?? false,
         ];
 

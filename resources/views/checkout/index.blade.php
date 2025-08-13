@@ -150,7 +150,7 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
                                     <label for="label" class="block text-sm font-medium text-gray-700">Label</label>
-                                    <select name="label" id="address-label" class="mt-1 block w-full rounded-md border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500">
+                                    <select name="label" id="address-label" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500">
                                         <option value="Home" selected>Home</option>
                                         <option value="Work">Work</option>
                                     </select>
@@ -698,6 +698,21 @@
 
             function clearValidationErrors() {
                 document.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
+
+                // Remove red border from all input fields
+                for (const key in addressFields) {
+                    if (addressFields.hasOwnProperty(key)) {
+                        const field = addressFields[key];
+                        if (field) {
+                            field.classList.remove('border-red-500');
+                        }
+                    }
+                }
+                // Special case for district autocomplete
+                const districtInput = document.getElementById('address-district-autocomplete');
+                if (districtInput) {
+                    districtInput.classList.remove('border-red-500');
+                }
             }
 
             function displayValidationErrors(errors) {
@@ -707,6 +722,17 @@
                         const errorElement = document.getElementById(`error-${field}`);
                         if (errorElement) {
                             errorElement.textContent = errors[field][0];
+                        }
+
+                        // Add red border to the input field
+                        const inputField = addressFields[field]; // Get the input element from addressFields
+                        if (inputField) {
+                            inputField.classList.add('border-red-500');
+                        } else if (field === 'district') { // Special case for district as it has autocomplete
+                            const districtInput = document.getElementById('address-district-autocomplete');
+                            if (districtInput) {
+                                districtInput.classList.add('border-red-500');
+                            }
                         }
                     }
                 }
