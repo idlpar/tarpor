@@ -28,4 +28,7 @@ Route::name('api.')->group(function () {
     Route::get('product/{product:id}/brief', [ProductController::class, 'brief'])->name('products.brief');
     Route::post('product/brief-batch', [ProductController::class, 'briefBatch'])->name('products.briefBatch');
     Route::get('faqs', [FaqController::class, 'index'])->name('faqs.index');
+
+    // Location Routes
+    Route::get('districts', [App\Http\Controllers\LocationController::class, 'getDistricts'])->name('districts');
 });

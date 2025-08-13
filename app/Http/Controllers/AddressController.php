@@ -34,23 +34,20 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
-            'district_id' => 'required_without:manual_district|exists:districts,id',
-            'upazila_id' => 'required_without:manual_upazila|exists:upazilas,id',
-            'union_id' => 'required_without:manual_union|exists:unions,id',
+            'district' => 'required|string|max:255',
+            'upazila' => 'required|string|max:255',
+            'union' => 'required|string|max:255',
             'street_address' => 'required|string',
             'postal_code' => 'required|string|max:20',
             'is_default' => 'boolean',
-            'manual_district' => 'nullable|string|max:255|required_without:district_id',
-            'manual_upazila' => 'nullable|string|max:255',
-            'manual_union' => 'nullable|string|max:255',
         ]);
 
         $addressData = [
             'user_id' => Auth::id(),
             'label' => $validated['label'],
-            'district' => $validated['manual_district'] ?? (isset($validated['district_id']) ? District::find($validated['district_id'])->name : null),
-            'upazila' => $validated['manual_upazila'] ?? (isset($validated['upazila_id']) ? Upazila::find($validated['upazila_id'])->name : null),
-            'union' => $validated['manual_union'] ?? (isset($validated['union_id']) ? Union::find($validated['union_id'])->name : null),
+            'district' => $validated['district'],
+            'upazila' => $validated['upazila'],
+            'union' => $validated['union'],
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
             'is_default' => $validated['is_default'] ?? false,
@@ -87,22 +84,19 @@ class AddressController extends Controller
 
         $validated = $request->validate([
             'label' => 'nullable|string|max:255',
-            'district_id' => 'required_without:manual_district|exists:districts,id',
-            'upazila_id' => 'required_without:manual_upazila|exists:upazilas,id',
-            'union_id' => 'required_without:manual_union|exists:unions,id',
+            'district' => 'required|string|max:255',
+            'upazila' => 'required|string|max:255',
+            'union' => 'required|string|max:255',
             'street_address' => 'required|string',
             'postal_code' => 'required|string|max:20',
             'is_default' => 'boolean',
-            'manual_district' => 'nullable|string|max:255|required_without:district_id',
-            'manual_upazila' => 'nullable|string|max:255',
-            'manual_union' => 'nullable|string|max:255',
         ]);
 
         $addressData = [
             'label' => $validated['label'],
-            'district' => $validated['manual_district'] ?? (isset($validated['district_id']) ? District::find($validated['district_id'])->name : null),
-            'upazila' => $validated['manual_upazila'] ?? (isset($validated['upazila_id']) ? Upazila::find($validated['upazila_id'])->name : null),
-            'union' => $validated['manual_union'] ?? (isset($validated['union_id']) ? Union::find($validated['union_id'])->name : null),
+            'district' => $validated['district'],
+            'upazila' => $validated['upazila'],
+            'union' => $validated['union'],
             'street_address' => $validated['street_address'],
             'postal_code' => $validated['postal_code'],
             'is_default' => $validated['is_default'] ?? false,

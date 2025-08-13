@@ -1240,6 +1240,26 @@
             .focus\:ring-2:focus {
                 box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
             }
+
+            /* SweetAlert2 responsiveness */
+            .swal2-popup {
+                width: 90% !important; /* Occupy 90% of the viewport width */
+                max-width: 400px; /* Max width for larger screens */
+            }
+
+            @media (max-width: 768px) {
+                .swal2-popup {
+                    width: 95% !important; /* Slightly wider on smaller screens */
+                    margin: 0 10px; /* Add some margin to the sides */
+                }
+            }
+
+            @media (max-width: 480px) {
+                .swal2-popup {
+                    width: 98% !important; /* Almost full width on very small screens */
+                    margin: 0 5px; /* Minimal margin */
+                }
+            }
         </style>
     @endpush
 @endsection
