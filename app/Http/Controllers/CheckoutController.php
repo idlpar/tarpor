@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
 {
@@ -27,6 +28,7 @@ class CheckoutController extends Controller
 
     public function placeOrder(Request $request)
     {
+        \Log::info('Checkout Request Data:', $request->all());
         $rules = [
             'phone' => 'required|string|max:20',
             'street_address' => 'required|string|max:255',
@@ -35,6 +37,7 @@ class CheckoutController extends Controller
             'union' => 'required|string|max:255',
             'postal_code' => 'required|string|max:10',
             'note' => 'nullable|string',
+            'selected_address_id' => 'nullable|exists:addresses,id', // Add validation for selected_address_id
         ];
 
         if (!Auth::check()) {
@@ -43,94 +46,126 @@ class CheckoutController extends Controller
             $rules['email'] = 'required|email|max:255';
         }
 
-        $request->validate($rules);
+        try {
+            $request->validate($rules);
 
-        $cart = session()->get('cart', []);
-        if (empty($cart)) {
-            return redirect()->route('home')->withErrors(['cart' => 'Your cart is empty.']);
-        }
+            $cart = session()->get('cart', []);
+            if (empty($cart)) {
+                return redirect()->route('home')->withErrors(['cart' => 'Your cart is empty.']);
+            }
 
-        $subtotal = 0;
-        foreach ($cart as $id => $details) {
-            $subtotal += $details['price'] * $details['quantity'];
-        }
+            $subtotal = 0;
+            foreach ($cart as $id => $details) {
+                $subtotal += $details['price'] * $details['quantity'];
+            }
 
-        $couponDiscount = session('coupon.discount', 0);
-        $rewardDiscount = session('rewards.discount', 0);
-        $rewardPointsUsed = session('rewards.points', 0);
+            $couponDiscount = session('coupon.discount', 0);
+            $rewardDiscount = session('rewards.discount', 0);
+            $rewardPointsUsed = session('rewards.points', 0);
 
-        $deliveryCharge = session('delivery_charge', 0);
-        $finalTotal = $subtotal - $couponDiscount - $rewardDiscount + $deliveryCharge;
-        if ($finalTotal < 0) {
-            $finalTotal = 0;
-        }
+            $deliveryCharge = session('delivery_charge', 0);
+            $finalTotal = $subtotal - $couponDiscount - $rewardDiscount + $deliveryCharge;
+            if ($finalTotal < 0) {
+                $finalTotal = 0;
+            }
 
-        $addressData = [
-            'phone' => $request->phone,
-            'street_address' => $request->street_address,
-            'district' => $request->district,
-            'upazila' => $request->upazila,
-            'union' => $request->union,
-            'postal_code' => $request->postal_code,
-            'note' => $request->note,
-        ];
+            $address = null;
+            if (Auth::check() && $request->filled('selected_address_id')) {
+                // User is logged in and selected an existing address
+                $address = Auth::user()->addresses()->find($request->selected_address_id);
+                if (!$address) {
+                    return back()->withErrors(['selected_address_id' => 'The selected address is invalid.']);
+                }
+                // Update existing address if necessary (e.g., if fields were edited in the form)
+                $address->update($request->only([
+                    'phone', 'street_address', 'district', 'upazila', 'union', 'postal_code', 'note'
+                ]));
+            } else {
+                // Guest checkout or logged-in user adding a new address
+                $addressData = [
+                    'phone' => $request->phone,
+                    'street_address' => $request->street_address,
+                    'district' => $request->district,
+                    'upazila' => $request->upazila,
+                    'union' => $request->union,
+                    'postal_code' => $request->postal_code,
+                    'note' => $request->note,
+                ];
 
-        if (Auth::check()) {
-            $addressData['user_id'] = Auth::id();
-            if ($request->has('is_default')) {
-                Auth::user()->addresses()->update(['is_default' => false]);
-                $addressData['is_default'] = true;
+                if (Auth::check()) {
+                $addressData['user_id'] = Auth::id();
+            } else {
+                // For guests, add guest user details to address data
+                $addressData['first_name'] = $request->first_name;
+                $addressData['last_name'] = $request->last_name;
+                $addressData['email'] = $request->email;
             }
             $address = \App\Models\Address::create($addressData);
-        } else {
-            // For guests, create an address record without a user_id
-            $address = \App\Models\Address::create($addressData);
-        }
+            }
 
-        foreach ($cart as $id => $details) {
-            $productId = is_numeric($id) ? $id : (int) str_replace('product_', '', $id);
-
+            // Create a single Order record
             $order = Order::create([
                 'user_id' => Auth::id(), // This will be null for guests
-                'product_id' => $productId,
-                'quantity' => $details['quantity'],
-                'total_price' => $details['price'] * $details['quantity'],
-                'address_id' => $address->id, // Store the address ID
+                'total_price' => $finalTotal,
+                'delivery_charge' => $deliveryCharge,
+                'coupon_discount' => $couponDiscount,
+                'reward_discount' => $rewardDiscount,
+                'address_id' => $address->id,
                 'status' => 'pending',
                 'attribution_data' => json_encode(session()->get('ad_tracking_data', [])),
             ]);
-        }
 
-        // Update coupon usage
-        if (session()->has('coupon.code')) {
-            $coupon = \App\Models\Coupon::where('code', session('coupon.code'))->first();
-            if ($coupon) {
-                $coupon->increment('used');
-            }
-        }
-
-        // Deduct used reward points
-        if ($rewardPointsUsed > 0 && Auth::check()) {
-            Auth::user()->rewardPoints()->create([
-                'points' => -$rewardPointsUsed,
-                'reason' => 'Used for order #' . $order->id,
-            ]);
-        }
-
-        // Award new reward points (example: 1 point per $10 spent on final total)
-        if (Auth::check() && $finalTotal > 0) {
-            $awardedPoints = floor($finalTotal / 10);
-            if ($awardedPoints > 0) {
-                Auth::user()->rewardPoints()->create([
-                    'points' => $awardedPoints,
-                    'reason' => 'Earned from order #' . $order->id,
+            // Create OrderItem records
+            foreach ($cart as $id => $details) {
+                $productId = is_numeric($id) ? $id : (int) str_replace('product_', '', $id);
+                OrderItem::create([
+                    'order_id' => $order->id,
+                    'product_id' => $productId,
+                    'quantity' => $details['quantity'],
+                    'price' => $details['price'],
+                    'product_name' => $details['name'], // Store product name for historical record
+                    'product_attributes' => isset($details['attributes']) && $details['attributes'] !== 'N/A' ? $details['attributes'] : null,
                 ]);
             }
+
+            // Update coupon usage
+            if (session()->has('coupon.code')) {
+                $coupon = \App\Models\Coupon::where('code', session('coupon.code'))->first();
+                if ($coupon) {
+                    $coupon->increment('used');
+                }
+            }
+
+            // Deduct used reward points
+            if ($rewardPointsUsed > 0 && Auth::check()) {
+                Auth::user()->rewardPoints()->create([
+                    'points' => -$rewardPointsUsed,
+                    'reason' => 'Used for order #' . $order->id,
+                ]);
+            }
+
+            // Award new reward points (example: 1 point per $10 spent on final total)
+            if (Auth::check() && $finalTotal > 0) {
+                $awardedPoints = floor($finalTotal / 10);
+                if ($awardedPoints > 0) {
+                    Auth::user()->rewardPoints()->create([
+                        'points' => $awardedPoints,
+                        'reason' => 'Earned from order #' . $order->id,
+                    ]);
+                }
+            }
+
+            session()->forget(['cart', 'coupon', 'rewards']);
+
+            return redirect()->route('order.success', ['order_id' => $order->id])->with('success', 'Order placed successfully!');
+        } catch (\Exception $e) {
+            \Log::error('Order Placement Error: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request_data' => $request->all(),
+                'user_id' => Auth::id(),
+            ]);
+            return back()->withErrors(['order_placement' => 'An error occurred while placing your order. Please try again.']);
         }
-
-        session()->forget(['cart', 'coupon', 'rewards']);
-
-        return redirect()->route('order.success', ['order_id' => $order->id])->with('success', 'Order placed successfully!');
     }
 
     public function updateCart(Request $request)

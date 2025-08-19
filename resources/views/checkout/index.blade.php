@@ -39,7 +39,7 @@
 
                         @guest
                             <!-- Guest Checkout Form -->
-                            <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
+                            <form action="{{ route('checkout.placeOrder') }}" method="POST" id="guest-checkout-form">
                                 @csrf
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <!-- First Name -->
@@ -100,11 +100,12 @@
                                             <div>
                                                 <div class="flex justify-between items-center mb-2">
                                                     <p class="font-medium text-gray-900">{{ $address->label }}</p>
+                                                <p class="text-gray-600 text-sm mt-1">Phone: {{ $address->phone }}</p>
                                                     @if($address->is_default)
                                                         <span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>
                                                     @endif
                                                 </div>
-                                                <p class="text-gray-700 text-sm">{{ $address->street_address }}, {{ $address->union }}, {{ $address->upazila }}, {{ $address->district }}, {{ $address->division }} - {{ $address->postal_code }}</p>
+                                                <p class="text-gray-700 text-sm">{{ $address->street_address }}, {{ $address->union }}, {{ $address->upazila }}, {{ $address->district }}, {{ $address->postal_code }}</p>
                                             </div>
                                             <div class="flex space-x-2 mt-4">
                                                 <button type="button" class="use-address-btn w-full px-3 py-2 bg-blue-500 text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="{{ $address->id }}">Deliver to this Address</button>
@@ -128,7 +129,6 @@
                                     @endif
                                 </button>
                             </div>
-                            <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
                         @endguest
                     </div>
 
@@ -227,8 +227,9 @@
 
                                 <div class="md:col-span-2">
                                     <div class="flex items-center">
-                                        <input type="checkbox" name="is_default" id="address-is_default" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                                        <label for="address-is_default" class="ml-2 block text-sm text-gray-900">Set as default address</label>
+                                        <input type="checkbox" name="is_default_checkbox" id="is_default_checkbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                        <label for="is_default_checkbox" class="ml-2 block text-sm text-gray-900">Set as default address</label>
+                                        <input type="hidden" name="is_default" id="address-is_default" value="0">
                                     </div>
                                 </div>
                             </div>
@@ -244,6 +245,16 @@
                         <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
                             @csrf
                             <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
+
+                            <!-- New hidden fields for address details -->
+                            <input type="hidden" name="phone" id="checkout-phone">
+                            <input type="hidden" name="street_address" id="checkout-street-address">
+                            <input type="hidden" name="district" id="checkout-district">
+                            <input type="hidden" name="upazila" id="checkout-upazila">
+                            <input type="hidden" name="union" id="checkout-union">
+                            <input type="hidden" name="postal_code" id="checkout-postal-code">
+                            <input type="hidden" name="note" id="checkout-note">
+                            <!-- End new hidden fields -->
 
                             <!-- Submit Button -->
                             <div class="mt-10">
@@ -452,6 +463,9 @@
             let couponDiscount = parseFloat("{{ $coupon['discount'] ?? 0 }}");
             let deliveryCharge = parseFloat("{{ $deliveryCharge ?? 0 }}");
 
+            // Store addresses from Blade for easy access
+            const allUserAddresses = @json($addresses);
+
             // DOM Elements
             const orderTotalEl = document.getElementById('order-total');
             const summarySubtotalEl = document.getElementById('summary-subtotal');
@@ -613,7 +627,8 @@
                 street_address: document.getElementById('street_address'),
                 postal_code: document.getElementById('address-postal_code'),
                 note: document.getElementById('note'),
-                is_default: document.getElementById('address-is_default'),
+                is_default_checkbox: document.getElementById('is_default_checkbox'), // New checkbox
+                is_default_hidden: document.getElementById('address-is_default'), // New hidden input
             };
 
             const districtAutocompleteInput = document.getElementById('address-district-autocomplete'); // Visible input for text
@@ -778,6 +793,8 @@
                     }
                     // Ensure district_id is sent correctly
                     formData.set('district', districtAutocompleteInput.value);
+                    // Set is_default based on checkbox
+                    formData.set('is_default', addressFields.is_default_checkbox.checked ? 1 : 0);
 
                     try {
                         const response = await fetch(url, {
@@ -842,9 +859,10 @@
                                         <div>
                                             <div class="flex justify-between items-center mb-2">
                                                 <p class="font-medium text-gray-900">${address.label}</p>
+                                                <p class="text-gray-600 text-sm mt-1">Phone: ${address.phone}</p>
                                                 ${isDefault ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>' : ''}
                                             </div>
-                                            <p class="text-gray-700 text-sm">${address.street_address}, ${getDistrictNameById(address.district)} - ${address.postal_code}</p>
+                                            <p class="text-gray-700 text-sm">${address.street_address}, ${address.union}, ${address.upazila}, ${getDistrictNameById(address.district)}, ${address.postal_code}</p>
                                         </div>
                                         <div class="flex space-x-2 mt-4">
                                             <button type="button" class="use-address-btn w-full px-3 py-2 ${isSelected ? 'bg-blue-600' : 'bg-blue-500'} text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="${address.id}">${isSelected ? 'Selected' : 'Deliver to this Address'}</button>
@@ -876,17 +894,54 @@
                 document.querySelectorAll('.address-item').forEach(item => {
                     item.classList.remove('bg-blue-50', 'border-blue-500');
                     const useBtn = item.querySelector('.use-address-btn');
-                    useBtn.textContent = 'Deliver to this Address';
-                    useBtn.classList.remove('bg-blue-600');
-                    useBtn.classList.add('bg-blue-500');
+                    if (useBtn) { // Add null check
+                        useBtn.textContent = 'Deliver to this Address';
+                        useBtn.classList.remove('bg-blue-600');
+                        useBtn.classList.add('bg-blue-500');
+                    }
                 });
                 const selectedItem = document.querySelector(`.address-item[data-address-id="${addressId}"]`);
                 if (selectedItem) {
                     selectedItem.classList.add('bg-blue-50', 'border-blue-500');
                     const useBtn = selectedItem.querySelector('.use-address-btn');
-                    useBtn.textContent = 'Selected';
-                    useBtn.classList.remove('bg-blue-500');
-                    useBtn.classList.add('bg-blue-600');
+                    if (useBtn) { // Add null check
+                        useBtn.textContent = 'Selected';
+                        useBtn.classList.remove('bg-blue-500');
+                        useBtn.classList.add('bg-blue-600');
+                    }
+
+                    // Populate hidden fields in the checkout form
+                    const selectedAddress = allUserAddresses.find(addr => addr.id == addressId);
+                    if (selectedAddress) {
+                        const checkoutPhone = document.getElementById('checkout-phone');
+                        if (checkoutPhone) { // Add null check
+                            checkoutPhone.value = selectedAddress.phone || '';
+                        }
+                        const checkoutStreetAddress = document.getElementById('checkout-street-address');
+                        if (checkoutStreetAddress) { // Add null check
+                            checkoutStreetAddress.value = selectedAddress.street_address || '';
+                        }
+                        const checkoutDistrict = document.getElementById('checkout-district');
+                        if (checkoutDistrict) { // Add null check
+                            checkoutDistrict.value = selectedAddress.district || '';
+                        }
+                        const checkoutUpazila = document.getElementById('checkout-upazila');
+                        if (checkoutUpazila) { // Add null check
+                            checkoutUpazila.value = selectedAddress.upazila || '';
+                        }
+                        const checkoutUnion = document.getElementById('checkout-union');
+                        if (checkoutUnion) { // Add null check
+                            checkoutUnion.value = selectedAddress.union || '';
+                        }
+                        const checkoutPostalCode = document.getElementById('checkout-postal-code');
+                        if (checkoutPostalCode) { // Add null check
+                            checkoutPostalCode.value = selectedAddress.postal_code || '';
+                        }
+                        const checkoutNote = document.getElementById('checkout-note');
+                        if (checkoutNote) { // Add null check
+                            checkoutNote.value = selectedAddress.note || '';
+                        }
+                    }
                 }
             }
 
@@ -953,7 +1008,12 @@
                                 addressFields.label.value = address.label || '';
                                 addressFields.street_address.value = address.street_address || '';
                                 addressFields.postal_code.value = address.postal_code || '';
-                                addressFields.is_default.checked = address.is_default;
+                                if (addressFields.is_default_checkbox) { // Add null check
+                                    addressFields.is_default_checkbox.checked = address.is_default;
+                                }
+                                if (addressFields.is_default_hidden) { // Add null check
+                                    addressFields.is_default_hidden.value = address.is_default ? 1 : 0;
+                                }
                                 addressFields.upazila.value = address.upazila || '';
                                 addressFields.union.value = address.union || '';
                                 addressFields.phone.value = address.phone || '';
@@ -1023,7 +1083,13 @@
 
             // Initial fetch of addresses for authenticated users
             @auth
-            fetchAddresses();
+            fetchAddresses().then(() => {
+                // After addresses are fetched and rendered, highlight the default one if it exists
+                const initialSelectedAddressId = selectedAddressIdInput.value;
+                if (initialSelectedAddressId) {
+                    highlightSelectedAddress(initialSelectedAddressId);
+                }
+            });
             @endauth
         });
     </script>

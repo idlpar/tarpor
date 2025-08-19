@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AddressController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\FaqController;
 use App\Http\Controllers\CollectionController;
@@ -77,13 +78,13 @@ Route::middleware(['auth', 'auth.session', 'auto.logout'])->group(function () {
         Route::put('/profile/address', [UserController::class, 'updateAddress'])->name('profile.address.update');
 
         // User Addresses
-        Route::resource('profile/addresses', App\Http\Controllers\AddressController::class)->except(['show'])->names('profile.addresses');
+        Route::resource('profile/addresses', AddressController::class)->except(['show'])->names('profile.addresses');
 
         // User Addresses API
         Route::prefix('api')->name('api.')->group(function () {
-            Route::get('user/addresses', [App\Http\Controllers\AddressController::class, 'getUserAddresses']);
-            Route::get('user/addresses/{address}', [App\Http\Controllers\AddressController::class, 'showUserAddress']);
-            Route::post('user/addresses/{address}/set-default', [App\Http\Controllers\AddressController::class, 'setDefault']);
+            Route::get('user/addresses', [AddressController::class, 'getUserAddresses']);
+            Route::get('user/addresses/{address}', [AddressController::class, 'showUserAddress']);
+            Route::post('user/addresses/{address}/set-default', [AddressController::class, 'setDefault']);
         });
 
         // Wishlist
@@ -96,7 +97,7 @@ Route::middleware(['auth', 'auth.session', 'auto.logout'])->group(function () {
     // Admin and Staff Routes
     Route::middleware('role:admin,staff')->group(function () {
         Route::resource('products', ProductController::class)->except(['show'])->names('products');
-        
+
         Route::get('/admin/products/{product:id}', [ProductController::class, 'show'])->name('products.show');
         Route::get('/products/{product:id}/edit', [ProductController::class, 'edit'])->name('products.edit');
         Route::patch('/products/{id}/restore', [ProductController::class, 'restore'])->name('products.restore');

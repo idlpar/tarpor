@@ -194,6 +194,21 @@ class AddressController extends Controller
     public function showUserAddress(Address $address, Request $request)
     {
         $this->authorize('view', $address); // Ensure user owns the address
-        return response()->json(['success' => true, 'address' => $address]);
+
+        // Manually select the fields to ensure they are all included
+        $addressData = [
+            'id' => $address->id,
+            'label' => $address->label,
+            'phone' => $address->phone,
+            'district' => $address->district,
+            'upazila' => $address->upazila,
+            'union' => $address->union,
+            'street_address' => $address->street_address,
+            'postal_code' => $address->postal_code,
+            'note' => $address->note,
+            'is_default' => $address->is_default,
+        ];
+
+        return response()->json(['success' => true, 'address' => $addressData]);
     }
 }
