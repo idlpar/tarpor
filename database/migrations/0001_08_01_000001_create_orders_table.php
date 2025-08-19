@@ -10,11 +10,12 @@ return new class extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
+            $table->string('short_id', 16)->nullable()->unique();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('product_id')->constrained()->onDelete('cascade');
-            $table->integer('quantity');
             $table->decimal('total_price', 10, 2);
-            $table->string('address');
+            $table->decimal('delivery_charge', 8, 2)->default(0.00);
+            $table->decimal('coupon_discount', 8, 2)->default(0.00);
+            $table->decimal('reward_discount', 8, 2)->default(0.00);
             $table->enum('status', ['pending', 'processing', 'shipped', 'delivered', 'cancelled'])->default('pending');
             $table->json('attribution_data')->nullable();
             $table->timestamps();

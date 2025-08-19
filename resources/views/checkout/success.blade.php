@@ -10,11 +10,11 @@
                 <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b-2 print:border-gray-800">
                     <div class="text-left">
                         <h1 class="text-3xl font-bold text-gray-800">Order Voucher</h1>
-                        <p class="text-sm text-gray-600">#{{ $order->id }}</p>
+                        <p class="text-sm text-gray-600">#{{ $order->short_id }}</p>
                     </div>
                     <div class="text-right">
                         <!-- Replace with your actual logo -->
-                        <img src="/logos/logo.png" alt="Company Logo" class="h-12 w-auto inline-block">
+                        <img src="/logos/logo.svg" alt="Company Logo" class="h-8 w-auto inline-block">
                     </div>
                 </div>
 
@@ -24,7 +24,7 @@
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">Order Information</h2>
                         <p class="text-gray-700"><strong>Order Date:</strong> {{ $order->created_at->format('M d, Y H:i A') }}</p>
                         <p class="text-gray-700"><strong>Status:</strong> <span class="font-medium text-blue-600">{{ ucfirst($order->status) }}</span></p>
-                        <p class="text-gray-700"><strong>Payment Status:</strong> <span class="font-medium text-green-600">Paid</span></p>
+                        <p class="text-gray-700"><strong>Payment Status:</strong> <span class="font-medium text-green-600">Cash on Delivery</span></p>
                     </div>
                     <div class="text-left">
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">Customer Information</h2>
@@ -52,6 +52,7 @@
                         <table class="min-w-full bg-white border border-gray-200 rounded-lg">
                             <thead>
                                 <tr class="bg-gray-100 text-gray-600 uppercase text-sm leading-normal print:bg-gray-200">
+                                    <th class="py-3 px-6 text-left">SL</th>
                                     <th class="py-3 px-6 text-left">Product</th>
                                     <th class="py-3 px-6 text-center">Qty</th>
                                     <th class="py-3 px-6 text-right">Price</th>
@@ -59,12 +60,13 @@
                                 </tr>
                             </thead>
                             <tbody class="text-gray-700 text-sm font-light">
-                                @foreach($order->products as $item)
+                                @foreach($order->orderItems as $item)
                                     <tr class="border-b border-gray-200 hover:bg-gray-50 print:border-gray-400">
-                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ $item->name ?? 'N/A' }}</td>
-                                        <td class="py-3 px-6 text-center">{{ $item->pivot->quantity }}</td>
-                                        <td class="py-3 px-6 text-right">{{ format_taka($item->pivot->price) }}</td>
-                                        <td class="py-3 px-6 text-right">{{ format_taka($item->pivot->quantity * $item->pivot->price) }}</td>
+                                        <td class="py-3 px-6 text-left">{{ $loop->iteration }}</td>
+                                        <td class="py-3 px-6 text-left whitespace-nowrap">{{ Str::limit($item->product->name ?? 'N/A', 30) }}</td>
+                                        <td class="py-3 px-6 text-center">{{ $item->quantity }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->price) }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->quantity * $item->price) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -75,18 +77,30 @@
                 <!-- Order Summary -->
                 <div class="flex justify-end mb-6">
                     <div class="w-full md:w-1/2">
+                        @php
+                            $subtotalFromItems = 0;
+                            foreach ($order->orderItems as $item) {
+                                $subtotalFromItems += $item->quantity * $item->price;
+                            }
+                        @endphp
                         <div class="flex justify-between py-2 border-b border-gray-200">
                             <span class="text-gray-700">Subtotal:</span>
-                            <span class="font-medium">{{ format_taka($order->total_price - ($order->delivery_charge ?? 0) - ($order->coupon_discount ?? 0)) }}</span>
+                            <span class="font-medium">{{ format_taka($subtotalFromItems) }}</span>
                         </div>
                         <div class="flex justify-between py-2 border-b border-gray-200">
                             <span class="text-gray-700">Shipping:</span>
                             <span class="font-medium">{{ format_taka($order->delivery_charge ?? 0) }}</span>
                         </div>
-                        @if($order->coupon_discount)
+                        @if($order->coupon_discount > 0)
                             <div class="flex justify-between py-2 border-b border-gray-200">
                                 <span class="text-gray-700">Coupon Discount:</span>
                                 <span class="font-medium text-red-500">- {{ format_taka($order->coupon_discount) }}</span>
+                            </div>
+                        @endif
+                        @if($order->reward_discount > 0)
+                            <div class="flex justify-between py-2 border-b border-gray-200">
+                                <span class="text-gray-700">Reward Discount:</span>
+                                <span class="font-medium text-red-500">- {{ format_taka($order->reward_discount) }}</span>
                             </div>
                         @endif
                         <div class="flex justify-between py-3 mt-2 border-t-2 border-gray-800 print:border-t-2 print:border-gray-800">
@@ -99,8 +113,9 @@
                 <!-- Barcode/QR Code Placeholder -->
                 <div class="text-center mb-6 print:hidden">
                     <p class="text-gray-600 text-sm mb-2">Scan for quick order lookup</p>
-                    <!-- Replace with actual barcode/QR code generation -->
-                    <img src="https://via.placeholder.com/150x50?text=ORDER-{{ $order->id }}" alt="Order Barcode" class="mx-auto">
+                    <div class="visible-print-block">
+                        {!! QrCode::size(150)->generate(route('order.success', ['short_id' => $order->short_id])) !!}
+                    </div>
                 </div>
 
                 <!-- Thank You Message -->
@@ -127,12 +142,12 @@
                 total: {{ $order->total_price ?? 0 }},
                 currency: 'BDT',
                 items: [
-                    @foreach($order->products as $item)
+                    @foreach($order->orderItems as $item)
                         {
-                            item_id: '{{ $item->id ?? 'N/A' }}',
-                            item_name: '{{ $item->name ?? 'N/A' }}',
-                            price: {{ $item->pivot->price ?? 0 }},
-                            quantity: {{ $item->pivot->quantity ?? 0 }}
+                            item_id: '{{ $item->product_id ?? 'N/A' }}',
+                            item_name: '{{ Str::limit($item->product->name ?? 'N/A', 30) }}',
+                            price: {{ $item->price ?? 0 }},
+                            quantity: {{ $item->quantity ?? 0 }}
                         },
                     @endforeach
                 ]

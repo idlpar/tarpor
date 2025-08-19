@@ -263,7 +263,7 @@
                                     <svg class="w-5 h-5 mr-2 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
                                     </svg>
-                                    Complete Secure Payment
+                                    Place Your Order
                                 </button>
                             </div>
                         </form>
@@ -311,22 +311,16 @@
                     <div class="mb-6 mt-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-3">Shipping Method</h3>
                         <div class="space-y-3">
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                <input type="radio" name="shipping_option" value="50" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" {{ $deliveryCharge == 50 ? 'checked' : '' }}>
-                                <div class="ml-4 flex-grow">
-                                    <span class="font-medium text-gray-800">Standard Shipping</span>
-                                    <p class="text-sm text-gray-500">4-5 business days</p>
-                                </div>
-                                <span class="font-semibold text-gray-800">৳50</span>
-                            </label>
-                            <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                <input type="radio" name="shipping_option" value="120" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" {{ $deliveryCharge == 120 ? 'checked' : '' }}>
-                                <div class="ml-4 flex-grow">
-                                    <span class="font-medium text-gray-800">Express Shipping</span>
-                                    <p class="text-sm text-gray-500">1-2 business days</p>
-                                </div>
-                                <span class="font-semibold text-gray-800">৳120</span>
-                            </label>
+                            @foreach($shippingMethods as $method)
+                                <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                                    <input type="radio" name="shipping_option" value="{{ $method->cost }}" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" {{ $deliveryCharge == $method->cost ? 'checked' : '' }}>
+                                    <div class="ml-4 flex-grow">
+                                        <span class="font-medium text-gray-800">{{ $method->name }}</span>
+                                        <p class="text-sm text-gray-500">{{ $method->description }}</p>
+                                    </div>
+                                    <span class="font-semibold text-gray-800">{{ format_taka($method->cost) }}</span>
+                                </label>
+                            @endforeach
                         </div>
                     </div>
 
@@ -828,6 +822,30 @@
                     } catch (error) {
                         console.error('Error saving address:', error);
                         Swal.fire('Error', 'Failed to save address.', 'error');
+                    }
+                });
+            }
+
+            // Client-side validation for shipping method
+            const checkoutForm = document.getElementById('checkout-form');
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    const selectedShippingOption = document.querySelector('input[name="shipping_option"]:checked');
+                    if (!selectedShippingOption) {
+                        e.preventDefault(); // Prevent form submission
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Shipping Method Required',
+                            text: 'Please select a shipping method to proceed with your order.',
+                            confirmButtonColor: '#3085d6',
+                        });
+                    } else {
+                        // Create a hidden input for the selected shipping option and append it to the form
+                        const hiddenShippingInput = document.createElement('input');
+                        hiddenShippingInput.type = 'hidden';
+                        hiddenShippingInput.name = 'shipping_option';
+                        hiddenShippingInput.value = selectedShippingOption.value;
+                        checkoutForm.appendChild(hiddenShippingInput);
                     }
                 });
             }

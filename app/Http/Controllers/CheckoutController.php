@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use App\Models\OrderItem;
+use App\Models\ShippingMethod; // Added
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +15,7 @@ class CheckoutController extends Controller
     {
         $cart = session()->get('cart', []);
         $coupon = session()->get('coupon');
-        $deliveryCharge = session()->get('delivery_charge', 0);
+        $deliveryCharge = session()->get('delivery_charge');
         $addresses = collect();
         $defaultAddress = null;
 
@@ -23,7 +24,17 @@ class CheckoutController extends Controller
             $defaultAddress = $addresses->where('is_default', true)->first() ?? $addresses->first();
         }
 
-        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge', 'addresses', 'defaultAddress'));
+        // Fetch active shipping methods
+        $shippingMethods = ShippingMethod::where('is_active', true)->get();
+
+        // Set a default delivery charge if not already set or invalid
+        if (!$deliveryCharge || !$shippingMethods->contains('cost', $deliveryCharge)) {
+            $defaultMethod = $shippingMethods->first(); // Get the first active method as default
+            $deliveryCharge = $defaultMethod ? $defaultMethod->cost : 0;
+            session()->put('delivery_charge', $deliveryCharge);
+        }
+
+        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge', 'addresses', 'defaultAddress', 'shippingMethods'));
     }
 
     public function placeOrder(Request $request)
@@ -37,7 +48,8 @@ class CheckoutController extends Controller
             'union' => 'required|string|max:255',
             'postal_code' => 'required|string|max:10',
             'note' => 'nullable|string',
-            'selected_address_id' => 'nullable|exists:addresses,id', // Add validation for selected_address_id
+            'selected_address_id' => 'nullable|exists:addresses,id',
+            'shipping_option' => 'required|numeric',
         ];
 
         if (!Auth::check()) {
@@ -63,7 +75,18 @@ class CheckoutController extends Controller
             $rewardDiscount = session('rewards.discount', 0);
             $rewardPointsUsed = session('rewards.points', 0);
 
-            $deliveryCharge = session('delivery_charge', 0);
+            $shippingCost = $request->input('shipping_option');
+            $shippingMethod = ShippingMethod::where('cost', $shippingCost)->where('is_active', true)->first();
+
+            if ($shippingMethod) {
+                $deliveryCharge = $shippingMethod->cost;
+            } else {
+                // Fallback or show an error if the shipping option is invalid
+                return back()->withErrors(['shipping_option' => 'Invalid shipping method selected.'])->withInput();
+            }
+
+            // Log the final delivery charge being used
+            Log::info('Delivery Charge before Order Creation:', ['delivery_charge' => $deliveryCharge]);
             $finalTotal = $subtotal - $couponDiscount - $rewardDiscount + $deliveryCharge;
             if ($finalTotal < 0) {
                 $finalTotal = 0;
@@ -118,6 +141,14 @@ class CheckoutController extends Controller
             // Create OrderItem records
             foreach ($cart as $id => $details) {
                 $productId = is_numeric($id) ? $id : (int) str_replace('product_', '', $id);
+
+                // Add a check to ensure productId is valid
+                if (empty($productId) || !is_int($productId)) {
+                    Log::error('Invalid product ID found in cart during order placement.', ['cart_item_id' => $id, 'processed_product_id' => $productId]);
+                    // Optionally, skip this item or throw an exception
+                    continue; // Skip this cart item if product ID is invalid
+                }
+
                 OrderItem::create([
                     'order_id' => $order->id,
                     'product_id' => $productId,
@@ -132,7 +163,7 @@ class CheckoutController extends Controller
             if (session()->has('coupon.code')) {
                 $coupon = \App\Models\Coupon::where('code', session('coupon.code'))->first();
                 if ($coupon) {
-                    $coupon->increment('used');
+                    $coupon->increment('times_used');
                 }
             }
 
@@ -157,7 +188,7 @@ class CheckoutController extends Controller
 
             session()->forget(['cart', 'coupon', 'rewards']);
 
-            return redirect()->route('order.success', ['order_id' => $order->id])->with('success', 'Order placed successfully!');
+            return redirect()->route('order.success', ['short_id' => $order->short_id])->with('success', 'Order placed successfully!');
         } catch (\Exception $e) {
             \Log::error('Order Placement Error: ' . $e->getMessage(), [
                 'exception' => $e,
@@ -210,9 +241,9 @@ class CheckoutController extends Controller
         return response()->json(['message' => 'Delivery charge updated successfully!']);
     }
 
-    public function showOrderSuccess($order_id)
+    public function showOrderSuccess($short_id)
     {
-        $order = Order::with(['products', 'address'])->findOrFail($order_id);
+        $order = Order::where('short_id', $short_id)->with(['orderItems.product', 'address'])->firstOrFail();
         return view('checkout.success', compact('order'));
     }
 }

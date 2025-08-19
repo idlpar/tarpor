@@ -6,6 +6,7 @@ use App\Http\Controllers\FaqController;
 use App\Http\Controllers\CollectionController;
 use App\Http\Controllers\LabelController;
 use App\Http\Controllers\ProductAttributeController;
+use App\Http\Controllers\ShippingMethodController;
 use App\Http\Controllers\WishlistController;
 use Illuminate\Support\Facades\Config;
 use App\Http\Controllers\DashboardController;
@@ -147,6 +148,9 @@ Route::middleware(['auth', 'auth.session', 'auto.logout'])->group(function () {
         // Coupon Management
         Route::resource('coupons', CouponController::class)->names('coupons');
 
+        // Shipping Methods Management
+        Route::resource('shipping_methods', ShippingMethodController::class)->names('shipping_methods');
+
         // Product Specifications Management
         Route::prefix('product-specifications')->name('admin.product_specifications.')->group(function () {
             Route::resource('groups', App\Http\Controllers\ProductSpecificationGroupController::class)->names('groups');
@@ -215,7 +219,7 @@ Route::delete('/cart/remove', [CartController::class, 'remove'])->name('cart.rem
 Route::post('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
 Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
 Route::post('/checkout', [CheckoutController::class, 'placeOrder'])->name('checkout.placeOrder');
-Route::get('/checkout/success/{order_id}', [CheckoutController::class, 'showOrderSuccess'])->name('order.success');
+Route::get('/order/success/{short_id}', [CheckoutController::class, 'showOrderSuccess'])->name('order.success');
 Route::post('/checkout/update-delivery-charge', [CheckoutController::class, 'updateDeliveryCharge'])->name('checkout.updateDeliveryCharge');
 Route::put('/checkout/update-cart', [CheckoutController::class, 'updateCart'])->name('checkout.updateCart');
 Route::delete('/checkout/remove-cart-item', [CheckoutController::class, 'removeCartItem'])->name('checkout.removeCartItem');

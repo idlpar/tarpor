@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 /**
  * @property int $user_id
@@ -10,7 +11,16 @@ use Illuminate\Database\Eloquent\Model;
  */
 class Order extends Model
 {
-    protected $fillable = ['user_id', 'product_id', 'quantity', 'total_price', 'status', 'attribution_data', 'address_id'];
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($order) {
+            $order->short_id = bin2hex(random_bytes(8));
+        });
+    }
+
+    protected $fillable = ['user_id', 'short_id', 'total_price', 'status', 'attribution_data', 'address_id', 'delivery_charge', 'coupon_discount', 'reward_discount'];
 
     protected $casts = [
         'attribution_data' => 'json',
@@ -31,5 +41,10 @@ class Order extends Model
         return $this->belongsToMany(Product::class)
             ->withPivot('quantity', 'price')
             ->withTimestamps();
+    }
+
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class);
     }
 }

@@ -31,4 +31,5 @@ Route::name('api.')->group(function () {
 
     // Location Routes
     Route::get('districts', [App\Http\Controllers\LocationController::class, 'getDistricts'])->name('districts');
+    Route::get('shipping-methods', [App\Http\Controllers\ShippingMethodController::class, 'getShippingMethods'])->name('shipping-methods');
 });
