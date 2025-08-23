@@ -191,7 +191,8 @@ class CheckoutController extends Controller
 
             return redirect()->route('order.success', ['short_id' => $order->short_id])->with('success', 'Order placed successfully!');
         } catch (ValidationException $e) {
-            return redirect()->back()->with('error', $e->getMessage())->withErrors($e->errors())->withInput();
+            $firstError = collect($e->errors())->first();
+            return redirect()->back()->with('error', $firstError[0])->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Log::error('Order Placement Error: ' . $e->getMessage(), [
                 'exception' => $e,
