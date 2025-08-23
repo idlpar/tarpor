@@ -1004,6 +1004,7 @@
 
                     // Edit Address
                     if (target.classList.contains('edit-address-btn')) {
+                        await loadAllDistricts(); // Ensure districts are loaded before populating
                         try {
                             const response = await fetch(`/api/user/addresses/${addressId}`, {
                                 headers: {
