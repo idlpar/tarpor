@@ -8,6 +8,7 @@ use App\Models\ShippingMethod; // Added
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
@@ -189,6 +190,8 @@ class CheckoutController extends Controller
             session()->forget(['cart', 'coupon', 'rewards']);
 
             return redirect()->route('order.success', ['short_id' => $order->short_id])->with('success', 'Order placed successfully!');
+        } catch (ValidationException $e) {
+            return redirect()->back()->with('error', $e->getMessage())->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             \Log::error('Order Placement Error: ' . $e->getMessage(), [
                 'exception' => $e,
