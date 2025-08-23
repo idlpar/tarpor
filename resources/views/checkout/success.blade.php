@@ -3,9 +3,10 @@
 @section('title', 'Order Confirmation & Voucher')
 
 @section('content')
+    <link rel="stylesheet" href="{{ asset('css/print.css') }}" media="print">
     <div class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen py-12">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-8 print:shadow-none print:p-0">
+            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-8 print:shadow-none print:p-0 printable-voucher print-only">
                 <!-- Voucher Header -->
                 <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b-2 print:border-gray-800">
                     <div class="text-left">
@@ -125,11 +126,39 @@
 
                 <!-- Print Button -->
                 <div class="text-center print:hidden">
-                    <button onclick="window.print()" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-lg font-semibold">
+                    <button id="print-voucher-btn" class="bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors duration-200 text-lg font-semibold">
                         <i class="fas fa-print mr-2"></i> Print Voucher
                     </button>
+                    <button id="print-sticker-btn" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition-colors duration-200 text-lg font-semibold ml-4">
+                        <i class="fas fa-sticky-note mr-2"></i> Print Sticker
+                    </button>
+                </div>
+            </div> <!-- Close printable-voucher -->
+
+            <!-- Printable Sticker Content (Hidden by default) -->
+            <div class="printable-sticker hidden print-only">
+                <h1 class="text-center">Shipping Label</h1>
+                <div class="address">
+                    <p><strong>To:</strong> {{ $order->user->name ?? 'Guest' }}</p>
+                    <p>{{ $order->address->street_address ?? 'N/A' }}</p>
+                    <p>{{ $order->address->union ?? 'N/A' }}, {{ $order->address->upazila ?? 'N/A' }}</p>
+                    <p>{{ $order->address->district ?? 'N/A' }} - {{ $order->address->postal_code ?? 'N/A' }}</p>
+                    <p>Phone: {{ $order->address->phone ?? 'N/A' }}</p>
+                </div>
+                <div class="order-details">
+                    <p><strong>Order ID:</strong> #{{ $order->short_id }}</p>
+                    <p><strong>Items:</strong></p>
+                    <ul>
+                        @foreach($order->orderItems as $item)
+                            <li>{{ $item->quantity }} x {{ Str::limit($item->product->name ?? 'N/A', 20) }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+                <div class="qr-code">
+                    {!! QrCode::size(100)->generate(route('order.success', ['short_id' => $order->short_id])) !!}
                 </div>
             </div>
+
         </div>
     </div>
 @endsection
@@ -137,6 +166,27 @@
 @push('scripts')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const printVoucherBtn = document.getElementById('print-voucher-btn');
+            const printStickerBtn = document.getElementById('print-sticker-btn');
+
+            function printContent(type) {
+                document.body.classList.add('printing-' + type);
+                window.print();
+                document.body.classList.remove('printing-' + type);
+            }
+
+            if (printVoucherBtn) {
+                printVoucherBtn.addEventListener('click', function() {
+                    printContent('voucher');
+                });
+            }
+
+            if (printStickerBtn) {
+                printStickerBtn.addEventListener('click', function() {
+                    printContent('sticker');
+                });
+            }
+
             const orderData = {
                 id: '{{ $order->id }}',
                 total: {{ $order->total_price ?? 0 }},

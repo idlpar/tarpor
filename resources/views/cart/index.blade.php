@@ -16,23 +16,73 @@
     }
 
     .btn {
-        @apply font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-offset-2;
+        font-weight: 700;
+        padding-top: 0.75rem;
+        padding-bottom: 0.75rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+        border-radius: 0.75rem;
+        transition-property: all;
+        transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        transition-duration: 300ms;
+        transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+    }
+    .btn:hover {
+        --tw-scale-x: 1.02;
+        --tw-scale-y: 1.02;
+        transform: translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y));
+    }
+    .btn:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
     }
     .btn-primary {
-        @apply bg-gradient-to-r from-[var(--primary)] to-[#6366f1] text-white shadow-lg hover:shadow-xl hover:from-[var(--primary-hover)] hover:to-[#4f46e5] focus:ring-[var(--primary)] border border-transparent;
+        background-image: linear-gradient(to right, var(--primary), #6366f1);
+        color: #fff;
         box-shadow: 0 4px 15px rgba(79, 70, 229, 0.3);
+        border: 1px solid transparent;
     }
     .btn-primary:hover {
         box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
+        background-image: linear-gradient(to right, var(--primary-hover), #4f46e5);
+    }
+    .btn-primary:focus {
+        --tw-ring-color: var(--primary);
+        box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
     }
     .btn-secondary {
-        @apply bg-[var(--light)] text-[var(--dark)] hover:bg-gray-200 focus:ring-gray-300 border border-[var(--border)];
+        background-color: var(--light);
+        color: var(--dark);
+        border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+        background-color: #e5e7eb;
+    }
+    .btn-secondary:focus {
+        --tw-ring-color: #d1d5db;
+        box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow, 0 0 #0000);
     }
     .form-input-custom {
-        @apply block w-full px-4 py-3 text-base text-gray-800 bg-gray-50 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300 shadow-sm;
+        display: block;
+        width: 100%;
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+        color: #1f2937;
+        background-color: #f9fafb;
+        border: 1px solid #d1d5db;
+        border-radius: 0.5rem;
+        transition: all 0.3s;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
     }
     .form-input-custom:focus {
-        @apply ring-offset-2 ring-offset-gray-100;
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+        --tw-ring-offset-shadow: var(--tw-ring-inset) 0 0 0 var(--tw-ring-offset-width) var(--tw-ring-offset-color);
+        --tw-ring-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+        box-shadow: var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow, 0 0 #0000);
+        border-color: transparent;
+        --tw-ring-color: #3b82f6;
+        --tw-ring-offset-color: #f9fafb;
     }
     /* Checkout button enhancements */
     .checkout-btn {

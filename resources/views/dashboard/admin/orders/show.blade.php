@@ -213,8 +213,30 @@
                             Shipping Information
                         </h2>
 
-                        <div class="bg-gradient-to-r from-gray-50 to-white p-4 rounded-lg border border-gray-200">
-                            <p class="text-gray-900">{{ $order->address }}</p>
+                        @php
+                            $address = json_decode($order->address);
+                        @endphp
+                        <div class="bg-gradient-to-r from-gray-50 to-white p-4 rounded-lg border border-gray-200 grid grid-cols-2 gap-4">
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Label</dt>
+                                <dd class="mt-1 text-base font-medium text-gray-900">{{ $address->label ?? 'N/A' }}</dd>
+                            </div>
+                            <div>
+                                <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                                <dd class="mt-1 text-base font-medium text-gray-900">{{ $address->phone ?? 'N/A' }}</dd>
+                            </div>
+                            <div class="col-span-2">
+                                <dt class="text-sm font-medium text-gray-500">Address</dt>
+                                <dd class="mt-1 text-base font-medium text-gray-900">
+                                    {{ $address->street_address ?? '' }}, {{ $address->union ?? '' }}, {{ $address->upazila ?? '' }}, {{ $address->district ?? '' }} - {{ $address->postal_code ?? '' }}
+                                </dd>
+                            </div>
+                            @if(isset($address->note) && $address->note)
+                            <div class="col-span-2">
+                                <dt class="text-sm font-medium text-gray-500">Note</dt>
+                                <dd class="mt-1 text-base font-medium text-gray-900">{{ $address->note }}</dd>
+                            </div>
+                            @endif
                         </div>
                     </div>
 
