@@ -88,6 +88,89 @@
                                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                         @enderror
                                     </div>
+                                <!-- Phone Number -->
+                                    <div class="md:col-span-2 space-y-1">
+                                        <label for="guest_phone" class="block text-sm font-medium text-gray-700">Phone Number <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" name="phone" id="guest_phone"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-500 @error('phone') border-red-500 @enderror"
+                                                   value="{{ old('phone') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('phone')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Street Address -->
+                                    <div class="md:col-span-2 space-y-1">
+                                        <label for="guest_street_address" class="block text-sm font-medium text-gray-700">House, Street, Area <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" name="street_address" id="guest_street_address"
+                                                   class="w-full pl-10 pr-4 py-3 text-gray-900 bg-white border border-gray-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:border-gray-500 @error('street_address') border-red-500 @enderror"
+                                                   value="{{ old('street_address') }}" required>
+                                            <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-gray-400">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        @error('street_address')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Union/Village -->
+                                    <div>
+                                        <label for="guest_union" class="block text-sm font-medium text-gray-700">Union/Village <span class="text-red-500">*</span></label>
+                                        <input type="text" name="union" id="guest_union" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500 @error('union') border-red-500 @enderror" value="{{ old('union') }}" required>
+                                        @error('union')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Thana/Upazila -->
+                                    <div>
+                                        <label for="guest_upazila" class="block text-sm font-medium text-gray-700">Thana/Upazila <span class="text-red-500">*</span></label>
+                                        <input type="text" name="upazila" id="guest_upazila" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500 @error('upazila') border-red-500 @enderror" value="{{ old('upazila') }}" required>
+                                        @error('upazila')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- District -->
+                                    <div>
+                                        <label for="guest_district_autocomplete" class="block text-sm font-medium text-gray-700">District <span class="text-red-500">*</span></label>
+                                        <div class="relative">
+                                            <input type="text" id="guest_district_autocomplete" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500 @error('district') border-red-500 @enderror" value="{{ old('district') }}" required>
+                                            <input type="hidden" name="district" id="guest_district_hidden" value="{{ old('district') }}">
+                                            <div id="guest_district_suggestions" class="absolute z-10 w-full bg-white border border-gray-300 rounded-md shadow-lg mt-1 max-h-60 overflow-y-auto hidden"></div>
+                                        </div>
+                                        @error('district')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Postal Code -->
+                                    <div>
+                                        <label for="guest_postal_code" class="block text-sm font-medium text-gray-700">Postal Code <span class="text-red-500">*</span></label>
+                                        <input type="text" name="postal_code" id="guest_postal_code" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500 @error('postal_code') border-red-500 @enderror" value="{{ old('postal_code') }}" required>
+                                        @error('postal_code')
+                                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Note -->
+                                    <div class="md:col-span-2">
+                                        <label for="guest_note" class="block text-sm font-medium text-gray-700">Note or Specific Instruction</label>
+                                        <textarea name="note" id="guest_note" rows="3" class="mt-1 block w-full rounded-md border border-gray-400 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50 py-3 px-4 text-gray-900 hover:border-gray-500">{{ old('note') }}</textarea>
+                                    </div>
+                                    <input type="hidden" name="shipping_option" id="guest_shipping_option_hidden" value="{{ $deliveryCharge }}">
                                 </div>
                             </form>
                         @else
@@ -242,23 +325,10 @@
 
                     <!-- Order Submission Form -->
                     <div class="bg-white rounded-2xl shadow-xl p-8 border border-gray-100 transform transition-all hover:shadow-2xl">
-                        <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
-                            @csrf
-                            <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
-
-                            <!-- New hidden fields for address details -->
-                            <input type="hidden" name="phone" id="checkout-phone">
-                            <input type="hidden" name="street_address" id="checkout-street-address">
-                            <input type="hidden" name="district" id="checkout-district">
-                            <input type="hidden" name="upazila" id="checkout-upazila">
-                            <input type="hidden" name="union" id="checkout-union">
-                            <input type="hidden" name="postal_code" id="checkout-postal-code">
-                            <input type="hidden" name="note" id="checkout-note">
-                            <!-- End new hidden fields -->
-
-                            <!-- Submit Button -->
+                        @guest
+                            <!-- Submit Button for Guest Checkout -->
                             <div class="mt-10">
-                                <button type="submit"
+                                <button type="submit" form="guest-checkout-form"
                                         class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
                                     <svg class="w-5 h-5 mr-2 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
@@ -266,7 +336,33 @@
                                     Place Your Order
                                 </button>
                             </div>
-                        </form>
+                        @else
+                            <form action="{{ route('checkout.placeOrder') }}" method="POST" id="checkout-form">
+                                @csrf
+                                <input type="hidden" name="selected_address_id" id="selected-address-id" value="{{ $defaultAddress->id ?? '' }}">
+
+                                <!-- New hidden fields for address details -->
+                                <input type="hidden" name="phone" id="checkout-phone">
+                                <input type="hidden" name="street_address" id="checkout-street-address">
+                                <input type="hidden" name="district" id="checkout-district">
+                                <input type="hidden" name="upazila" id="checkout-upazila">
+                                <input type="hidden" name="union" id="checkout-union">
+                                <input type="hidden" name="postal_code" id="checkout-postal-code">
+                                <input type="hidden" name="note" id="checkout-note">
+                                <!-- End new hidden fields -->
+
+                                <!-- Submit Button -->
+                                <div class="mt-10">
+                                    <button type="submit"
+                                            class="w-full py-4 px-6 bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-bold rounded-xl hover:from-blue-700 hover:to-indigo-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-1 flex items-center justify-center">
+                                        <svg class="w-5 h-5 mr-2 text-blue-200" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                        Place Your Order
+                                    </button>
+                                </div>
+                            </form>
+                        @endguest
                     </div>
                 </div>
 
@@ -445,6 +541,18 @@
                 return `৳${parseInt(amount)}`;
             }
 
+            let allDistricts = [];
+
+            // Load all districts once
+            async function loadAllDistricts() {
+                try {
+                    const response = await fetch('/api/districts');
+                    allDistricts = await response.json();
+                } catch (error) {
+                    console.error('Error loading districts:', error);
+                }
+            }
+
             // Function to get district name by ID
             function getDistrictNameById(districtId) {
                 const district = allDistricts.find(d => d.id == districtId);
@@ -456,9 +564,6 @@
             let couponCode = "{{ $coupon['code'] ?? '' }}"; // Store the coupon code
             let couponDiscount = parseFloat("{{ $coupon['discount'] ?? 0 }}");
             let deliveryCharge = parseFloat("{{ $deliveryCharge ?? 0 }}");
-
-            // Store addresses from Blade for easy access
-            const allUserAddresses = @json($addresses);
 
             // DOM Elements
             const orderTotalEl = document.getElementById('order-total');
@@ -530,6 +635,13 @@
                 radio.addEventListener('change', function() {
                     deliveryCharge = parseFloat(this.value);
                     updateOrderSummary();
+
+                    // Update the hidden shipping option input for guest form if it exists
+                    const guestShippingOptionHidden = document.getElementById('guest_shipping_option_hidden');
+                    if (guestShippingOptionHidden) {
+                        guestShippingOptionHidden.value = this.value;
+                    }
+
                     Swal.fire({
                         iconHtml: '<svg class="w-12 h-12 sm:w-16 sm:h-16 text-blue-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 17H5a2 2 0 00-2 2h16a2 2 0 002-2v-3a2 2 0 00-2-2H6a2 2 0 00-2 2v3h15zM19 17V9a2 2 0 00-2-2H5a2 2 0 00-2 2v8h16z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 9V5a2 2 0 00-2-2H5a2 2 0 00-2 2v4"></path></svg>',
                         title: this.nextElementSibling.querySelector('span').textContent + ' Selected',
@@ -601,231 +713,6 @@
             // Initial call to update summary on page load
             updateOrderSummary();
 
-            // New Address Management Logic
-            const addAddressBtn = document.getElementById('add-new-address-btn');
-            const addressFormContainer = document.getElementById('address-form-container');
-            const cancelAddressFormBtn = document.getElementById('cancel-address-form-btn');
-            const ajaxAddressForm = document.getElementById('ajax-address-form');
-            const addressFormTitle = document.getElementById('address-form-title');
-            const addressFormMethod = document.getElementById('address-form-method');
-            const addressFormId = document.getElementById('address-form-id');
-            const savedAddressesContainer = document.getElementById('saved-addresses-container');
-            const selectedAddressIdInput = document.getElementById('selected-address-id');
-
-            const addressFields = {
-                label: document.getElementById('address-label'),
-                phone: document.getElementById('phone'),
-                district_id: document.getElementById('address-district'), // Hidden input for ID
-                upazila: document.getElementById('address-upazila'),
-                union: document.getElementById('address-union'),
-                street_address: document.getElementById('street_address'),
-                postal_code: document.getElementById('address-postal_code'),
-                note: document.getElementById('note'),
-                is_default_checkbox: document.getElementById('is_default_checkbox'), // New checkbox
-                is_default_hidden: document.getElementById('address-is_default'), // New hidden input
-            };
-
-            const districtAutocompleteInput = document.getElementById('address-district-autocomplete'); // Visible input for text
-            const districtSuggestionsContainer = document.getElementById('address-district-suggestions');
-
-            let allDistricts = [];
-
-            // Load all districts once
-            async function loadAllDistricts() {
-                try {
-                    const response = await fetch('/api/districts');
-                    allDistricts = await response.json();
-                } catch (error) {
-                    console.error('Error loading districts:', error);
-                }
-            }
-
-            // Autocomplete logic for district
-            if (districtAutocompleteInput) {
-                districtAutocompleteInput.addEventListener('input', function() {
-                    const query = this.value.toLowerCase();
-                    districtSuggestionsContainer.innerHTML = '';
-
-                    if (query.length > 0) {
-                        const filteredDistricts = allDistricts.filter(district =>
-                            district.name.toLowerCase().includes(query) ||
-                            district.bn_name.toLowerCase().includes(query)
-                        );
-
-                        filteredDistricts.forEach(district => {
-                            const div = document.createElement('div');
-                            div.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
-                            div.textContent = `${district.name} (${district.bn_name})`;
-                            div.dataset.id = district.id;
-                            div.dataset.name = district.name;
-                            div.addEventListener('click', function() {
-                                districtAutocompleteInput.value = this.dataset.name;
-                                addressFields.district_id.value = this.dataset.id; // Update hidden input
-                                districtSuggestionsContainer.classList.add('hidden');
-                            });
-                            districtSuggestionsContainer.appendChild(div);
-                        });
-                        districtSuggestionsContainer.classList.remove('hidden');
-                    } else {
-                        districtSuggestionsContainer.classList.add('hidden');
-                    }
-                });
-
-                // Hide suggestions when clicking outside
-                document.addEventListener('click', function(event) {
-                    if (!districtAutocompleteInput.contains(event.target) && !districtSuggestionsContainer.contains(event.target)) {
-                        districtSuggestionsContainer.classList.add('hidden');
-                    }
-                });
-            }
-
-            function clearAddressForm() {
-                for (const key in addressFields) {
-                    if (addressFields.hasOwnProperty(key)) {
-                        const field = addressFields[key];
-                        if (field) { // Check if field is not null
-                            if (field.type === 'checkbox') {
-                                field.checked = false;
-                            } else if (field.tagName === 'SELECT') {
-                                if (key !== 'label') {
-                                    field.value = '';
-                                }
-                            } else {
-                                field.value = '';
-                            }
-                        }
-                    }
-                }
-                // Also clear the autocomplete input
-                if (districtAutocompleteInput) districtAutocompleteInput.value = '';
-                if (addressFormTitle) addressFormTitle.textContent = 'Add New Address';
-                if (addressFormMethod) addressFormMethod.value = 'POST';
-                if (addressFormId) addressFormId.value = '';
-                if (document.getElementById('save-address-btn')) document.getElementById('save-address-btn').textContent = 'Save Address';
-                clearValidationErrors();
-            }
-
-            function clearValidationErrors() {
-                document.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
-
-                // Remove red border from all input fields
-                for (const key in addressFields) {
-                    if (addressFields.hasOwnProperty(key)) {
-                        const field = addressFields[key];
-                        if (field) {
-                            field.classList.remove('border-red-500');
-                        }
-                    }
-                }
-                // Special case for district autocomplete
-                const districtInput = document.getElementById('address-district-autocomplete');
-                if (districtInput) {
-                    districtInput.classList.remove('border-red-500');
-                }
-            }
-
-            function displayValidationErrors(errors) {
-                clearValidationErrors();
-                for (const field in errors) {
-                    if (errors.hasOwnProperty(field)) {
-                        const errorElement = document.getElementById(`error-${field}`);
-                        if (errorElement) {
-                            errorElement.textContent = errors[field][0];
-                        }
-
-                        // Add red border to the input field
-                        const inputField = addressFields[field]; // Get the input element from addressFields
-                        if (inputField) {
-                            inputField.classList.add('border-red-500');
-                        } else if (field === 'district') { // Special case for district as it has autocomplete
-                            const districtInput = document.getElementById('address-district-autocomplete');
-                            if (districtInput) {
-                                districtInput.classList.add('border-red-500');
-                            }
-                        }
-                    }
-                }
-            }
-
-            // Show/Hide Address Form
-            if (addAddressBtn) {
-                addAddressBtn.addEventListener('click', function() {
-                    addressFormContainer.classList.remove('hidden');
-                    addAddressBtn.classList.add('hidden');
-                    clearAddressForm();
-                    loadAllDistricts(); // Load districts when form is opened
-                });
-            }
-
-            if (cancelAddressFormBtn) {
-                cancelAddressFormBtn.addEventListener('click', function() {
-                    addressFormContainer.classList.add('hidden');
-                    addAddressBtn.classList.remove('hidden');
-                    clearAddressForm();
-                });
-            }
-
-            // Handle AJAX Address Form Submission
-            if (ajaxAddressForm) {
-                ajaxAddressForm.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-
-                    // Phone number validation
-                    const phoneNumber = addressFields.phone.value.trim();
-                    if (phoneNumber.length !== 11 || !/^[0-9]+$/.test(phoneNumber)) {
-                        displayValidationErrors({ phone: ['Phone number must be exactly 11 digits and contain only numbers.'] });
-                        return;
-                    }
-
-                    const formData = new FormData(this);
-                    const method = addressFormMethod.value;
-                    const addressId = addressFormId.value;
-                    let url = '{{ route('profile.addresses.store') }}';
-
-                    if (method === 'PUT') {
-                        url = `/profile/addresses/${addressId}`;
-                    }
-                    // Ensure district_id is sent correctly
-                    formData.set('district', districtAutocompleteInput.value);
-                    // Set is_default based on checkbox
-                    formData.set('is_default', addressFields.is_default_checkbox.checked ? 1 : 0);
-
-                    try {
-                        const response = await fetch(url, {
-                            method: 'POST', // Always POST for Laravel, _method handles PUT
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json',
-                            },
-                            body: formData,
-                        });
-
-                        const data = await response.json();
-
-                        if (!response.ok) {
-                            if (response.status === 422 && data.errors) {
-                                displayValidationErrors(data.errors);
-                            } else {
-                                Swal.fire('Error', data.message || 'An unexpected error occurred.', 'error');
-                            }
-                            return;
-                        }
-
-                        Swal.fire('Success', data.message, 'success');
-                        addressFormContainer.classList.add('hidden');
-                        addAddressBtn.classList.remove('hidden');
-                        clearAddressForm();
-                        // Reload addresses or dynamically add/update them
-                        fetchAddresses();
-
-                    } catch (error) {
-                        console.error('Error saving address:', error);
-                        Swal.fire('Error', 'Failed to save address.', 'error');
-                    }
-                });
-            }
-
             // Client-side validation for shipping method
             const checkoutForm = document.getElementById('checkout-form');
             if (checkoutForm) {
@@ -850,266 +737,507 @@
                 });
             }
 
-            // Fetch and Render Addresses
-            async function fetchAddresses() {
-                try {
-                    const response = await fetch('/api/user/addresses', {
-                        headers: {
-                            'Accept': 'application/json',
-                            'X-Requested-With': 'XMLHttpRequest',
+            @guest
+                // Guest Address Fields and Autocomplete
+                const guestPhoneInput = document.getElementById('guest_phone');
+                const guestDistrictAutocompleteInput = document.getElementById('guest_district_autocomplete');
+                const guestDistrictHiddenInput = document.getElementById('guest_district_hidden');
+                const guestDistrictSuggestionsContainer = document.getElementById('guest_district_suggestions');
+                const guestStreetAddressInput = document.getElementById('guest_street_address');
+                const guestUnionInput = document.getElementById('guest_union');
+                const guestUpazilaInput = document.getElementById('guest_upazila');
+                const guestPostalCodeInput = document.getElementById('guest_postal_code');
+                const guestNoteInput = document.getElementById('guest_note');
+
+                // Load districts immediately for guests
+                loadAllDistricts();
+
+                // Autocomplete logic for guest district
+                if (guestDistrictAutocompleteInput) {
+                    guestDistrictAutocompleteInput.addEventListener('input', function() {
+                        const query = this.value.toLowerCase();
+                        guestDistrictSuggestionsContainer.innerHTML = '';
+
+                        if (query.length > 0) {
+                            const filteredDistricts = allDistricts.filter(district =>
+                                district.name.toLowerCase().includes(query) ||
+                                district.bn_name.toLowerCase().includes(query)
+                            );
+
+                            filteredDistricts.forEach(district => {
+                                const div = document.createElement('div');
+                                div.classList.add('p-2', 'cursor-pointer', 'hover:bg-gray-100');
+                                div.textContent = `${district.name} (${district.bn_name})`;
+                                div.dataset.id = district.id;
+                                div.dataset.name = district.name;
+                                div.addEventListener('click', function() {
+                                    guestDistrictAutocompleteInput.value = this.dataset.name;
+                                    guestDistrictHiddenInput.value = this.dataset.id; // Update hidden input
+                                    guestDistrictSuggestionsContainer.classList.add('hidden');
+                                });
+                                guestDistrictSuggestionsContainer.appendChild(div);
+                            });
+                            guestDistrictSuggestionsContainer.classList.remove('hidden');
+                        } else {
+                            guestDistrictSuggestionsContainer.classList.add('hidden');
                         }
                     });
-                    const data = await response.json();
 
-                    if (data.success) {
-                        savedAddressesContainer.innerHTML = '';
-                        if (data.addresses.length === 0) {
-                            savedAddressesContainer.innerHTML = '<p class="text-gray-600 md:col-span-2">No saved addresses. Please add one.</p>';
-                            addAddressBtn.textContent = 'Add New Address';
-                            selectedAddressIdInput.value = '';
-                        } else {
-                            addAddressBtn.innerHTML = '<i class="fas fa-plus mr-2"></i> Add Another Address';
-                            data.addresses.forEach(address => {
-                                const isDefault = address.is_default;
-                                const isSelected = selectedAddressIdInput.value == address.id;
-                                const addressHtml = `
-                                    <div class="border rounded-lg p-4 flex flex-col justify-between address-item ${isSelected ? 'bg-blue-50 border-blue-500' : 'border-gray-200'}" data-address-id="${address.id}">
-                                        <div>
-                                            <div class="flex justify-between items-center mb-2">
-                                                <p class="font-medium text-gray-900">${address.label}</p>
-                                                <p class="text-gray-600 text-sm mt-1">Phone: ${address.phone}</p>
-                                                ${isDefault ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>' : ''}
-                                            </div>
-                                            <p class="text-gray-700 text-sm">${address.street_address}, ${address.union}, ${address.upazila}, ${getDistrictNameById(address.district)}, ${address.postal_code}</p>
-                                        </div>
-                                        <div class="flex space-x-2 mt-4">
-                                            <button type="button" class="use-address-btn w-full px-3 py-2 ${isSelected ? 'bg-blue-600' : 'bg-blue-500'} text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="${address.id}">${isSelected ? 'Selected' : 'Deliver to this Address'}</button>
-                                            <button type="button" class="edit-address-btn px-3 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-edit"></i></button>
-                                            ${!isDefault ? `<button type="button" class="make-default-btn px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300 transition-colors" data-address-id="${address.id}"><i class="fas fa-star"></i></button>` : ''}
-                                            <button type="button" class="delete-address-btn px-3 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-trash"></i></button>
-                                        </div>
-                                    </div>
-                                `;
-                                savedAddressesContainer.insertAdjacentHTML('beforeend', addressHtml);
+                    // Hide suggestions when clicking outside
+                    document.addEventListener('click', function(event) {
+                        if (!guestDistrictAutocompleteInput.contains(event.target) && !guestDistrictSuggestionsContainer.contains(event.target)) {
+                            guestDistrictSuggestionsContainer.classList.add('hidden');
+                        }
+                    });
+                }
+
+                // Phone number validation for guest form
+                const guestCheckoutForm = document.getElementById('guest-checkout-form');
+                if (guestCheckoutForm) {
+                    guestCheckoutForm.addEventListener('submit', function(e) {
+                        const phoneNumber = guestPhoneInput.value.trim();
+                        if (phoneNumber.length !== 11 || !/^[0-9]+$/.test(phoneNumber)) {
+                            e.preventDefault(); // Prevent form submission
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Validation Error',
+                                text: 'Phone number must be exactly 11 digits and contain only numbers.',
+                                confirmButtonColor: '#d33',
                             });
-                            // Ensure a default address is selected if available
-                            if (data.defaultAddress && !selectedAddressIdInput.value) {
-                                selectedAddressIdInput.value = data.defaultAddress.id;
-                                highlightSelectedAddress(data.defaultAddress.id);
+                        }
+                    });
+                }
+
+            @else
+                // Registered User Address Management Logic
+                const addAddressBtn = document.getElementById('add-new-address-btn');
+                const addressFormContainer = document.getElementById('address-form-container');
+                const cancelAddressFormBtn = document.getElementById('cancel-address-form-btn');
+                const ajaxAddressForm = document.getElementById('ajax-address-form');
+                const addressFormTitle = document.getElementById('address-form-title');
+                const addressFormMethod = document.getElementById('address-form-method');
+                const addressFormId = document.getElementById('address-form-id');
+                const savedAddressesContainer = document.getElementById('saved-addresses-container');
+                const selectedAddressIdInput = document.getElementById('selected-address-id');
+
+                const addressFields = {
+                    label: document.getElementById('address-label'),
+                    phone: document.getElementById('phone'),
+                    district_id: document.getElementById('address-district'), // Hidden input for ID
+                    upazila: document.getElementById('address-upazila'),
+                    union: document.getElementById('address-union'),
+                    street_address: document.getElementById('street_address'),
+                    postal_code: document.getElementById('address-postal_code'),
+                    note: document.getElementById('note'),
+                    is_default_checkbox: document.getElementById('is_default_checkbox'), // New checkbox
+                    is_default_hidden: document.getElementById('address-is_default'), // New hidden input
+                };
+
+                const districtAutocompleteInput = document.getElementById('address-district-autocomplete'); // Visible input for text
+                const districtSuggestionsContainer = document.getElementById('address-district-suggestions');
+
+                // Store addresses from Blade for easy access
+                const allUserAddresses = @json($addresses);
+
+                function clearAddressForm() {
+                    for (const key in addressFields) {
+                        if (addressFields.hasOwnProperty(key)) {
+                            const field = addressFields[key];
+                            if (field) { // Check if field is not null
+                                if (field.type === 'checkbox') {
+                                    field.checked = false;
+                                } else if (field.tagName === 'SELECT') {
+                                    if (key !== 'label') {
+                                        field.value = '';
+                                    }
+                                } else {
+                                    field.value = '';
+                                }
                             }
                         }
-                    } else {
-                        Swal.fire('Error', data.message || 'Failed to load addresses.', 'error');
                     }
-                } catch (error) {
-                    console.error('Error fetching addresses:', error);
-                    Swal.fire('Error', 'Failed to load addresses.', 'error');
+                    // Also clear the autocomplete input
+                    if (districtAutocompleteInput) districtAutocompleteInput.value = '';
+                    if (addressFormTitle) addressFormTitle.textContent = 'Add New Address';
+                    if (addressFormMethod) addressFormMethod.value = 'POST';
+                    if (addressFormId) addressFormId.value = '';
+                    if (document.getElementById('save-address-btn')) document.getElementById('save-address-btn').textContent = 'Save Address';
+                    clearValidationErrors();
                 }
-            }
 
-            // Highlight selected address
-            function highlightSelectedAddress(addressId) {
-                document.querySelectorAll('.address-item').forEach(item => {
-                    item.classList.remove('bg-blue-50', 'border-blue-500');
-                    const useBtn = item.querySelector('.use-address-btn');
-                    if (useBtn) { // Add null check
-                        useBtn.textContent = 'Deliver to this Address';
-                        useBtn.classList.remove('bg-blue-600');
-                        useBtn.classList.add('bg-blue-500');
-                    }
-                });
-                const selectedItem = document.querySelector(`.address-item[data-address-id="${addressId}"]`);
-                if (selectedItem) {
-                    selectedItem.classList.add('bg-blue-50', 'border-blue-500');
-                    const useBtn = selectedItem.querySelector('.use-address-btn');
-                    if (useBtn) { // Add null check
-                        useBtn.textContent = 'Selected';
-                        useBtn.classList.remove('bg-blue-500');
-                        useBtn.classList.add('bg-blue-600');
-                    }
+                function clearValidationErrors() {
+                    document.querySelectorAll('[id^="error-"]').forEach(el => el.textContent = '');
 
-                    // Populate hidden fields in the checkout form
-                    const selectedAddress = allUserAddresses.find(addr => addr.id == addressId);
-                    if (selectedAddress) {
-                        const checkoutPhone = document.getElementById('checkout-phone');
-                        if (checkoutPhone) { // Add null check
-                            checkoutPhone.value = selectedAddress.phone || '';
+                    // Remove red border from all input fields
+                    for (const key in addressFields) {
+                        if (addressFields.hasOwnProperty(key)) {
+                            const field = addressFields[key];
+                            if (field) {
+                                field.classList.remove('border-red-500');
+                            }
                         }
-                        const checkoutStreetAddress = document.getElementById('checkout-street-address');
-                        if (checkoutStreetAddress) { // Add null check
-                            checkoutStreetAddress.value = selectedAddress.street_address || '';
-                        }
-                        const checkoutDistrict = document.getElementById('checkout-district');
-                        if (checkoutDistrict) { // Add null check
-                            checkoutDistrict.value = selectedAddress.district || '';
-                        }
-                        const checkoutUpazila = document.getElementById('checkout-upazila');
-                        if (checkoutUpazila) { // Add null check
-                            checkoutUpazila.value = selectedAddress.upazila || '';
-                        }
-                        const checkoutUnion = document.getElementById('checkout-union');
-                        if (checkoutUnion) { // Add null check
-                            checkoutUnion.value = selectedAddress.union || '';
-                        }
-                        const checkoutPostalCode = document.getElementById('checkout-postal-code');
-                        if (checkoutPostalCode) { // Add null check
-                            checkoutPostalCode.value = selectedAddress.postal_code || '';
-                        }
-                        const checkoutNote = document.getElementById('checkout-note');
-                        if (checkoutNote) { // Add null check
-                            checkoutNote.value = selectedAddress.note || '';
+                    }
+                    // Special case for district autocomplete
+                    const districtInput = document.getElementById('address-district-autocomplete');
+                    if (districtInput) {
+                        districtInput.classList.remove('border-red-500');
+                    }
+                }
+
+                function displayValidationErrors(errors) {
+                    clearValidationErrors();
+                    for (const field in errors) {
+                        if (errors.hasOwnProperty(field)) {
+                            const errorElement = document.getElementById(`error-${field}`);
+                            if (errorElement) {
+                                errorElement.textContent = errors[field][0];
+                            }
+
+                            // Add red border to the input field
+                            const inputField = addressFields[field]; // Get the input element from addressFields
+                            if (inputField) {
+                                inputField.classList.add('border-red-500');
+                            }
                         }
                     }
                 }
-            }
 
-            // Event delegation for Use, Make Default, Edit, Delete buttons
-            if (savedAddressesContainer) {
-                savedAddressesContainer.addEventListener('click', async function(event) {
-                    const target = event.target.closest('button');
-                    if (!target) return;
+                // Show/Hide Address Form
+                if (addAddressBtn) {
+                    addAddressBtn.addEventListener('click', function() {
+                        addressFormContainer.classList.remove('hidden');
+                        addAddressBtn.classList.add('hidden');
+                        clearAddressForm();
+                        loadAllDistricts(); // Load districts when form is opened
+                    });
+                }
 
-                    const addressId = target.dataset.addressId;
+                if (cancelAddressFormBtn) {
+                    cancelAddressFormBtn.addEventListener('click', function() {
+                        addressFormContainer.classList.add('hidden');
+                        addAddressBtn.classList.remove('hidden');
+                        clearAddressForm();
+                    });
+                }
 
-                    // Use Address
-                    if (target.classList.contains('use-address-btn')) {
-                        selectedAddressIdInput.value = addressId;
-                        highlightSelectedAddress(addressId);
-                        Swal.fire('Address Selected', 'Your chosen address has been set for this order.', 'success');
-                    }
+                // Handle AJAX Address Form Submission
+                if (ajaxAddressForm) {
+                    ajaxAddressForm.addEventListener('submit', async function(e) {
+                        e.preventDefault();
 
-                    // Make Default
-                    if (target.classList.contains('make-default-btn')) {
+                        // Phone number validation
+                        const phoneNumber = addressFields.phone.value.trim();
+                        if (phoneNumber.length !== 11 || !/^[0-9]+$/.test(phoneNumber)) {
+                            displayValidationErrors({ phone: ['Phone number must be exactly 11 digits and contain only numbers.'] });
+                            return;
+                        }
+
+                        const formData = new FormData(this);
+                        const method = addressFormMethod.value;
+                        const addressId = addressFormId.value;
+                        let url = '{{ route('profile.addresses.store') }}';
+
+                        if (method === 'PUT') {
+                            url = `/profile/addresses/${addressId}`;
+                        }
+                        // Ensure district_id is sent correctly
+                        formData.set('district', districtAutocompleteInput.value);
+                        // Set is_default based on checkbox
+                        formData.set('is_default', addressFields.is_default_checkbox.checked ? 1 : 0);
+
                         try {
-                            const response = await fetch(`/api/user/addresses/${addressId}/set-default`, {
-                                method: 'POST',
+                            const response = await fetch(url, {
+                                method: 'POST', // Always POST for Laravel, _method handles PUT
                                 headers: {
                                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                    'Accept': 'application/json',
                                     'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
                                 },
+                                body: formData,
                             });
-                            const data = await response.json();
-                            if (data.success) {
-                                Swal.fire('Success', data.message, 'success');
-                                fetchAddresses(); // Re-fetch to update UI
-                            } else {
-                                Swal.fire('Error', data.message || 'Failed to set default address.', 'error');
-                            }
-                        } catch (error) {
-                            console.error('Error setting default address:', error);
-                            Swal.fire('Error', 'Failed to set default address.', 'error');
-                        }
-                    }
 
-                    // Edit Address
-                    if (target.classList.contains('edit-address-btn')) {
-                        await loadAllDistricts(); // Ensure districts are loaded before populating
-                        try {
-                            const response = await fetch(`/api/user/addresses/${addressId}`, {
-                                headers: {
-                                    'Accept': 'application/json',
-                                    'X-Requested-With': 'XMLHttpRequest',
-                                },
-                            });
                             const data = await response.json();
 
-                            if (data.success && data.address) {
-                                const address = data.address;
-                                addressFormContainer.classList.remove('hidden');
-                                addAddressBtn.classList.add('hidden');
-                                addressFormTitle.textContent = 'Edit Address';
-                                addressFormMethod.value = 'PUT';
-                                addressFormId.value = address.id;
-                                document.getElementById('save-address-btn').textContent = 'Update Address';
-
-                                // Populate form fields
-                                addressFields.label.value = address.label || '';
-                                addressFields.street_address.value = address.street_address || '';
-                                addressFields.postal_code.value = address.postal_code || '';
-                                if (addressFields.is_default_checkbox) { // Add null check
-                                    addressFields.is_default_checkbox.checked = address.is_default;
+                            if (!response.ok) {
+                                if (response.status === 422 && data.errors) {
+                                    displayValidationErrors(data.errors);
+                                } else {
+                                    Swal.fire('Error', data.message || 'An unexpected error occurred.', 'error');
                                 }
-                                if (addressFields.is_default_hidden) { // Add null check
-                                    addressFields.is_default_hidden.value = address.is_default ? 1 : 0;
-                                }
-                                addressFields.upazila.value = address.upazila || '';
-                                addressFields.union.value = address.union || '';
-                                addressFields.phone.value = address.phone || '';
-                                addressFields.note.value = address.note || '';
-
-                                // Populate district autocomplete and hidden ID
-                                if (districtAutocompleteInput) {
-                                    districtAutocompleteInput.value = getDistrictNameById(address.district) || '';
-                                }
-                                if (addressFields.district_id) {
-                                    addressFields.district_id.value = address.district || '';
-                                }
-
-                                clearValidationErrors();
-
-                            } else {
-                                Swal.fire('Error', data.message || 'Failed to load address for editing.', 'error');
+                                return;
                             }
+
+                            Swal.fire('Success', data.message, 'success');
+                            addressFormContainer.classList.add('hidden');
+                            addAddressBtn.classList.remove('hidden');
+                            clearAddressForm();
+                            // Reload addresses or dynamically add/update them
+                            fetchAddresses();
+
                         } catch (error) {
-                            console.error('Error fetching address for edit:', error);
-                            Swal.fire('Error', 'Failed to load address for editing.', 'error');
+                            console.error('Error saving address:', error);
+                            Swal.fire('Error', 'Failed to save address.', 'error');
+                        }
+                    });
+                }
+
+                // Fetch and Render Addresses
+                async function fetchAddresses() {
+                    try {
+                        const response = await fetch('/api/user/addresses', {
+                            headers: {
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
+                            }
+                        });
+                        const data = await response.json();
+
+                        if (data.success) {
+                            savedAddressesContainer.innerHTML = '';
+                            if (data.addresses.length === 0) {
+                                savedAddressesContainer.innerHTML = '<p class="text-gray-600 md:col-span-2">No saved addresses. Please add one.</p>';
+                                addAddressBtn.textContent = 'Add New Address';
+                                selectedAddressIdInput.value = '';
+                            } else {
+                                addAddressBtn.innerHTML = '<i class="fas fa-plus mr-2"></i> Add Another Address';
+                                data.addresses.forEach(address => {
+                                    const isDefault = address.is_default;
+                                    const isSelected = selectedAddressIdInput.value == address.id;
+                                    const addressHtml = `
+                                        <div class="border rounded-lg p-4 flex flex-col justify-between address-item ${isSelected ? 'bg-blue-50 border-blue-500' : 'border-gray-200'}" data-address-id="${address.id}">
+                                            <div>
+                                                <div class="flex justify-between items-center mb-2">
+                                                    <p class="font-medium text-gray-900">${address.label}</p>
+                                                    <p class="text-gray-600 text-sm mt-1">Phone: ${address.phone}</p>
+                                                    ${isDefault ? '<span class="text-xs bg-blue-200 text-blue-800 px-2 py-1 rounded-full">Default</span>' : ''}
+                                                </div>
+                                                <p class="text-gray-700 text-sm">${address.street_address}, ${address.union}, ${address.upazila}, ${getDistrictNameById(address.district)}, ${address.postal_code}</p>
+                                            </div>
+                                            <div class="flex space-x-2 mt-4">
+                                                <button type="button" class="use-address-btn w-full px-3 py-2 ${isSelected ? 'bg-blue-600' : 'bg-blue-500'} text-white rounded-md text-sm hover:bg-blue-600 transition-colors" data-address-id="${address.id}">${isSelected ? 'Selected' : 'Deliver to this Address'}</button>
+                                                <button type="button" class="edit-address-btn px-3 py-2 bg-yellow-500 text-white rounded-md text-sm hover:bg-yellow-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-edit"></i></button>
+                                                ${!isDefault ? `<button type="button" class="make-default-btn px-3 py-2 bg-gray-200 text-gray-800 rounded-md text-sm hover:bg-gray-300 transition-colors" data-address-id="${address.id}"><i class="fas fa-star"></i></button>` : ''}
+                                                <button type="button" class="delete-address-btn px-3 py-2 bg-red-500 text-white rounded-md text-sm hover:bg-red-600 transition-colors" data-address-id="${address.id}"><i class="fas fa-trash"></i></button>
+                                            </div>
+                                        </div>
+                                    `;
+                                    savedAddressesContainer.insertAdjacentHTML('beforeend', addressHtml);
+                                });
+                                // Ensure a default address is selected if available
+                                if (data.defaultAddress && !selectedAddressIdInput.value) {
+                                    selectedAddressIdInput.value = data.defaultAddress.id;
+                                    highlightSelectedAddress(data.defaultAddress.id);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Error fetching addresses:', error);
+                        Swal.fire('Error', 'Failed to load addresses.', 'error');
+                    }
+                }
+
+                // Highlight selected address
+                function highlightSelectedAddress(addressId) {
+                    document.querySelectorAll('.address-item').forEach(item => {
+                        item.classList.remove('bg-blue-50', 'border-blue-500');
+                        const useBtn = item.querySelector('.use-address-btn');
+                        if (useBtn) { // Add null check
+                            useBtn.textContent = 'Deliver to this Address';
+                            useBtn.classList.remove('bg-blue-600');
+                            useBtn.classList.add('bg-blue-500');
+                        }
+                    });
+                    const selectedItem = document.querySelector(`.address-item[data-address-id="${addressId}"]`);
+                    if (selectedItem) {
+                        selectedItem.classList.add('bg-blue-50', 'border-blue-500');
+                        const useBtn = selectedItem.querySelector('.use-address-btn');
+                        if (useBtn) { // Add null check
+                            useBtn.textContent = 'Selected';
+                            useBtn.classList.remove('bg-blue-500');
+                            useBtn.classList.add('bg-blue-600');
+                        }
+
+                        // Populate hidden fields in the checkout form
+                        const selectedAddress = allUserAddresses.find(addr => addr.id == addressId);
+                        if (selectedAddress) {
+                            const checkoutPhone = document.getElementById('checkout-phone');
+                            if (checkoutPhone) { // Add null check
+                                checkoutPhone.value = selectedAddress.phone || '';
+                            }
+                            const checkoutStreetAddress = document.getElementById('checkout-street-address');
+                            if (checkoutStreetAddress) { // Add null check
+                                checkoutStreetAddress.value = selectedAddress.street_address || '';
+                            }
+                            const checkoutDistrict = document.getElementById('checkout-district');
+                            if (checkoutDistrict) { // Add null check
+                                checkoutDistrict.value = selectedAddress.district || '';
+                            }
+                            const checkoutUpazila = document.getElementById('checkout-upazila');
+                            if (checkoutUpazila) { // Add null check
+                                checkoutUpazila.value = selectedAddress.upazila || '';
+                            }
+                            const checkoutUnion = document.getElementById('checkout-union');
+                            if (checkoutUnion) { // Add null check
+                                checkoutUnion.value = selectedAddress.union || '';
+                            }
+                            const checkoutPostalCode = document.getElementById('checkout-postal-code');
+                            if (checkoutPostalCode) { // Add null check
+                                checkoutPostalCode.value = selectedAddress.postal_code || '';
+                            }
+                            const checkoutNote = document.getElementById('checkout-note');
+                            if (checkoutNote) { // Add null check
+                                checkoutNote.value = selectedAddress.note || '';
+                            }
                         }
                     }
+                }
 
-                    // Delete Address
-                    if (target.classList.contains('delete-address-btn')) {
-                        Swal.fire({
-                            title: 'Are you sure?',
-                            text: "You won't be able to revert this!",
-                            icon: 'warning',
-                            showCancelButton: true,
-                            confirmButtonColor: '#d33',
-                            cancelButtonColor: '#3085d6',
-                            confirmButtonText: 'Yes, delete it!',
-                            focusCancel: true
-                        }).then(async (result) => {
-                            if (result.isConfirmed) {
-                                try {
-                                    const response = await fetch(`/profile/addresses/${addressId}`, {
-                                        method: 'DELETE',
-                                        headers: {
-                                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                                            'Accept': 'application/json',
-                                            'X-Requested-With': 'XMLHttpRequest',
-                                        },
-                                    });
-                                    const data = await response.json();
-                                    if (data.success) {
-                                        Swal.fire(
-                                            'Deleted!',
-                                            'Your address has been deleted.',
-                                            'success'
-                                        )
-                                        fetchAddresses(); // Re-fetch to update UI
-                                    } else {
-                                        Swal.fire('Error', data.message || 'Failed to delete address.', 'error');
+                // Event delegation for Use, Make Default, Edit, Delete buttons
+                if (savedAddressesContainer) {
+                    savedAddressesContainer.addEventListener('click', async function(event) {
+                        const target = event.target.closest('button');
+                        if (!target) return;
+
+                        const addressId = target.dataset.addressId;
+
+                        // Use Address
+                        if (target.classList.contains('use-address-btn')) {
+                            selectedAddressIdInput.value = addressId;
+                            highlightSelectedAddress(addressId);
+                            Swal.fire('Address Selected', 'Your chosen address has been set for this order.', 'success');
+                        }
+
+                        // Make Default
+                        if (target.classList.contains('make-default-btn')) {
+                            try {
+                                const response = await fetch(`/api/user/addresses/${addressId}/set-default`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    },
+                                });
+                                const data = await response.json();
+                                if (data.success) {
+                                    Swal.fire('Success', data.message, 'success');
+                                    fetchAddresses(); // Re-fetch to update UI
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to set default address.', 'error');
+                                }
+                            } catch (error) {
+                                console.error('Error setting default address:', error);
+                                Swal.fire('Error', 'Failed to set default address.', 'error');
+                            }
+                        }
+
+                        // Edit Address
+                        if (target.classList.contains('edit-address-btn')) {
+                            await loadAllDistricts(); // Ensure districts are loaded before populating
+                            try {
+                                const response = await fetch(`/api/user/addresses/${addressId}`, {
+                                    headers: {
+                                        'Accept': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    },
+                                });
+                                const data = await response.json();
+
+                                if (data.success && data.address) {
+                                    const address = data.address;
+                                    addressFormContainer.classList.remove('hidden');
+                                    addAddressBtn.classList.add('hidden');
+                                    addressFormTitle.textContent = 'Edit Address';
+                                    addressFormMethod.value = 'PUT';
+                                    addressFormId.value = address.id;
+                                    document.getElementById('save-address-btn').textContent = 'Update Address';
+
+                                    // Populate form fields
+                                    addressFields.label.value = address.label || '';
+                                    addressFields.street_address.value = address.street_address || '';
+                                    addressFields.postal_code.value = address.postal_code || '';
+                                    if (addressFields.is_default_checkbox) { // Add null check
+                                        addressFields.is_default_checkbox.checked = address.is_default;
                                     }
-                                } catch (error) {
-                                    console.error('Error deleting address:', error);
-                                    Swal.fire('Error', 'Failed to delete address.', 'error');
+                                    if (addressFields.is_default_hidden) { // Add null check
+                                        addressFields.is_default_hidden.value = address.is_default ? 1 : 0;
+                                    }
+                                    addressFields.upazila.value = address.upazila || '';
+                                    addressFields.union.value = address.union || '';
+                                    addressFields.phone.value = address.phone || '';
+                                    addressFields.note.value = address.note || '';
+
+                                    // Populate district autocomplete and hidden ID
+                                    if (districtAutocompleteInput) {
+                                        districtAutocompleteInput.value = getDistrictNameById(address.district) || '';
+                                    }
+                                    if (addressFields.district_id) {
+                                        addressFields.district_id.value = address.district || '';
+                                    }
+
+                                    clearValidationErrors();
+
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to load address for editing.', 'error');
                                 }
+                            } catch (error) {
+                                console.error('Error fetching address for edit:', error);
+                                Swal.fire('Error', 'Failed to load address for editing.', 'error');
                             }
-                        })
+                        }
+
+                        // Delete Address
+                        if (target.classList.contains('delete-address-btn')) {
+                            Swal.fire({
+                                title: 'Are you sure?',
+                                text: "You won't be able to revert this!",
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#d33',
+                                cancelButtonColor: '#3085d6',
+                                confirmButtonText: 'Yes, delete it!',
+                                focusCancel: true
+                            }).then(async (result) => {
+                                if (result.isConfirmed) {
+                                    try {
+                                        const response = await fetch(`/profile/addresses/${addressId}`, {
+                                            method: 'DELETE',
+                                            headers: {
+                                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                                'Accept': 'application/json',
+                                                'X-Requested-With': 'XMLHttpRequest',
+                                            },
+                                        });
+                                        const data = await response.json();
+                                        if (data.success) {
+                                            Swal.fire(
+                                                'Deleted!',
+                                                'Your address has been deleted.',
+                                                'success'
+                                            )
+                                            fetchAddresses(); // Re-fetch to update UI
+                                        } else {
+                                            Swal.fire('Error', data.message || 'Failed to delete address.', 'error');
+                                        }
+                                    } catch (error) {
+                                        console.error('Error deleting address:', error);
+                                        Swal.fire('Error', 'Failed to delete address.', 'error');
+                                    }
+                                }
+                            })
+                        }
+                    });
+                }
+
+                // Initial fetch of addresses for authenticated users
+                fetchAddresses().then(() => {
+                    // After addresses are fetched and rendered, highlight the default one if it exists
+                    const initialSelectedAddressId = selectedAddressIdInput.value;
+                    if (initialSelectedAddressId) {
+                        highlightSelectedAddress(initialSelectedAddressId);
                     }
                 });
-            }
-
-            // Initial fetch of addresses for authenticated users
-            @auth
-            fetchAddresses().then(() => {
-                // After addresses are fetched and rendered, highlight the default one if it exists
-                const initialSelectedAddressId = selectedAddressIdInput.value;
-                if (initialSelectedAddressId) {
-                    highlightSelectedAddress(initialSelectedAddressId);
-                }
-            });
-            @endauth
+            @endguest
         });
     </script>
 @endpush

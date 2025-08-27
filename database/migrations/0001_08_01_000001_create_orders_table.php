@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
             $table->string('short_id', 16)->nullable()->unique();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('user_id')->nullable()->constrained()->onDelete('cascade');
             $table->decimal('total_price', 10, 2);
             $table->decimal('delivery_charge', 8, 2)->default(0.00);
             $table->decimal('coupon_discount', 8, 2)->default(0.00);
