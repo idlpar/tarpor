@@ -29,8 +29,8 @@
                     </div>
                     <div class="text-left">
                         <h2 class="text-xl font-semibold text-gray-800 mb-2">Customer Information</h2>
-                        <p class="text-gray-700"><strong>Name:</strong> {{ $order->user->name ?? 'Guest' }}</p>
-                        <p class="text-gray-700"><strong>Email:</strong> {{ $order->user->email ?? 'N/A' }}</p>
+                        <p class="text-gray-700"><strong>Name:</strong> @if($order->user_id) {{ $order->user->name }} @else {{ $order->address->first_name }} {{ $order->address->last_name }} @endif</p>
+                        <p class="text-gray-700"><strong>Email:</strong> @if($order->user_id) {{ $order->user->email ?? 'N/A' }} @else {{ $order->address->email ?? 'N/A' }} @endif</p>
                         <p class="text-gray-700"><strong>Phone:</strong> {{ $order->address->phone ?? 'N/A' }}</p>
                     </div>
                 </div>
@@ -139,7 +139,7 @@
             <div class="printable-sticker hidden print-only">
                 <h1 class="text-center">Shipping Label</h1>
                 <div class="address">
-                    <p><strong>To:</strong> {{ $order->user->name ?? 'Guest' }}</p>
+                    <p><strong>To:</strong> @if($order->user_id) {{ $order->user->name }} @else {{ $order->address->first_name }} {{ $order->address->last_name }} @endif</p>
                     <p>{{ $order->address->street_address ?? 'N/A' }}</p>
                     <p>{{ $order->address->union ?? 'N/A' }}, {{ $order->address->upazila ?? 'N/A' }}</p>
                     <p>{{ $order->address->district ?? 'N/A' }} - {{ $order->address->postal_code ?? 'N/A' }}</p>

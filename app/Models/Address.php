@@ -20,7 +20,10 @@ class Address extends Model
         'street_address',
         'postal_code',
         'note',
-        'is_default'
+        'is_default',
+        'first_name',
+        'last_name',
+        'email'
     ];
 
     protected $casts = [
