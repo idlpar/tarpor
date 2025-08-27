@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductVariant;
+use App\Models\ShippingMethod; // Added
 use Illuminate\Http\Request;
 
 class CartController extends Controller
@@ -91,7 +92,8 @@ class CartController extends Controller
 
     public function index()
     {
-        return view('cart.index');
+        $shippingMethods = ShippingMethod::where('is_active', true)->get(); // Added
+        return view('cart.index', compact('shippingMethods')); // Modified
     }
 
     public function update(Request $request)

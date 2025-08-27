@@ -188,22 +188,20 @@
                         <div class="mb-6">
                             <h3 class="text-lg font-semibold text-gray-800 mb-3">Shipping Method</h3>
                             <div class="space-y-3">
-                                <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                    <input type="radio" name="shipping" value="50" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" checked>
-                                    <div class="ml-4 flex-grow">
-                                        <span class="font-medium text-gray-800">Standard Shipping</span>
-                                        <p class="text-sm text-gray-500">4-5 business days</p>
-                                    </div>
-                                    <span class="font-semibold text-gray-800">৳50</span>
-                                </label>
-                                <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
-                                    <input type="radio" name="shipping" value="120" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500">
-                                    <div class="ml-4 flex-grow">
-                                        <span class="font-medium text-gray-800">Express Shipping</span>
-                                        <p class="text-sm text-gray-500">1-2 business days</p>
-                                    </div>
-                                    <span class="font-semibold text-gray-800">৳120</span>
-                                </label>
+                                @forelse($shippingMethods as $index => $method)
+                                    <label class="flex items-center p-4 border rounded-lg cursor-pointer transition-all has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
+                                        <input type="radio" name="shipping" value="{{ $method->cost }}" class="form-radio h-5 w-5 text-blue-600 focus:ring-blue-500" {{ $index == 0 ? 'checked' : '' }}>
+                                        <div class="ml-4 flex-grow">
+                                            <span class="font-medium text-gray-800">{{ $method->name }}</span>
+                                            @if($method->description)
+                                                <p class="text-sm text-gray-500">{{ $method->description }}</p>
+                                            @endif
+                                        </div>
+                                        <span class="font-semibold text-gray-800">{{ format_taka($method->cost) }}</span>
+                                    </label>
+                                @empty
+                                    <p class="text-gray-600">No shipping methods available.</p>
+                                @endforelse
                             </div>
                         </div>
                         <div class="mb-6">
@@ -284,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const shippingOptions = document.querySelectorAll('input[name="shipping"]');
 
     // --- State ---
-    let shippingCost = shippingEl ? parseFloat(shippingEl.textContent.replace(/[^0-9.-]+/g,"")) : 50;
+    let shippingCost = 0;
     let discount = 0;
 
     // --- Main Update Function ---
@@ -327,11 +325,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // --- Event Listeners ---
     shippingOptions.forEach(radio => {
-        radio.addEventListener('change', function() {
+        radio.addEventListener('change', async function() {
             shippingCost = parseFloat(this.value);
             updateSummary();
+
+            // Send AJAX request to update delivery charge in session
+            try {
+                const response = await fetch('{{ route('checkout.updateDeliveryCharge') }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ delivery_charge: shippingCost })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Error updating delivery charge:', errorData.message || 'Unknown error');
+                } else {
+                    console.log('Delivery charge updated in session.');
+                }
+            } catch (error) {
+                console.error('Network error updating delivery charge:', error);
+            }
         });
     });
+
+    // Set initial shipping cost based on the checked radio button
+    const initialCheckedShipping = document.querySelector('input[name="shipping"]:checked');
+    if (initialCheckedShipping) {
+        shippingCost = parseFloat(initialCheckedShipping.value);
+    }
 
     const applyCouponForm = document.getElementById('apply-coupon-form');
     if (applyCouponForm) {
