@@ -149,7 +149,7 @@
                         <p class="text-gray-500 font-medium">{{ count(session('cart')) }} items</p>
                     </div>
                     @foreach(session('cart') as $id => $details)
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4 flex flex-col lg:flex-row lg:items-center transition-shadow hover:shadow-md">
+                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4 flex flex-col lg:flex-row lg:items-center transition-shadow hover:shadow-md cart-item" data-id="{{ $id }}" data-item-price="{{ $details['price'] }}">
                             <div class="flex items-center space-x-4 flex-grow">
                                 <img src="{{ $details['image'] }}" alt="{{ $details['name'] }}" class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg">
                                 <div class="flex-grow">
@@ -161,15 +161,16 @@
                                 </div>
                             </div>
                             <div class="flex items-center justify-between mt-4 lg:mt-0">
-                                <form action="{{ route('cart.update', ['id' => $id]) }}" method="POST" class="flex items-center">
+                                <form action="{{ route('cart.update', ['id' => $id]) }}" method="POST" class="flex items-center cart-update-form">
                                     @csrf
                                     @method('PUT')
-                                    <input type="number" name="quantity" value="{{ $details['quantity'] }}" min="1" class="form-input-custom w-20 text-center mx-4">
-                                    <button type="submit" class="text-gray-500 hover:text-blue-600 p-2 rounded-full" data-tippy-content="Update">
+                                    <input type="number" name="quantity" value="{{ $details['quantity'] }}" min="1" class="form-input-custom w-20 text-center mx-4 cart-item-quantity-input">
+                                    <button type="submit" class="text-gray-500 hover:text-blue-600 p-2 rounded-full update-quantity-btn" data-tippy-content="Update">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5"></path></svg>
                                     </button>
                                 </form>
-                                <form action="{{ route('cart.remove', ['id' => $id]) }}" method="POST">
+                                <p class="text-md text-gray-800 font-bold ml-4 cart-item-line-total">{{ format_taka($details['price'] * $details['quantity']) }}</p>
+                                <form action="{{ route('cart.remove', ['id' => $id]) }}" method="POST" class="cart-remove-form">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="text-red-500 hover:text-red-700 p-2 rounded-full ml-2" data-tippy-content="Delete">
@@ -286,15 +287,15 @@ document.addEventListener('DOMContentLoaded', function() {
     let discount = 0;
 
     // --- Main Update Function ---
-    function updateSummary() {
+    function updateSummary(newSubtotal = null, newTotal = null) {
         if (!subtotalEl) return; // Don't run on empty cart page
 
-        const subtotal = parseFloat(subtotalEl.textContent.replace(/[^0-9,.-]+/g,"").replace(/,/g, ''));
-        const total = subtotal + shippingCost - discount;
+        let currentSubtotal = newSubtotal !== null ? newSubtotal : parseFloat(subtotalEl.textContent.replace(/[^0-9,.-]+/g,"").replace(/,/g, ''));
+        let currentTotal = newTotal !== null ? newTotal : (currentSubtotal + shippingCost - discount);
 
-        subtotalEl.textContent = formatCurrencyBD(subtotal);
+        subtotalEl.textContent = formatCurrencyBD(currentSubtotal);
         shippingEl.textContent = formatCurrencyBD(shippingCost);
-        totalEl.textContent = formatCurrencyBD(total);
+        totalEl.textContent = formatCurrencyBD(currentTotal);
 
         if (discount > 0) {
             discountEl.textContent = `- ${formatCurrencyBD(discount)}`;
@@ -359,6 +360,113 @@ document.addEventListener('DOMContentLoaded', function() {
         shippingCost = parseFloat(initialCheckedShipping.value);
     }
 
+    // AJAX for quantity update
+    const cartItemQuantityInputs = document.querySelectorAll('.cart-item-quantity-input'); // New selector
+    const cartRemoveForms = document.querySelectorAll('.cart-remove-form'); // New selector
+
+    cartItemQuantityInputs.forEach(input => {
+        input.addEventListener('change', async function() { // Use 'change' event for quantity input
+            const cartItemDiv = this.closest('.cart-item');
+            const itemId = cartItemDiv.dataset.id;
+            const newQuantity = parseInt(this.value);
+
+            if (newQuantity < 1) {
+                this.value = 1; // Reset to 1 if less than 1
+                return;
+            }
+
+            try {
+                const response = await fetch('{{ route('cart.update') }}', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ id: itemId, quantity: newQuantity })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Update individual item's line total
+                    const itemLineTotalEl = cartItemDiv.querySelector('.cart-item-line-total');
+                    if (itemLineTotalEl) {
+                        itemLineTotalEl.textContent = formatCurrencyBD(data.item_line_total);
+                    }
+
+                    // Update overall subtotal and total
+                    // Update global state variables if provided in response
+                    if (data.delivery_charge !== undefined) {
+                        shippingCost = data.delivery_charge;
+                    }
+                    if (data.coupon !== undefined && data.coupon !== null) {
+                        discount = data.coupon.discount || 0;
+                    } else {
+                        discount = 0; // Clear discount if no coupon
+                    }
+
+                    updateSummary(data.subtotal, data.total);
+                    console.log('Cart item quantity updated successfully!');
+                } else {
+                    console.error('Error updating cart item quantity:', data.message);
+                    alert('Error updating quantity: ' + data.message);
+                    // Optionally, revert the input value to the previous valid quantity
+                }
+            } catch (error) {
+                console.error('Network error updating cart item quantity:', error);
+                alert('Network error. Could not update quantity.');
+            }
+        });
+    });
+
+    // AJAX for item removal
+    cartRemoveForms.forEach(form => {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault(); // Prevent default form submission
+            const cartItemDiv = this.closest('.cart-item');
+            const itemId = cartItemDiv.dataset.id;
+
+            if (!confirm('Are you sure you want to remove this item from your cart?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(this.action, { // Use form's action URL
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ id: itemId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    cartItemDiv.remove(); // Remove the item's div from the DOM
+                    updateSummary(data.subtotal, data.total); // Update overall summary
+                    console.log('Cart item removed successfully!');
+
+                    // If cart becomes empty, show the empty cart message
+                    if (data.cart_count === 0) {
+                        document.querySelector('.grid.grid-cols-1.lg\\:grid-cols-12.gap-8.xl\\:gap-12').innerHTML = `
+                            <div class=\"text-center py-16\">\n                                <h1 class=\"text-3xl font-bold text-gray-800 mb-4\">Your Cart is Empty</h1>\n                                <p class=\"text-gray-600 mb-8\">Looks like you haven't added anything to your cart yet.</p>\n                                <a href=\"{{ route('shop.index') }}\" class=\"btn btn-primary p-2 rounded-lg\">Continue Shopping</a>\n                            </div>
+                        `;
+                    }
+                } else {
+                    console.error('Error removing cart item:', data.message);
+                    alert('Error removing item: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Network error removing cart item:', error);
+                alert('Network error. Could not remove item.');
+            }
+        });
+    });
+
+
     const applyCouponForm = document.getElementById('apply-coupon-form');
     if (applyCouponForm) {
         applyCouponForm.addEventListener('submit', async function(e) {
@@ -393,6 +501,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 discount = data.discount; // Assuming the backend returns the discount amount
                 couponFeedbackEl.textContent = data.message || 'Coupon applied successfully!';
                 couponFeedbackEl.className = 'text-sm mt-2 text-green-600 font-semibold';
+                updateSummary(data.subtotal, data.total); // Update summary with new totals from coupon apply
 
             } catch (error) {
                 console.error('Error applying coupon:', error);

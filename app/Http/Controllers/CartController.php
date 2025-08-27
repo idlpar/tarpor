@@ -107,9 +107,34 @@ class CartController extends Controller
         if(isset($cart[$request->id])) {
             $cart[$request->id]['quantity'] = $request->quantity;
             session()->put('cart', $cart);
-            return redirect()->back()->with('success', 'Cart updated successfully!');
+
+            // Recalculate subtotal and total for the response
+            $subtotal = 0;
+            foreach ($cart as $item) {
+                $subtotal += $item['price'] * $item['quantity'];
+            }
+
+            // Assuming delivery_charge and coupon are also in session for total calculation
+            $deliveryCharge = session()->get('delivery_charge', 0);
+            $couponDiscount = session()->get('coupon.discount', 0);
+            $total = $subtotal + $deliveryCharge - $couponDiscount;
+            if ($total < 0) $total = 0;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart updated successfully!',
+                'cart' => $cart, // Return the updated cart for client-side rendering
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'item_line_total' => $cart[$request->id]['price'] * $cart[$request->id]['quantity'], // New line total for the updated item
+                'delivery_charge' => $deliveryCharge, // Explicitly return delivery charge
+                'coupon' => session()->get('coupon'), // Explicitly return coupon data
+            ]);
         }
-        return redirect()->back()->withErrors(['cart' => 'Item not found in cart.']);
+        return response()->json([
+            'success' => false,
+            'message' => 'Item not found in cart.',
+        ], 404);
     }
 
     public function remove(Request $request)
