@@ -20,7 +20,7 @@ class Order extends Model
         });
     }
 
-    protected $fillable = ['user_id', 'short_id', 'total_price', 'status', 'attribution_data', 'address_id', 'delivery_charge', 'coupon_discount', 'reward_discount'];
+    protected $fillable = ['user_id', 'short_id', 'total_price', 'status', 'attribution_data', 'address_id', 'delivery_charge', 'coupon_discount', 'reward_discount', 'shipping_method_id', 'coupon_id'];
 
     protected $casts = [
         'attribution_data' => 'json',
@@ -46,5 +46,15 @@ class Order extends Model
     public function orderItems()
     {
         return $this->hasMany(OrderItem::class);
+    }
+
+    public function shippingMethod()
+    {
+        return $this->belongsTo(ShippingMethod::class);
+    }
+
+    public function coupon()
+    {
+        return $this->belongsTo(Coupon::class);
     }
 }

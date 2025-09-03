@@ -24,15 +24,29 @@
     }
 
     /* Hide everything by default */
-    body > *:not(.print-only) {
-        display: none !important;
+    body * {
+        visibility: hidden;
     }
 
     /* Show only the selected printable area */
+    body.printing-voucher .printable-voucher,
+    body.printing-voucher .printable-voucher * {
+        visibility: visible;
+    }
+
     body.printing-voucher .printable-voucher {
-        display: block !important;
         position: relative; /* Ensure it respects its own dimensions */
         page-break-after: always; /* Ensure it starts on a new page */
+    }
+
+    body.printing-sticker .printable-sticker,
+    body.printing-sticker .printable-sticker * {
+        visibility: visible;
+    }
+
+    body.printing-sticker .printable-sticker {
+        position: relative; /* Ensure it respects its own dimensions */
+        page-break-after: always; /* Ensure each sticker is on its own page */
     }
 
     body.printing-sticker .printable-sticker {

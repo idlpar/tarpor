@@ -209,7 +209,7 @@ class OrderController extends Controller
             'status' => request('status')
         ];
 
-        $ordersQuery = Order::with(['user', 'products'])
+        $ordersQuery = Order::with(['user', 'products', 'shippingMethod', 'coupon', 'orderItems.product'])
             ->when($filters['status'], function ($query, $status) {
                 return $query->where('status', $status);
             })

@@ -124,6 +124,40 @@
             height: 42px;
             white-space: nowrap;
         }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 15% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: black;
+            text-decoration: none;
+            cursor: pointer;
+        }
     </style>
 @endpush
 
@@ -304,7 +338,7 @@
                         <tr>
                             <th>Order #</th>
                             <th>Customer</th>
-                            <th>Products</th>
+                            <th>Details</th>
                             <th>Amount</th>
                             <th>Status</th>
                             <th>Date</th>
@@ -317,29 +351,39 @@
                                 <td class="font-medium">#{{ $order->id }}</td>
                                 <td>
                                     <div class="flex items-center">
-                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                                            <span class="text-gray-600 font-medium">{{ strtoupper(substr($order->user->name, 0, 1)) }}</span>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="font-medium text-gray-900">{{ $order->user->name }}</div>
-                                            <div class="text-sm text-gray-500">{{ $order->user->email }}</div>
-                                        </div>
+                                        @if ($order->user)
+                                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                                <a href="{{ route('users.show', $order->user) }}">
+                                                    <span class="text-gray-600 font-medium">{{ strtoupper(substr($order->user->name, 0, 1)) }}</span>
+                                                </a>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="font-medium text-gray-900">
+                                                    <a href="{{ route('users.show', $order->user) }}">{{ $order->user->name }}</a>
+                                                </div>
+                                                <div class="text-sm text-gray-500">{{ $order->user->email }}</div>
+                                            </div>
+                                        @else
+                                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                                <span class="text-gray-600 font-medium">G</span>
+                                            </div>
+                                            <div class="ml-4">
+                                                @if ($order->address && $order->address->first_name)
+                                                    <div class="font-medium text-gray-900">{{ $order->address->first_name }} {{ $order->address->last_name }}</div>
+                                                @else
+                                                    <div class="font-medium text-gray-900">Guest</div>
+                                                @endif
+                                                @if ($order->address && $order->address->email)
+                                                    <div class="text-sm text-gray-500">{{ $order->address->email }}</div>
+                                                @endif
+                                            </div>
+                                        @endif
                                     </div>
                                 </td>
                                 <td>
-                                    @if($order->products->isNotEmpty())
-                                        <div class="text-gray-900">
-                                            {{ $order->products->first()->name }}
-                                            @if($order->products->count() > 1)
-                                                + {{ $order->products->count() - 1 }} more
-                                            @endif
-                                        </div>
-                                        <div class="text-sm text-gray-500">
-                                            Qty: {{ $order->products->sum('pivot.quantity') }}
-                                        </div>
-                                    @else
-                                        <div class="text-gray-500">No products</div>
-                                    @endif
+                                    <button class="text-blue-600 hover:underline" onclick='showOrderItems({{ json_encode($order) }})'>
+                                        View Details
+                                    </button>
                                 </td>
                                 <td class="font-medium">{{ format_taka($order->total_price) }}</td>
                                 <td>
@@ -427,6 +471,18 @@
             </div>
         </div>
     </div>
+    
+    <!-- Modal for order items -->
+    <div id="orderItemsModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Order Details</h2>
+            <table class="table">
+                <tbody id="orderItemsTbody">
+                </tbody>
+            </table>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -485,5 +541,55 @@
                 });
             }
         });
+
+        function showOrderItems(order) {
+            const modal = document.getElementById('orderItemsModal');
+            const tbody = document.getElementById('orderItemsTbody');
+            tbody.innerHTML = '';
+
+            let shippingInfo = `
+                <tr>
+                    <td colspan="3">
+                        <strong>Shipping Method:</strong> ${order.shipping_method ? order.shipping_method.name : 'N/A'}
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += shippingInfo;
+
+            let couponInfo = `
+                <tr>
+                    <td colspan="3">
+                        <strong>Coupon:</strong> ${order.coupon ? order.coupon.code : 'N/A'}
+                    </td>
+                </tr>
+            `;
+            tbody.innerHTML += couponInfo;
+
+            let productsHeader = `
+                <tr>
+                    <th>Product</th>
+                    <th>Quantity</th>
+                    <th>Price</th>
+                </tr>
+            `;
+            tbody.innerHTML += productsHeader;
+
+            order.order_items.forEach(item => {
+                const row = `
+                    <tr>
+                        <td>${item.product.name}</td>
+                        <td>${item.quantity}</td>
+                        <td>${item.price}</td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+            modal.style.display = "block";
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('orderItemsModal');
+            modal.style.display = "none";
+        }
     </script>
 @endpush

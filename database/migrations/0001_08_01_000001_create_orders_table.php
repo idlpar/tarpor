@@ -22,6 +22,8 @@ return new class extends Migration
             $table->softDeletes();
 
             $table->foreignId('address_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('shipping_method_id')->nullable()->constrained()->onDelete('set null');
+            $table->foreignId('coupon_id')->nullable()->constrained()->onDelete('set null');
         });
     }
 

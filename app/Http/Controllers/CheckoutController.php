@@ -117,14 +117,15 @@ class CheckoutController extends Controller
                 ];
 
                 if (Auth::check()) {
-                $addressData['user_id'] = Auth::id();
-            } else {
-                // For guests, add guest user details to address data
-                $addressData['first_name'] = $request->first_name;
-                $addressData['last_name'] = $request->last_name;
-                $addressData['email'] = $request->email;
-            }
-            $address = \App\Models\Address::create($addressData);
+                    $addressData['user_id'] = Auth::id();
+                } else {
+                    // For guests, add guest user details to address data
+                    $addressData['first_name'] = $request->first_name;
+                    $addressData['last_name'] = $request->last_name;
+                    $addressData['email'] = $request->email;
+                    $addressData['label'] = 'Home';
+                }
+                $address = \App\Models\Address::create($addressData);
             }
 
             // Create a single Order record
@@ -137,6 +138,8 @@ class CheckoutController extends Controller
                 'address_id' => $address->id,
                 'status' => 'pending',
                 'attribution_data' => json_encode(session()->get('ad_tracking_data', [])),
+                'shipping_method_id' => $shippingMethod->id,
+                'coupon_id' => session()->has('coupon.id') ? session('coupon.id') : null,
             ]);
 
             // Create OrderItem records
