@@ -297,7 +297,11 @@ class OrderController extends Controller
             default => null
         };
 
-        return view('dashboard.admin.orders.show', compact('order', 'nextStatus'));
+        $links = [
+            'Orders' => route('admin.orders.index'),
+            'Order Details' => null
+        ];
+        return view('dashboard.admin.orders.show', compact('order', 'nextStatus', 'links'));
     }
 
     public function create()

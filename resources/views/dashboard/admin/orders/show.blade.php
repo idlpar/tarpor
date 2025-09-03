@@ -7,19 +7,63 @@
 @endpush
 
 @section('admin_content')
-    <div class="bg-gradient-to-b from-gray-50 to-gray-100 min-h-screen py-12">
-        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-8 print:shadow-none print:p-0 printable-voucher">
-                <!-- Voucher Header -->
-                <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b-2 print:border-gray-800">
-                    <div class="text-left">
-                        <h1 class="text-3xl font-bold text-gray-800">Order Voucher</h1>
-                        <p class="text-sm text-gray-600">#{{ $order->short_id }}</p>
-                    </div>
-                    <div class="text-right">
-                        <img src="/logos/logo.svg" alt="Company Logo" class="h-8 w-auto inline-block">
+    <div class="container mx-auto">
+        @if (session('success'))
+            <div class="mb-4 rounded-lg bg-green-100 text-green-700 p-4" role="alert">
+                {{ session('success') }}
+            </div>
+        @endif
+
+        @if ($errors->any())
+            <div class="mb-4 rounded-lg bg-red-100 text-red-700 p-4" role="alert">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
+        @include('components.breadcrumbs', [
+            'links' => [
+                'Orders' => route('admin.orders.index'),
+                'Order Details' => null
+            ]
+        ])
+
+        <!-- Page Header -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-8">
+            <div class="mb-4 md:mb-0">
+                <div class="flex items-center">
+                    <a href="{{ route('admin.orders.index') }}" class="mr-4 text-gray-400 hover:text-gray-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                    </a>
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900 tracking-tight">Order Overview</h1>
+                        <p class="mt-1 text-sm text-gray-600">Detailed view of order #{{ $order->short_id }}</p>
                     </div>
                 </div>
+            </div>
+            <div>
+                <a href="{{ route('admin.orders.index') }}" class="inline-flex items-center px-4 py-2 border border-green-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[var(--primary)]">
+                    View All Orders
+                </a>
+            </div>
+        </div>
+
+        <div class="max-w-4xl mx-auto bg-white rounded-lg shadow-xl p-8 print:shadow-none print:p-0 printable-voucher">
+            <!-- Voucher Header -->
+            <div class="flex justify-between items-center border-b pb-4 mb-6 print:border-b-2 print:border-gray-800">
+                <div class="text-left">
+                    <h1 class="text-3xl font-bold text-gray-800">Order Voucher</h1>
+                    <p class="text-sm text-gray-600">#{{ $order->short_id }}</p>
+                </div>
+                <div class="text-right">
+                    <img src="/logos/logo.svg" alt="Company Logo" class="h-8 w-auto inline-block">
+                </div>
+            </div>
 
                 <!-- Order & Customer Details -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
