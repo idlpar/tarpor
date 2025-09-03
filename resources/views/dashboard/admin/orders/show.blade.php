@@ -77,8 +77,11 @@
                     </div>
                 </div>
 
-                <!-- Order Summary -->
-                <div class="flex justify-end mb-6">
+                <div class="flex justify-between items-start mb-6">
+                    <div class="flex-shrink-0 print:hidden">
+                        <p class="text-sm text-gray-600 mb-2">Scan to view order details:</p>
+                        {!! QrCode::size(120)->generate(route('admin.orders.show', $order->id)) !!}
+                    </div>
                     <div class="w-full md:w-1/2">
                         @php
                             $subtotalFromItems = 0;
