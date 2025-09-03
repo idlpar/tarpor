@@ -139,10 +139,12 @@
 
         .modal-content {
             background-color: #fefefe;
-            margin: 15% auto;
+            margin: 10% auto;
             padding: 20px;
             border: 1px solid #888;
             width: 80%;
+            max-width: 600px;
+            border-radius: 0.5rem;
         }
 
         .close {
@@ -476,11 +478,37 @@
     <div id="orderItemsModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h2>Order Details</h2>
-            <table class="table">
-                <tbody id="orderItemsTbody">
-                </tbody>
-            </table>
+            <h2 class="text-2xl font-bold mb-4">Order Details</h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Shipping Information</h3>
+                    <p><strong>Method:</strong> <span id="shippingMethod"></span></p>
+                </div>
+                <div>
+                    <h3 class="text-lg font-semibold mb-2">Discount Information</h3>
+                    <p><strong>Coupon:</strong> <span id="couponCode"></span></p>
+                </div>
+            </div>
+
+            <hr class="my-6">
+
+            <div>
+                <h3 class="text-lg font-semibold mb-2">Products Ordered</h3>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>Quantity</th>
+                                <th class="text-right">Price</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orderItemsTbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -544,46 +572,25 @@
 
         function showOrderItems(order) {
             const modal = document.getElementById('orderItemsModal');
+            const shippingMethodSpan = document.getElementById('shippingMethod');
+            const couponCodeSpan = document.getElementById('couponCode');
             const tbody = document.getElementById('orderItemsTbody');
+
+            shippingMethodSpan.textContent = order.shipping_method ? order.shipping_method.name : 'N/A';
+            couponCodeSpan.textContent = order.coupon ? order.coupon.code : 'N/A';
+
             tbody.innerHTML = '';
-
-            let shippingInfo = `
-                <tr>
-                    <td colspan="3">
-                        <strong>Shipping Method:</strong> ${order.shipping_method ? order.shipping_method.name : 'N/A'}
-                    </td>
-                </tr>
-            `;
-            tbody.innerHTML += shippingInfo;
-
-            let couponInfo = `
-                <tr>
-                    <td colspan="3">
-                        <strong>Coupon:</strong> ${order.coupon ? order.coupon.code : 'N/A'}
-                    </td>
-                </tr>
-            `;
-            tbody.innerHTML += couponInfo;
-
-            let productsHeader = `
-                <tr>
-                    <th>Product</th>
-                    <th>Quantity</th>
-                    <th>Price</th>
-                </tr>
-            `;
-            tbody.innerHTML += productsHeader;
-
             order.order_items.forEach(item => {
                 const row = `
                     <tr>
                         <td>${item.product.name}</td>
                         <td>${item.quantity}</td>
-                        <td>${item.price}</td>
+                        <td class="text-right">${item.price}</td>
                     </tr>
                 `;
                 tbody.innerHTML += row;
             });
+
             modal.style.display = "block";
         }
 
