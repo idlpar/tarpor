@@ -1,6 +1,6 @@
 @extends('layouts.admin')
 
-@section('title', 'Add Brand | ' . strtoupper(config('app.name')))
+@section('title', 'Add Brand')
 
 @section('admin_content')
     <div class="container mx-auto">

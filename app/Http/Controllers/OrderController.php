@@ -229,8 +229,11 @@ class OrderController extends Controller
 
         $stats = $this->getOrderStats($statsQuery);
 
+        $links = [
+            'Orders' => null
+        ];
         return view('dashboard.admin.orders.index', array_merge(
-            compact('orders', 'filters'),
+            compact('orders', 'filters', 'links'),
             ['stats' => $stats]
         ));
     }

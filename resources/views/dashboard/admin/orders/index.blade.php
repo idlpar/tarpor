@@ -166,12 +166,13 @@
 @section('admin_content')
     <div class="py-6">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            @include('components.breadcrumbs', [
-                'links' => [
-                    'Orders' => null
-                ]
-            ])
-            <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            @include('components.ui.breadcrumbs', [
+            'links' => [
+                'Orders' => null
+            ]
+        ])
+
+        <div class="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
                     <h1 class="text-2xl font-bold text-gray-900">Order Management</h1>
                     <p class="mt-1 text-sm text-gray-600">View and manage customer orders</p>
