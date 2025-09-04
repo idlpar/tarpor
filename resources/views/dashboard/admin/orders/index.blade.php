@@ -124,7 +124,7 @@
             height: 42px;
             white-space: nowrap;
         }
-        
+
         .modal {
             display: none;
             position: fixed;
@@ -164,8 +164,8 @@
 @endpush
 
 @section('admin_content')
-    <div class="py-6">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
+        <div class="container mx-auto px-4 py-4">
             @include('components.ui.breadcrumbs', [
             'links' => [
                 'Orders' => null
@@ -473,8 +473,8 @@
                 @endif
             </div>
         </div>
-    </div>
-    
+
+
     <!-- Modal for order items -->
     <div id="orderItemsModal" class="modal">
         <div class="modal-content">
