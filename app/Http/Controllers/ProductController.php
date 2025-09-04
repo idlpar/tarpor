@@ -30,7 +30,7 @@ class ProductController extends Controller
     public function index(Request $request)
     {
         Log::info('ProductController index method hit.');
-        $products = Product::with(['brand', 'categories', 'media'])
+        $products = Product::with(['brand', 'categories', 'media', 'variants:product_id,stock_quantity'])
             ->withCount('variants')
             ->when($request->has('type') && $request->input('type') !== '', function ($query) use ($request) {
                 $query->where('type', $request->input('type'));
@@ -80,6 +80,12 @@ class ProductController extends Controller
                 }]);
             })
             ->paginate(25);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'products' => $products,
+            ]);
+        }
 
         $brands = Brand::orderBy('name')->get();
         $categories = Category::orderBy('name')->get();

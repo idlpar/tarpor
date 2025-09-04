@@ -86,8 +86,12 @@
             border-bottom: none;
         }
 
-        .table tr:hover td {
-            background-color: #f9fafb;
+        .disabled-pagination-link {
+            background-color: #e0e0e0; /* Lighter gray background */
+            color: #a0a0a0; /* Muted text color */
+            cursor: not-allowed;
+            pointer-events: none;
+            border: 1px solid #d0d0d0; /* Lighter border */
         }
 
         .action-btn {
@@ -340,9 +344,9 @@
             const paginationContainer = document.getElementById('pagination-container');
             const loadingSpinner = document.getElementById('loading-spinner');
 
-            // Helper function to format currency (simple version)
+            // Helper function to format currency (simple version)                                                                                                                    │
             function formatTaka(amount) {
-                return `BDT ${parseFloat(amount).toFixed(2)}`;
+                return parseFloat(amount).toFixed(2);
             }
 
             // Function to fetch and render order data
@@ -600,7 +604,7 @@
                             `;
                         } else {
                             paginationHtml += `
-                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md">
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md disabled-pagination-link">
                                     ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
                                 </span>
                             `;

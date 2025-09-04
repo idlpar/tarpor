@@ -208,209 +208,299 @@
             </div>
         @endif
 
-        <!-- Products Table -->
-        <div class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
-            <!-- Table Header with Bulk Actions -->
-            <div class="px-4 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
-                <div class="flex items-center">
-                    <input type="checkbox" id="selectAllCheckbox" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                    <label for="selectAllCheckbox" class="ml-2 text-sm text-gray-700">Select all</label>
-
-                    <div id="bulkActions" class="hidden ml-4">
-                        <select id="bulkActionSelect" class="mr-2 border-gray-300 rounded-md shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-                            <option value="">Bulk Actions</option>
-                            <option value="publish">Publish</option>
-                            <option value="draft">Set to Draft</option>
-                            <option value="archive">Archive</option>
-                            <option value="delete">Delete</option>
-                            <option value="update-categories">Update Categories</option>
-                            <option value="update-tags">Update Tags</option>
-                        </select>
-                        <button id="applyBulkAction" class="bg-blue-600 text-white px-3 py-1 rounded-md text-sm hover:bg-blue-700">
-                            Apply
-                        </button>
-                    </div>
-                </div>
-
-                <div class="text-sm text-gray-500">
-                    Showing {{ $products->firstItem() }} to {{ $products->lastItem() }} of {{ $products->total() }} products
-                </div>
+        <!-- Products Table Placeholder -->
+        <div id="products-table-container" class="bg-white shadow-sm rounded-lg border border-gray-200 overflow-hidden">
+            <div id="products-table-body" class="overflow-x-auto">
+                <!-- Product table content will be loaded here via AJAX -->
             </div>
+            <div id="pagination-container" class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                <!-- Pagination will be loaded here via AJAX -->
+            </div>
+        </div>
 
-            <!-- Table -->
-            <div class="overflow-x-auto">
+        <!-- Spinner for loading data -->
+        <div id="loading-spinner" class="text-center py-8" style="display: none;">
+            <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-2 text-gray-600">Loading products...</p>
+        </div>
+    </div>
+@endsection
+
+@push('scripts')
+<script>
+    function confirmDelete(event) {
+        event.preventDefault();
+        Swal.fire({
+            title: 'Are you sure?',
+            text: "You won't be able to revert this!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!',
+            focusCancel: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                event.target.submit();
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const productsTableBody = document.getElementById('products-table-body');
+        const paginationContainer = document.getElementById('pagination-container');
+        const loadingSpinner = document.getElementById('loading-spinner');
+        const filterToggleButton = document.getElementById('filterToggleButton');
+        const filterSection = document.getElementById('filterSection');
+        const applyFiltersButton = document.getElementById('applyFiltersButton');
+        const clearFiltersButton = document.getElementById('clearFiltersButton');
+        const sortSelect = document.getElementById('sortSelect');
+
+        // Filter elements
+        const searchInput = document.getElementById('searchInput');
+        const categoryFilter = document.getElementById('categoryFilter');
+        const brandFilter = document.getElementById('brandFilter');
+        const typeFilter = document.getElementById('typeFilter');
+        const statusFilter = document.getElementById('statusFilter');
+        const stockStatusFilter = document.getElementById('stockStatusFilter');
+        const priceMin = document.getElementById('priceMin');
+        const priceMax = document.getElementById('priceMax');
+        const dateFrom = document.getElementById('dateFrom');
+        const dateTo = document.getElementById('dateTo');
+
+        // Helper function to format currency
+        function formatTaka(amount) {
+            return `BDT ${parseFloat(amount).toFixed(2)}`;
+        }
+
+        // Function to fetch and render product data
+        async function fetchProductData(page = 1) {
+            loadingSpinner.style.display = 'block';
+            productsTableBody.innerHTML = ''; // Clear previous products
+            paginationContainer.innerHTML = ''; // Clear previous pagination
+
+            const params = new URLSearchParams();
+            params.append('page', page);
+
+            // Append filter values
+            if (searchInput.value) params.append('search', searchInput.value);
+            if (categoryFilter.value) params.append('category_id', categoryFilter.value);
+            if (brandFilter.value) params.append('brand_id', brandFilter.value);
+            if (typeFilter.value) params.append('type', typeFilter.value);
+            if (statusFilter.value) params.append('status', statusFilter.value);
+            if (stockStatusFilter.value) params.append('stock_status', stockStatusFilter.value);
+            if (priceMin.value) params.append('price_min', priceMin.value);
+            if (priceMax.value) params.append('price_max', priceMax.value);
+            if (dateFrom.value) params.append('date_from', dateFrom.value);
+            if (dateTo.value) params.append('date_to', dateTo.value);
+            if (sortSelect.value) params.append('sort', sortSelect.value);
+
+            try {
+                const response = await fetch(`{{ route('products.index') }}?${params.toString()}`, {
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const data = await response.json();
+
+                renderProductsTable(data.products.data);
+                renderPagination(data.products);
+
+            } catch (error) {
+                console.error('Error fetching product data:', error);
+                productsTableBody.innerHTML = '<p class="text-red-500 px-6 py-4">Failed to load products. Please try again.</p>';
+            } finally {
+                loadingSpinner.style.display = 'none';
+            }
+        }
+
+        // Function to render products table
+        function renderProductsTable(products) {
+            let tableHtml = `
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
-                    <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8">
-                            <!-- Checkbox column -->
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                            Image
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">
-                            Product
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            SKU
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Categories
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Price
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Stock
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-8"></th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Image</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Product</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categories</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                            <th scope="col" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                    @forelse ($products as $product)
-                        <tr class="hover:bg-gray-50">
-                            <!-- Checkbox -->
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <input type="checkbox" name="product_ids[]" value="{{ $product->id }}" class="product-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
-                            </td>
+            `;
 
-                            <!-- Image -->
+            if (products.length === 0) {
+                tableHtml += `
+                    <tr>
+                        <td colspan="9" class="px-6 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center text-gray-400">
+                                <svg class="h-16 w-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <h3 class="text-lg font-medium text-gray-900 mb-1">No products found</h3>
+                                <p class="text-sm">Try adjusting your search or filter to find what you're looking for.</p>
+                                <a href="{{ route('products.create') }}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
+                                    Add New Product
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                products.forEach(product => {
+                    const thumbnailUrl = product.thumbnail_url || '{{ asset('images/default-product.png') }}';
+                    const brandHtml = product.brand ? `<span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800">${product.brand.name}</span>` : '';
+                    const variableTypeHtml = product.type === 'variable' ? `<span class="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 ml-1">Variable (${product.variants_count} variants)</span>` : '';
+                    const skuHtml = product.sku ? `
+                        <div class="flex items-center">
+                            ${product.sku}
+                            <button data-copy-sku="${product.sku}" class="ml-1 text-gray-400 hover:text-gray-600">
+                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    ` : 'N/A';
+
+                    let categoriesHtml = '';
+                    if (product.categories && product.categories.length > 0) {
+                        product.categories.slice(0, 2).forEach(category => {
+                            categoriesHtml += `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">${category.name}</span>`;
+                        });
+                        if (product.categories.length > 2) {
+                            categoriesHtml += `<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">+${product.categories.length - 2} more</span>`;
+                        }
+                    } else {
+                        categoriesHtml = `<span class="text-xs text-gray-500">Uncategorized</span>`;
+                    }
+
+                    const priceHtml = product.sale_price ? `
+                        <span class="font-medium">${formatTaka(product.sale_price)}</span>
+                        <span class="text-xs text-gray-500 line-through">${formatTaka(product.price)}</span>
+                    ` : `
+                        <span class="font-medium">${formatTaka(product.price)}</span>
+                    `;
+
+                    let stockClass = '';
+                    let stockMainText = '';
+                    let stockSubText = '';
+
+                    if (product.type === 'variable') {
+                        if (product.variants_count === 0) {
+                            stockClass = 'bg-gray-100 text-gray-800'; // Neutral color
+                            stockMainText = 'No Variants';
+                            stockSubText = 'Configure variants'; // Suggestion
+                        } else if (product.total_stock > 0) {
+                            stockClass = 'bg-blue-100 text-blue-800';
+                            stockMainText = `${product.total_stock} in stock`;
+                            stockSubText = `${product.variants_count} variants`;
+                        } else {
+                            stockClass = 'bg-red-100 text-red-800';
+                            stockMainText = 'Out of Stock';
+                            stockSubText = `${product.variants_count} variants`;
+                        }
+                    } else {
+                        if (product.stock_quantity > 10) {
+                            stockClass = 'bg-green-100 text-green-800';
+                        } else if (product.stock_quantity > 0) {
+                            stockClass = 'bg-yellow-100 text-yellow-800';
+                        } else {
+                            stockClass = 'bg-red-100 text-red-800';
+                        }
+                        stockMainText = product.stock_quantity;
+                    }
+
+                    const statusClass = product.status === 'published' ? 'bg-green-100 text-green-800' :
+                                        product.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
+
+                    tableHtml += `
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <input type="checkbox" name="product_ids[]" value="${product.id}" class="product-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex-shrink-0 h-10 w-10">
-                                    <img class="h-10 w-10 rounded-md object-cover" src="{{ $product->thumbnail_url ?? asset('images/default-product.png') }}" alt="{{ $product->name }}">
+                                    <img class="h-10 w-10 rounded-md object-cover" src="${thumbnailUrl}" alt="${product.name}">
                                 </div>
                             </td>
-
-                            <!-- Product Name and Details -->
                             <td class="px-6 py-4">
                                 <div class="flex items-center">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900">
-                                            <a href="{{ route('products.show', $product->id) }}" class="hover:text-blue-600 hover:underline">
-                                                {{ $product->name }}
+                                            <a href="/admin/products/${product.id}" class="hover:text-blue-600 hover:underline">
+                                                ${product.name}
                                             </a>
                                         </div>
                                         <div class="text-xs text-gray-500 mt-1">
-                                            @if($product->brand)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-gray-100 text-gray-800">
-                                                {{ $product->brand->name }}
-                                            </span>
-                                            @endif
-                                            @if($product->type === 'variable')
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded bg-purple-100 text-purple-800 ml-1">
-                                                Variable ({{ $product->variants_count }} variants)
-                                            </span>
-                                            @endif
+                                            ${brandHtml}
+                                            ${variableTypeHtml}
                                         </div>
                                     </div>
                                 </div>
                             </td>
-
-                            <!-- SKU -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div class="flex items-center">
-                                    {{ $product->sku ?? 'N/A' }}
-                                    @if($product->sku)
-                                        <button data-copy-sku="{{ $product->sku }}" class="ml-1 text-gray-400 hover:text-gray-600">
-                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"/>
-                                            </svg>
-                                        </button>
-                                    @endif
-                                </div>
+                                ${skuHtml}
                             </td>
-
-                            <!-- Categories -->
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-1 max-w-[200px]">
-                                    @forelse($product->categories->take(2) as $category)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        {{ $category->name }}
-                                    </span>
-                                    @empty
-                                        <span class="text-xs text-gray-500">Uncategorized</span>
-                                    @endforelse
-                                    @if($product->categories->count() > 2)
-                                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                                        +{{ $product->categories->count() - 2 }} more
-                                    </span>
-                                    @endif
+                                    ${categoriesHtml}
                                 </div>
                             </td>
-
-                            <!-- Price -->
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                 <div class="flex flex-col">
-                                    @if($product->sale_price)
-                                        <span class="font-medium">{{ format_taka($product->sale_price) }}</span>
-                                        <span class="text-xs text-gray-500 line-through">{{ format_taka($product->price) }}</span>
-                                    @else
-                                        <span class="font-medium">{{ format_taka($product->price) }}</span>
-                                    @endif
+                                    ${priceHtml}
                                 </div>
                             </td>
-
-                            <!-- Stock -->
                             <td class="px-6 py-4 whitespace-nowrap text-center">
-                                @if($product->type === 'variable')
-                                    <div class="flex flex-col items-center">
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                                        {{ $product->total_stock }} total
+                                <div class="flex flex-col items-center">
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full ${stockClass}">
+                                        ${stockMainText}
                                     </span>
-                                        <span class="text-xs text-gray-500 mt-1">{{ $product->variants_count }} variants</span>
-                                    </div>
-                                @else
-                                    <span class="px-2 py-1 text-xs font-medium rounded-full
-                                    @if($product->stock_quantity > 10) bg-green-100 text-green-800
-                                    @elseif($product->stock_quantity > 0) bg-yellow-100 text-yellow-800
-                                    @else bg-red-100 text-red-800 @endif">
-                                    {{ $product->stock_quantity }}
-                                </span>
-                                @endif
+                                    ${stockSubText ? `<span class="text-xs text-gray-500 mt-1">${stockSubText}</span>` : ''}
+                                </div>
                             </td>
-
-                            <!-- Status -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 py-1 text-xs font-medium rounded-full
-                                @if($product->status === 'published') bg-green-100 text-green-800
-                                @elseif($product->status === 'draft') bg-yellow-100 text-yellow-800
-                                @else bg-gray-100 text-gray-800 @endif">
-                                {{ ucfirst($product->status) }}
-                            </span>
+                                <span class="px-2 py-1 text-xs font-medium rounded-full ${statusClass}">
+                                    ${product.status.charAt(0).toUpperCase() + product.status.slice(1)}
+                                </span>
                             </td>
-
-                            <!-- Actions -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end space-x-2">
-                                    <a href="{{ route('products.show.frontend', $product->slug) }}" target="_blank" class="text-gray-400 hover:text-gray-600 custom-tooltip-trigger" data-tooltip="View on Frontend">
+                                    <a href="/products/${product.slug}" target="_blank" class="text-gray-400 hover:text-gray-600 custom-tooltip-trigger" data-tooltip="View on Frontend">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </a>
                                     <span class="text-gray-300">|</span>
-                                    <a href="{{ route('products.edit', $product->id) }}" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Product">
+                                    <a href="/admin/products/${product.id}/edit" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Product">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </a>
-                                    @if($product->type === 'variable')
+                                    ${product.type === 'variable' ? `
                                         <span class="text-gray-300">|</span>
-                                        <a href="{{ route('products.variants.edit', $product->id) }}" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Manage Variants">
+                                        <a href="/admin/products/${product.id}/variants/edit" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Manage Variants">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                             </svg>
                                         </a>
-                                    @endif
+                                    ` : ''}
                                     <span class="text-gray-300">|</span>
-                                    <form action="{{ route('products.destroy', $product->id) }}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
-                                        @csrf
-                                        @method('DELETE')
+                                    <form action="/admin/products/${product.id}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
+                                        <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                        <input type="hidden" name="_method" value="DELETE">
                                         <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Product">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -420,64 +510,293 @@
                                 </div>
                             </td>
                         </tr>
-                    @empty
-                        <tr>
-                            <td colspan="9" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center justify-center text-gray-400">
-                                    <svg class="h-16 w-16 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <h3 class="text-lg font-medium text-gray-900 mb-1">No products found</h3>
-                                    <p class="text-sm">Try adjusting your search or filter to find what you're looking for.</p>
-                                    <a href="{{ route('products.create') }}" class="mt-4 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700">
-                                        Add New Product
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                    @endforelse
+                    `;
+                });
+            }
+
+            tableHtml += `
                     </tbody>
                 </table>
-            </div>
+            `;
+            productsTableBody.innerHTML = tableHtml;
 
-            <!-- Pagination -->
-            @if($products->hasPages())
-                <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between sm:px-6">
-                    <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                        <div>
-                            <p class="text-sm text-gray-700">
-                                Showing <span class="font-medium">{{ $products->firstItem() }}</span> to <span class="font-medium">{{ $products->lastItem() }}</span> of <span class="font-medium">{{ $products->total() }}</span> results
-                            </p>
-                        </div>
-                        <div>
-                            {{ $products->links() }}
+            // Add event listeners for copy SKU buttons
+            productsTableBody.querySelectorAll('[data-copy-sku]').forEach(button => {
+                button.addEventListener('click', function() {
+                    const sku = this.dataset.copySku;
+                    navigator.clipboard.writeText(sku).then(() => {
+                        // Optional: Show a tooltip or temporary message
+                        console.log('SKU copied:', sku);
+                    }).catch(err => {
+                        console.error('Failed to copy SKU:', err);
+                    });
+                });
+            });
+        }
+
+        // Function to render pagination
+        function renderPagination(paginationData) {
+            if (paginationData.last_page > 1) {
+                let paginationHtml = `
+                    <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex items-center justify-between sm:px-6">
+                        <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-sm text-gray-700">
+                                    Showing <span class="font-medium">${paginationData.from}</span> to <span class="font-medium">${paginationData.to}</span> of <span class="font-medium">${paginationData.total}</span> results
+                                </p>
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                `;
+
+                paginationData.links.forEach(link => {
+                    if (link.url) {
+                        const pageNum = new URL(link.url).searchParams.get('page') || 1;
+                        paginationHtml += `
+                            <a href="#" data-page="${pageNum}" class="${link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md">
+                                ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                            </a>
+                        `;
+                    } else {
+                        paginationHtml += `
+                            <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md disabled-pagination-link">
+                                ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                            </span>
+                        `;
+                    }
+                });
+
+                paginationHtml += `
+                                </nav>
+                            </div>
                         </div>
                     </div>
-                </div>
-            @endif
-        </div>
-    </div>
-@endsection
+                `;
+                paginationContainer.innerHTML = paginationHtml;
 
-@push('scripts')
-
-<script>
-    function confirmDelete(event) {
-        event.preventDefault(); // Prevent the form from submitting immediately
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Yes, delete it!',
-            focusCancel: true // Focus on the cancel button by default
-        }).then((result) => {
-            if (result.isConfirmed) {
-                event.target.submit(); // Submit the form if confirmed
+                // Add event listeners for pagination links
+                paginationContainer.querySelectorAll('a[data-page]').forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        fetchProductData(this.dataset.page);
+                    });
+                });
+            } else {
+                paginationContainer.innerHTML = ''; // Hide pagination if only one page
             }
+        }
+
+        // Initial fetch of data when the page loads
+        fetchProductData();
+
+        // Filter toggle functionality
+        filterToggleButton.addEventListener('click', function() {
+            filterSection.classList.toggle('hidden');
         });
-    }
+
+        // Apply Filters button
+        applyFiltersButton.addEventListener('click', function() {
+            fetchProductData();
+        });
+
+        // Clear Filters button
+        clearFiltersButton.addEventListener('click', function() {
+            searchInput.value = '';
+            categoryFilter.value = '';
+            brandFilter.value = '';
+            typeFilter.value = '';
+            statusFilter.value = '';
+            stockStatusFilter.value = '';
+            priceMin.value = '';
+            priceMax.value = '';
+            dateFrom.value = '';
+            dateTo.value = '';
+            sortSelect.value = 'created_at:desc'; // Reset sort to default
+            fetchProductData();
+        });
+
+        // Sort select change
+        sortSelect.addEventListener('change', function() {
+            fetchProductData();
+        });
+
+        // Optional: Add debounce for search input to avoid too many requests
+        let searchTimeout;
+        searchInput.addEventListener('keyup', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                fetchProductData();
+            }, 500); // Fetch after 500ms of no typing
+        });
+
+        // Other filter changes (category, brand, type, status, stock status, price, date)
+        // These will trigger fetchProductData on change
+        categoryFilter.addEventListener('change', fetchProductData);
+        brandFilter.addEventListener('change', fetchProductData);
+        typeFilter.addEventListener('change', fetchProductData);
+        statusFilter.addEventListener('change', fetchProductData);
+        stockStatusFilter.addEventListener('change', fetchProductData);
+
+        // Price and Date inputs - fetch on change if both min/max or from/to are filled
+        [priceMin, priceMax, dateFrom, dateTo].forEach(input => {
+            input.addEventListener('change', function() {
+                // Only fetch if both min/max or from/to are filled, or if one is cleared
+                if ((priceMin.value && priceMax.value) || (!priceMin.value && !priceMax.value)) {
+                    fetchProductData();
+                }
+                if ((dateFrom.value && dateTo.value) || (!dateFrom.value && !dateTo.value)) {
+                    fetchProductData();
+                }
+            });
+        });
+
+        // Quick Actions Menu Toggle
+        const quickActionsButton = document.getElementById('quickActionsButton');
+        const quickActionsMenu = document.getElementById('quickActionsMenu');
+
+        if (quickActionsButton && quickActionsMenu) {
+            quickActionsButton.addEventListener('click', function() {
+                quickActionsMenu.classList.toggle('hidden');
+            });
+
+            // Close the dropdown if the user clicks outside of it
+            document.addEventListener('click', function(event) {
+                if (!quickActionsButton.contains(event.target) && !quickActionsMenu.contains(event.target)) {
+                    quickActionsMenu.classList.add('hidden');
+                }
+            });
+        }
+
+        // Export Products Button (if needed to be AJAX)
+        const exportProductsButton = document.getElementById('exportProductsButton');
+        if (exportProductsButton) {
+            exportProductsButton.addEventListener('click', function(e) {
+                e.preventDefault();
+                // You might want to collect current filters and pass them to the export route
+                const params = new URLSearchParams();
+                if (searchInput.value) params.append('search', searchInput.value);
+                // ... add other filters ...
+                window.location.href = `{{ route('products.export') }}?${params.toString()}`;
+            });
+        }
+
+        // Select All Checkbox and Bulk Actions
+        const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+        const productCheckboxes = document.querySelectorAll('.product-checkbox');
+        const bulkActionsDiv = document.getElementById('bulkActions');
+        const applyBulkActionButton = document.getElementById('applyBulkAction');
+        const bulkActionSelect = document.getElementById('bulkActionSelect');
+
+        function updateBulkActionsVisibility() {
+            const checkedCount = document.querySelectorAll('.product-checkbox:checked').length;
+            if (checkedCount > 0) {
+                bulkActionsDiv.classList.remove('hidden');
+            } else {
+                bulkActionsDiv.classList.add('hidden');
+            }
+        }
+
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                productCheckboxes.forEach(checkbox => {
+                    checkbox.checked = selectAllCheckbox.checked;
+                });
+                updateBulkActionsVisibility();
+            });
+        }
+
+        productCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', updateBulkActionsVisibility);
+        });
+
+        if (applyBulkActionButton) {
+            applyBulkActionButton.addEventListener('click', async function() {
+                const action = bulkActionSelect.value;
+                const selectedProductIds = Array.from(document.querySelectorAll('.product-checkbox:checked')).map(cb => cb.value);
+
+                if (!action || selectedProductIds.length === 0) {
+                    Swal.fire('Warning', 'Please select an action and at least one product.', 'warning');
+                    return;
+                }
+
+                let additionalData = {};
+                if (action === 'update-categories') {
+                    const { value: categoryIds } = await Swal.fire({
+                        title: 'Select Categories',
+                        input: 'select',
+                        inputOptions: {
+                            @foreach($categories as $category)
+                                '{{ $category->id }}': '{{ $category->name }}',
+                                @foreach($category->children as $child)
+                                    '{{ $child->id }}': '— {{ $child->name }}',
+                                @endforeach
+                            @endforeach
+                        },
+                        inputPlaceholder: 'Select categories',
+                        showCancelButton: true,
+                        inputValidator: (value) => {
+                            if (!value) {
+                                return 'You need to select at least one category!';
+                            }
+                        }
+                    });
+                    if (categoryIds) {
+                        additionalData.category_ids = [categoryIds]; // Swal returns single value for select
+                    } else {
+                        return; // User cancelled
+                    }
+                } else if (action === 'update-tags') {
+                    const { value: tagsInput } = await Swal.fire({
+                        title: 'Enter Tags (comma-separated)',
+                        input: 'text',
+                        inputPlaceholder: 'e.g., new, popular, sale',
+                        showCancelButton: true,
+                    });
+                    if (tagsInput !== undefined) {
+                        additionalData.tags = tagsInput.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
+                    } else {
+                        return; // User cancelled
+                    }
+                }
+
+                Swal.fire({
+                    title: 'Applying Bulk Action...',
+                    text: 'Please wait...',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+
+                try {
+                    const response = await fetch(`{{ route('products.bulk-action') }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: JSON.stringify({
+                            action: action,
+                            ids: selectedProductIds,
+                            ...additionalData
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        Swal.fire('Success', result.message, 'success');
+                        fetchProductData(); // Re-fetch data after bulk action
+                    } else {
+                        Swal.fire('Error', result.message || 'An error occurred.', 'error');
+                    }
+                } catch (error) {
+                    console.error('Bulk action error:', error);
+                    Swal.fire('Error', 'An error occurred during the bulk action.', 'error');
+                }
+            });
+        }
+    });
 </script>
 @endpush

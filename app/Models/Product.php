@@ -14,6 +14,8 @@ class Product extends Model
      *
      * @return string
      */
+    protected $appends = ['thumbnail_url', 'total_stock'];
+
     public function getRouteKeyName()
     {
         return 'slug';
