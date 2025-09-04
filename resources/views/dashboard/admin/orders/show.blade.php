@@ -112,8 +112,8 @@
                                         <td class="py-3 px-6 text-left">{{ $loop->iteration }}</td>
                                         <td class="py-3 px-6 text-left whitespace-nowrap">{{ Str::limit($item->product->name ?? 'N/A', 30) }}</td>
                                         <td class="py-3 px-6 text-center">{{ $item->quantity }}</td>
-                                        <td class="py-3 px-6 text-right">{{ format_taka($item->price) }}</td>
-                                        <td class="py-3 px-6 text-right">{{ format_taka($item->quantity * $item->price) }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->price, '') }}</td>
+                                        <td class="py-3 px-6 text-right">{{ format_taka($item->quantity * $item->price, '') }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -135,22 +135,22 @@
                         @endphp
                         <div class="flex justify-between py-2 border-b border-gray-200">
                             <span class="text-gray-700">Subtotal:</span>
-                            <span class="font-medium">{{ format_taka($subtotalFromItems) }}</span>
+                            <span class="font-medium">{{ format_taka($subtotalFromItems, '') }}</span>
                         </div>
                         <div class="flex justify-between py-2 border-b border-gray-200">
                             <span class="text-gray-700">Shipping:</span>
-                            <span class="font-medium">{{ format_taka($order->delivery_charge ?? 0) }}</span>
+                            <span class="font-medium">{{ format_taka($order->delivery_charge ?? 0, '') }}</span>
                         </div>
                         @if($order->coupon_discount > 0)
                             <div class="flex justify-between py-2 border-b border-gray-200">
                                 <span class="text-gray-700">Coupon Discount:</span>
-                                <span class="font-medium text-red-500">- {{ format_taka($order->coupon_discount) }}</span>
+                                <span class="font-medium text-red-500">- {{ format_taka($order->coupon_discount, '') }}</span>
                             </div>
                         @endif
                         @if($order->reward_discount > 0)
                             <div class="flex justify-between py-2 border-b border-gray-200">
                                 <span class="text-gray-700">Reward Discount:</span>
-                                <span class="font-medium text-red-500">- {{ format_taka($order->reward_discount) }}</span>
+                                <span class="font-medium text-red-500">- {{ format_taka($order->reward_discount, '') }}</span>
                             </div>
                         @endif
                         <div class="flex justify-between py-3 mt-2 border-t-2 border-gray-800 print:border-t-2 print:border-gray-800">
@@ -163,6 +163,10 @@
 
             <!-- Action Buttons -->
             <div class="mt-8 flex flex-wrap gap-3 justify-end print:hidden">
+                <button onclick="printVoucher()" class="action-btn inline-flex items-center px-5 py-2.5 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700">
+                    <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    Print
+                </button>
                 @if (auth()->user()->role === 'admin' || auth()->user()->role === 'staff')
                     <a href="{{ route('admin.orders.edit', $order) }}" class="action-btn inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-[var(--primary-light)] to-cyan-500 text-white font-medium rounded-lg hover:from-[var(--primary)] hover:to-[var(--primary-light)]">
                         <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -203,6 +207,14 @@
 
 @push('scripts')
     <script>
+        function printVoucher() {
+            var printContents = document.querySelector('.printable-voucher').innerHTML;
+            var originalContents = document.body.innerHTML;
+            document.body.innerHTML = printContents;
+            window.print();
+            document.body.innerHTML = originalContents;
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             const statusForm = document.getElementById('statusUpdateForm');
             if (statusForm) {

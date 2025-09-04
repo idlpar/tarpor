@@ -140,6 +140,7 @@ Route::middleware(['auth', 'auth.session', 'auto.logout'])->group(function () {
         Route::patch('/admin/orders/{order}/status', [OrderController::class, 'updateStatus'])
             ->name('admin.orders.update-status')
             ->middleware('can:changeStatus,order');
+        
         Route::prefix('tag')->name('tag.')->group(function () {
             Route::get('/suggest', [TagController::class, 'suggest'])->name('suggest');
             Route::post('/store-multiple', [TagController::class, 'storeMultiple'])->name('store-multiple');

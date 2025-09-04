@@ -520,4 +520,7 @@ class OrderController extends Controller
 
         return back()->with('success', 'Order status updated successfully!');
     }
+
+    
 }
+
