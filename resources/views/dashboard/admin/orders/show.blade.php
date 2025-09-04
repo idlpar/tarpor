@@ -88,7 +88,7 @@
                     <p class="text-gray-700">{{ $order->address->union ?? 'N/A' }}, {{ $order->address->upazila ?? 'N/A' }}</p>
                     <p class="text-gray-700">{{ $order->address->district ?? 'N/A' }} - {{ $order->address->postal_code ?? 'N/A' }}</p>
                     @if($order->address->note)
-                        <p class="text-gray-700 mt-2"><strong>Note:</strong> {{ Str::limit($order->address->note, 100) }}</p>
+                        <p class="text-gray-700 mt-2 print-note"><strong>Note:</strong> {{ Str::limit($order->address->note, 100) }}</p>
                     @endif
                 </div>
 
