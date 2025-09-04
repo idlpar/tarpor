@@ -180,14 +180,12 @@
 
                 <div class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                     <div class="relative">
-                        <form method="GET" action="{{ route('admin.orders.index') }}">
-                            @if(request('status'))
-                                <input type="hidden" name="status" value="{{ request('status') }}">
-                            @endif
+                        <form method="GET" action="{{ route('admin.orders.index') }}" id="order-filter-form">
                             <select id="time-frame-filter" name="time_frame"
                                     class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
                                 <option value="all" {{ $filters['time_frame'] == 'all' ? 'selected' : '' }}>All Time</option>
                                 <option value="daily" {{ $filters['time_frame'] == 'daily' ? 'selected' : '' }}>Today</option>
+                                <option value="yesterday" {{ $filters['time_frame'] == 'yesterday' ? 'selected' : '' }}>Yesterday</option>
                                 <option value="weekly" {{ $filters['time_frame'] == 'weekly' ? 'selected' : '' }}>This Week</option>
                                 <option value="monthly" {{ $filters['time_frame'] == 'monthly' ? 'selected' : '' }}>This Month</option>
                                 <option value="yearly" {{ $filters['time_frame'] == 'yearly' ? 'selected' : '' }}>This Year</option>
@@ -201,20 +199,9 @@
                                            class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                 </div>
                             </div>
-                        </form>
-                    </div>
 
-                    <div class="relative">
-                        <form method="GET" action="{{ route('admin.orders.index') }}">
-                            <input type="hidden" name="time_frame" value="{{ $filters['time_frame'] }}">
-                            @if($filters['start_date'])
-                                <input type="hidden" name="start_date" value="{{ $filters['start_date'] }}">
-                            @endif
-                            @if($filters['end_date'])
-                                <input type="hidden" name="end_date" value="{{ $filters['end_date'] }}">
-                            @endif
                             <select name="status"
-                                    class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
+                                    class="block w-full pl-3 pr-10 py-2 text-base border border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md mt-3">
                                 <option value="">All Statuses</option>
                                 <option value="pending" {{ $filters['status'] == 'pending' ? 'selected' : '' }}>Pending</option>
                                 <option value="processing" {{ $filters['status'] == 'processing' ? 'selected' : '' }}>Processing</option>
@@ -244,6 +231,7 @@
                         @else
                             @switch($filters['time_frame'])
                                 @case('daily') Today's Orders @break
+                                @case('yesterday') Yesterday's Orders @break
                                 @case('weekly') This Week's Orders @break
                                 @case('monthly') This Month's Orders @break
                                 @case('yearly') This Year's Orders @break
@@ -538,14 +526,15 @@
             // Time frame filter functionality
             const timeFrameFilter = document.getElementById('time-frame-filter');
             const dateRangePicker = document.getElementById('date-range-picker');
+            const orderFilterForm = document.getElementById('order-filter-form');
 
-            if (timeFrameFilter && dateRangePicker) {
+            if (timeFrameFilter && dateRangePicker && orderFilterForm) {
                 timeFrameFilter.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         dateRangePicker.classList.add('active');
                     } else {
                         dateRangePicker.classList.remove('active');
-                        this.form.submit();
+                        orderFilterForm.submit();
                     }
                 });
             }
@@ -557,7 +546,7 @@
                     const startDate = document.querySelector('input[name="start_date"]').value;
                     const endDate = document.querySelector('input[name="end_date"]').value;
                     if (startDate && endDate) {
-                        timeFrameFilter.form.submit();
+                        orderFilterForm.submit();
                     }
                 });
             });
@@ -566,7 +555,7 @@
             const statusFilter = document.querySelector('select[name="status"]');
             if (statusFilter) {
                 statusFilter.addEventListener('change', function() {
-                    this.form.submit();
+                    orderFilterForm.submit();
                 });
             }
         });

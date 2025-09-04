@@ -272,15 +272,17 @@ class OrderController extends Controller
         switch ($filters['time_frame']) {
             case 'daily':
                 return $query->whereDate('created_at', $now->toDateString());
+            case 'yesterday':
+                return $query->whereDate('created_at', $now->subDay()->toDateString());
             case 'weekly':
                 return $query->whereBetween('created_at', [
-                    $now->startOfWeek(),
-                    $now->copy()->endOfWeek()
+                    $now->copy()->subDays(6)->startOfDay(),
+                    $now->copy()->endOfDay()
                 ]);
             case 'monthly':
                 return $query->whereBetween('created_at', [
-                    $now->startOfMonth(),
-                    $now->copy()->endOfMonth()
+                    $now->copy()->subDays(29)->startOfDay(),
+                    $now->copy()->endOfDay()
                 ]);
             case 'yearly':
                 return $query->whereYear('created_at', $now->year);
