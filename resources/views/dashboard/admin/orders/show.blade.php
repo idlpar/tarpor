@@ -122,9 +122,9 @@
                 </div>
 
                 <div class="flex justify-between items-start mb-6">
-                    <div class="flex-shrink-0 print:hidden">
+                    <div class="flex-shrink-0">
                         <p class="text-sm text-gray-600 mb-2">Scan to view order details:</p>
-                        {!! QrCode::size(120)->generate(route('admin.orders.show', $order->id)) !!}
+                        {!! QrCode::size(120)->generate(route('order.success', $order->short_id)) !!}
                     </div>
                     <div class="w-full md:w-1/2">
                         @php
@@ -162,7 +162,7 @@
             </div>
 
             <!-- Action Buttons -->
-            <div class="mt-8 flex flex-wrap gap-3 justify-end print:hidden">
+            <div class="mt-8 flex flex-wrap gap-3 justify-end">
                 <button onclick="printVoucher()" class="action-btn inline-flex items-center px-5 py-2.5 bg-gray-600 text-white font-medium rounded-lg hover:bg-gray-700">
                     <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
                     Print
@@ -208,11 +208,7 @@
 @push('scripts')
     <script>
         function printVoucher() {
-            var printContents = document.querySelector('.printable-voucher').innerHTML;
-            var originalContents = document.body.innerHTML;
-            document.body.innerHTML = printContents;
             window.print();
-            document.body.innerHTML = originalContents;
         }
 
         document.addEventListener('DOMContentLoaded', function() {

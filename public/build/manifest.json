@@ -32,8 +32,13 @@
     "src": "node_modules/@fortawesome/fontawesome-free/webfonts/fa-v4compatibility.woff2"
   },
   "resources/css/app.css": {
-    "file": "assets/app-BFqn1mSb.css",
+    "file": "assets/app-2eUSgn84.css",
     "src": "resources/css/app.css",
+    "isEntry": true
+  },
+  "resources/css/print.css": {
+    "file": "assets/print-DKcwh146.css",
+    "src": "resources/css/print.css",
     "isEntry": true
   },
   "resources/js/app.js": {
