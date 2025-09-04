@@ -191,7 +191,7 @@ class OrderController extends Controller
         }
     }
 
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         Log::info('Accessing admin orders', [
@@ -209,7 +209,16 @@ class OrderController extends Controller
             'status' => request('status')
         ];
 
-        $ordersQuery = Order::with(['user', 'products', 'shippingMethod', 'coupon', 'orderItems.product'])
+        $ordersQuery = Order::with([
+            'user',
+            'products',
+            'shippingMethod',
+            'coupon',
+            'orderItems.product' => function ($query) {
+                $query->select('id', 'name', 'price', 'slug'); // Select only necessary product fields
+            },
+            'address'
+        ])
             ->when($filters['status'], function ($query, $status) {
                 return $query->where('status', $status);
             })
@@ -228,6 +237,14 @@ class OrderController extends Controller
             });
 
         $stats = $this->getOrderStats($statsQuery);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'orders' => $orders,
+                'stats' => $stats,
+                'filters' => $filters,
+            ]);
+        }
 
         $links = [
             'Orders' => null

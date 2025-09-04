@@ -243,222 +243,31 @@
                 </div>
             </div>
 
-            <!-- Stats Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <!-- Pending -->
-                <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Pending</p>
-                            <div class="mt-1">
-                                <p class="text-xl font-semibold">{{ $stats['pendingOrders'] }} orders</p>
-                                <p class="text-sm text-gray-600">{{ format_taka($stats['pendingAmount'] ?? 0) }}</p>
-                            </div>
-                        </div>
-                        <div class="bg-yellow-100 p-2 rounded-lg">
-                            <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Processing -->
-                <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Processing</p>
-                            <div class="mt-1">
-                                <p class="text-xl font-semibold">{{ $stats['processingOrders'] }} orders</p>
-                                <p class="text-sm text-gray-600">{{ format_taka($stats['processingAmount'] ?? 0) }}</p>
-                            </div>
-                        </div>
-                        <div class="bg-blue-100 p-2 rounded-lg">
-                            <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Shipped -->
-                <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Shipped</p>
-                            <div class="mt-1">
-                                <p class="text-xl font-semibold">{{ $stats['shippedOrders'] }} orders</p>
-                                <p class="text-sm text-gray-600">{{ format_taka($stats['shippedAmount'] ?? 0) }}</p>
-                            </div>
-                        </div>
-                        <div class="bg-indigo-100 p-2 rounded-lg">
-                            <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Delivered -->
-                <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-sm font-medium text-gray-500">Delivered</p>
-                            <div class="mt-1">
-                                <p class="text-xl font-semibold">{{ $stats['deliveredOrders'] }} orders</p>
-                                <p class="text-sm text-gray-600">{{ format_taka($stats['deliveredAmount'] ?? 0) }}</p>
-                            </div>
-                        </div>
-                        <div class="bg-green-100 p-2 rounded-lg">
-                            <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
+            <!-- Stats Cards Placeholder -->
+            <div id="stats-cards-container" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <!-- Spinners or placeholders will go here -->
             </div>
 
-            <!-- Orders Table -->
-            <div class="bg-white shadow rounded-lg overflow-hidden">
+            <!-- Orders Table Placeholder -->
+            <div id="orders-table-container" class="bg-white shadow rounded-lg overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-medium text-gray-900">Recent Orders</h3>
                 </div>
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                        <tr>
-                            <th>Order #</th>
-                            <th>Customer</th>
-                            <th>Details</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                            <th>Date</th>
-                            <th class="text-right">Actions</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        @forelse ($orders as $order)
-                            <tr>
-                                <td class="font-medium">#{{ $order->id }}</td>
-                                <td>
-                                    <div class="flex items-center">
-                                        @if ($order->user)
-                                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                                                <a href="{{ route('users.show', $order->user) }}">
-                                                    <span class="text-gray-600 font-medium">{{ strtoupper(substr($order->user->name, 0, 1)) }}</span>
-                                                </a>
-                                            </div>
-                                            <div class="ml-4">
-                                                <div class="font-medium text-gray-900">
-                                                    <a href="{{ route('users.show', $order->user) }}">{{ $order->user->name }}</a>
-                                                </div>
-                                                <div class="text-sm text-gray-500">{{ $order->user->email }}</div>
-                                            </div>
-                                        @else
-                                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                                                <span class="text-gray-600 font-medium">G</span>
-                                            </div>
-                                            <div class="ml-4">
-                                                @if ($order->address && $order->address->first_name)
-                                                    <div class="font-medium text-gray-900">{{ $order->address->first_name }} {{ $order->address->last_name }}</div>
-                                                @else
-                                                    <div class="font-medium text-gray-900">Guest</div>
-                                                @endif
-                                                @if ($order->address && $order->address->email)
-                                                    <div class="text-sm text-gray-500">{{ $order->address->email }}</div>
-                                                @endif
-                                            </div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td>
-                                    <button class="text-blue-600 hover:underline" onclick='showOrderItems({{ json_encode($order) }})'>
-                                        View Details
-                                    </button>
-                                </td>
-                                <td class="font-medium">{{ format_taka($order->total_price) }}</td>
-                                <td>
-                                    <span class="status-badge badge-{{ $order->status }}">
-                                        {{ ucfirst($order->status) }}
-                                    </span>
-                                </td>
-                                <td class="text-sm text-gray-500">
-                                    {{ $order->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="text-right">
-                                    <div class="flex justify-end items-center space-x-2">
-                                        <a href="{{ route('admin.orders.show', $order) }}" class="action-btn custom-tooltip-trigger" data-tooltip="View Order">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                            </svg>
-                                        </a>
-
-                                        <span class="text-gray-300">|</span>
-                                        <a href="{{ route('admin.orders.edit', $order) }}" class="action-btn custom-tooltip-trigger" data-tooltip="Edit Order">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                        </a>
-
-                                        @can('delete', $order)
-                                            <span class="text-gray-300">|</span>
-                                            <form action="{{ route('admin.orders.destroy', $order) }}" method="POST" class="inline" onsubmit="confirmDelete(event)">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="action-btn text-red-600 hover:text-red-800 custom-tooltip-trigger" data-tooltip="Delete Order">
-                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                    </svg>
-                                                </button>
-                                            </form>
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
-                                    <div class="flex flex-col items-center justify-center">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                        </svg>
-                                        <h3 class="mt-2 text-lg font-medium text-gray-900">No orders found</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Get started by creating a new order.</p>
-                                        <div class="mt-6">
-                                            <a href="{{ route('admin.orders.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                                                <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                                </svg>
-                                                New Order
-                                            </a>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
+                <div id="orders-table-body" class="table-responsive">
+                    <!-- Spinner or table content will go here -->
                 </div>
+                <div id="pagination-container" class="px-6 py-4 border-t border-gray-200">
+                    <!-- Pagination will go here -->
+                </div>
+            </div>
 
-                @if($orders->hasPages())
-                    <div class="px-6 py-4 border-t border-gray-200">
-                        <div class="flex flex-col sm:flex-row items-center justify-between">
-                            <div class="text-sm text-gray-500 mb-4 sm:mb-0">
-                                Showing <span class="font-medium">{{ $orders->firstItem() }}</span> to <span class="font-medium">{{ $orders->lastItem() }}</span> of <span class="font-medium">{{ $orders->total() }}</span> results
-                            </div>
-
-                            <div>
-                                {{ $orders->appends([
-                                    'time_frame' => $filters['time_frame'],
-                                    'start_date' => $filters['start_date'],
-                                    'end_date' => $filters['end_date'],
-                                    'status' => $filters['status']
-                                ])->links() }}
-                            </div>
-                        </div>
-                    </div>
-                @endif
+            <!-- Spinner for loading data -->
+            <div id="loading-spinner" class="text-center py-8" style="display: none;">
+                <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <p class="mt-2 text-gray-600">Loading orders...</p>
             </div>
         </div>
 
@@ -523,18 +332,309 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
-            // Time frame filter functionality
             const timeFrameFilter = document.getElementById('time-frame-filter');
             const dateRangePicker = document.getElementById('date-range-picker');
             const orderFilterForm = document.getElementById('order-filter-form');
+            const statsCardsContainer = document.getElementById('stats-cards-container');
+            const ordersTableBody = document.getElementById('orders-table-body');
+            const paginationContainer = document.getElementById('pagination-container');
+            const loadingSpinner = document.getElementById('loading-spinner');
 
+            // Helper function to format currency (simple version)
+            function formatTaka(amount) {
+                return `BDT ${parseFloat(amount).toFixed(2)}`;
+            }
+
+            // Function to fetch and render order data
+            async function fetchOrderData(page = 1) {
+                loadingSpinner.style.display = 'block';
+                statsCardsContainer.innerHTML = ''; // Clear previous stats
+                ordersTableBody.innerHTML = ''; // Clear previous orders
+                paginationContainer.innerHTML = ''; // Clear previous pagination
+
+                const formData = new FormData(orderFilterForm);
+                const params = new URLSearchParams();
+                for (const pair of formData.entries()) {
+                    params.append(pair[0], pair[1]);
+                }
+                params.append('page', page);
+
+                try {
+                    const response = await fetch(`${orderFilterForm.action}?${params.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest' // Laravel expects this header for ajax() check
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    renderStats(data.stats);
+                    renderOrdersTable(data.orders.data);
+                    renderPagination(data.orders);
+
+                } catch (error) {
+                    console.error('Error fetching order data:', error);
+                    // Display an error message to the user
+                    statsCardsContainer.innerHTML = '<p class="text-red-500">Failed to load data. Please try again.</p>';
+                    ordersTableBody.innerHTML = '<p class="text-red-500">Failed to load data. Please try again.</p>';
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // Function to render stats cards
+            function renderStats(stats) {
+                statsCardsContainer.innerHTML = `
+                    <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Pending</p>
+                                <div class="mt-1">
+                                    <p class="text-xl font-semibold">${stats.pendingOrders} orders</p>
+                                    <p class="text-sm text-gray-600">${formatTaka(stats.pendingAmount ?? 0)}</p>
+                                </div>
+                            </div>
+                            <div class="bg-yellow-100 p-2 rounded-lg">
+                                <svg class="h-6 w-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Processing</p>
+                                <div class="mt-1">
+                                    <p class="text-xl font-semibold">${stats.processingOrders} orders</p>
+                                    <p class="text-sm text-gray-600">${formatTaka(stats.processingAmount ?? 0)}</p>
+                                </div>
+                            </div>
+                            <div class="bg-blue-100 p-2 rounded-lg">
+                                <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Shipped</p>
+                                <div class="mt-1">
+                                    <p class="text-xl font-semibold">${stats.shippedOrders} orders</p>
+                                    <p class="text-sm text-gray-600">${formatTaka(stats.shippedAmount ?? 0)}</p>
+                                </div>
+                            </div>
+                            <div class="bg-indigo-100 p-2 rounded-lg">
+                                <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-white p-4 rounded-lg shadow border border-gray-100">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-gray-500">Delivered</p>
+                                <div class="mt-1">
+                                    <p class="text-xl font-semibold">${stats.deliveredOrders} orders</p>
+                                    <p class="text-sm text-gray-600">${formatTaka(stats.deliveredAmount ?? 0)}</p>
+                                </div>
+                            </div>
+                            <div class="bg-green-100 p-2 rounded-lg">
+                                <svg class="h-6 w-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Function to render orders table
+            function renderOrdersTable(orders) {
+                let tableHtml = `
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Details</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+
+                if (orders.length === 0) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center">
+                                    <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                    </svg>
+                                    <h3 class="mt-2 text-lg font-medium text-gray-900">No orders found</h3>
+                                    <p class="mt-1 text-sm text-gray-500">Get started by creating a new order.</p>
+                                    <div class="mt-6">
+                                        <a href="{{ route('admin.orders.create') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                            <svg class="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                                            </svg>
+                                            New Order
+                                        </a>
+                                    </div>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    orders.forEach(order => {
+                        const userHtml = order.user ? `
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <a href="/users/${order.user.id}">
+                                    <span class="text-gray-600 font-medium">${order.user.name.charAt(0).toUpperCase()}</span>
+                                </a>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900">
+                                    <a href="/users/${order.user.id}">${order.user.name}</a>
+                                </div>
+                                <div class="text-sm text-gray-500">${order.user.email}</div>
+                            </div>
+                        ` : `
+                            <div class="flex-shrink-0 h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                                <span class="text-gray-600 font-medium">G</span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="font-medium text-gray-900">${order.address && order.address.first_name ? order.address.first_name + ' ' + order.address.last_name : 'Guest'}</div>
+                                ${order.address && order.address.email ? `<div class="text-sm text-gray-500">${order.address.email}</div>` : ''}
+                            </div>
+                        `;
+
+                        tableHtml += `
+                            <tr>
+                                <td class="font-medium">#${order.id}</td>
+                                <td>
+                                    <div class="flex items-center">
+                                        ${userHtml}
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="text-blue-600 hover:underline" onclick='showOrderItems(${JSON.stringify(order)})'>
+                                        View Details
+                                    </button>
+                                </td>
+                                <td class="font-medium">${formatTaka(order.total_price)}</td>
+                                <td>
+                                    <span class="status-badge badge-${order.status}">
+                                        ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                                    </span>
+                                </td>
+                                <td class="text-sm text-gray-500">
+                                    ${new Date(order.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </td>
+                                <td class="text-right">
+                                    <div class="flex justify-end items-center space-x-2">
+                                        <a href="/admin/orders/${order.id}" class="action-btn custom-tooltip-trigger" data-tooltip="View Order">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        <a href="/admin/orders/${order.id}/edit" class="action-btn custom-tooltip-trigger" data-tooltip="Edit Order">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        <form action="/admin/orders/${order.id}" method="POST" class="inline" onsubmit="confirmDelete(event)">
+                                            <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                            <input type="hidden" name="_method" value="DELETE">
+                                            <button type="submit" class="action-btn text-red-600 hover:text-red-800 custom-tooltip-trigger" data-tooltip="Delete Order">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+                ordersTableBody.innerHTML = tableHtml;
+            }
+
+            // Function to render pagination
+            function renderPagination(paginationData) {
+                if (paginationData.last_page > 1) {
+                    let paginationHtml = `
+                        <div class="flex flex-col sm:flex-row items-center justify-between">
+                            <div class="text-sm text-gray-500 mb-4 sm:mb-0">
+                                Showing <span class="font-medium">${paginationData.from}</span> to <span class="font-medium">${paginationData.to}</span> of <span class="font-medium">${paginationData.total}</span> results
+                            </div>
+                            <div>
+                                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                    `;
+
+                    paginationData.links.forEach(link => {
+                        if (link.url) {
+                            const pageNum = new URL(link.url).searchParams.get('page') || 1;
+                            paginationHtml += `
+                                <a href="#" data-page="${pageNum}" class="${link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </a>
+                            `;
+                        } else {
+                            paginationHtml += `
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </span>
+                            `;
+                        }
+                    });
+
+                    paginationHtml += `
+                                </nav>
+                            </div>
+                        </div>
+                    `;
+                    paginationContainer.innerHTML = paginationHtml;
+
+                    // Add event listeners for pagination links
+                    paginationContainer.querySelectorAll('a[data-page]').forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            fetchOrderData(this.dataset.page);
+                        });
+                    });
+                }
+            }
+
+            // Initial fetch of data when the page loads
+            fetchOrderData();
+
+            // Time frame filter functionality
             if (timeFrameFilter && dateRangePicker && orderFilterForm) {
                 timeFrameFilter.addEventListener('change', function() {
                     if (this.value === 'custom') {
                         dateRangePicker.classList.add('active');
                     } else {
                         dateRangePicker.classList.remove('active');
-                        orderFilterForm.submit();
+                        fetchOrderData(); // Fetch data on change
                     }
                 });
             }
@@ -546,7 +646,7 @@
                     const startDate = document.querySelector('input[name="start_date"]').value;
                     const endDate = document.querySelector('input[name="end_date"]').value;
                     if (startDate && endDate) {
-                        orderFilterForm.submit();
+                        fetchOrderData(); // Fetch data on change
                     }
                 });
             });
@@ -555,7 +655,7 @@
             const statusFilter = document.querySelector('select[name="status"]');
             if (statusFilter) {
                 statusFilter.addEventListener('change', function() {
-                    orderFilterForm.submit();
+                    fetchOrderData(); // Fetch data on change
                 });
             }
         });
