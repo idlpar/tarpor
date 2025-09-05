@@ -9,9 +9,14 @@ use Illuminate\Support\Facades\Log;
 
 class CouponController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $coupons = Coupon::orderBy('id', 'desc')->paginate(10);
+        if ($request->ajax()) {
+            return response()->json([
+                'coupons' => $coupons,
+            ]);
+        }
         $links = [
             'Coupons' => route('coupons.index')
         ];
@@ -70,16 +75,20 @@ class CouponController extends Controller
         $coupon->update($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('coupons.index')->with('success', 'Coupon updated successfully.');
+            return redirect()->route('coupons.index')->with('success', 'Coupon updated successfully.')->with('highlight_coupon_id', $coupon->id);
         }
 
-        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon updated successfully.');
+        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon updated successfully.')->with('highlight_coupon_id', $coupon->id);
     }
 
     public function destroy(Coupon $coupon)
     {
         $coupon->delete();
-        return redirect()->route('coupons.index')->with('success', 'Coupon deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Coupon deleted successfully.',
+            'coupon_id' => $coupon->id,
+        ]);
     }
 
     public function apply(Request $request)
