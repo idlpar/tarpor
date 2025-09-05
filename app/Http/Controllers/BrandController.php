@@ -13,9 +13,18 @@ class BrandController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $brands = Brand::orderBy('id', 'desc')->paginate(10); // Fetch all brands, including soft deleted ones
+        $brands = Brand::when($request->query('search'), function ($query) use ($request) {
+            $query->where('name', 'like', '%' . $request->query('search') . '%')
+                  ->orWhere('slug', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderBy('id', 'desc')->paginate(10); // Fetch all brands, including soft deleted ones
+        if ($request->ajax()) {
+            return response()->json([
+                'brands' => $brands,
+            ]);
+        }
         $links = [
             'Brands' => route('brands.index')
         ];
@@ -83,7 +92,7 @@ class BrandController extends Controller
             $brand->save();
         }
 
-        return redirect()->route('brands.index')->with('success', 'Brand created successfully.');
+        return redirect()->route('brands.index')->with('success', 'Brand created successfully.')->with('highlight_brand_id', $brand->id);
     }
 
     /**
@@ -168,7 +177,7 @@ class BrandController extends Controller
                 ]);
             }
 
-            return redirect()->route('brands.index')->with('success', 'Brand updated successfully.');
+            return redirect()->route('brands.index')->with('success', 'Brand updated successfully.')->with('highlight_brand_id', $brand->id);
         } catch (\Exception $e) {
             if ($request->ajax()) {
                 return response()->json([
@@ -189,7 +198,11 @@ class BrandController extends Controller
         $brand = Brand::findOrFail($id);
         $brand->delete(); // Soft delete the brand
 
-        return redirect()->route('brands.index')->with('success', 'Brand deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand deleted successfully.',
+            'brand_id' => $brand->id,
+        ]);
     }
 
     public function restore(string $id)
@@ -197,7 +210,11 @@ class BrandController extends Controller
         $brand = Brand::withTrashed()->findOrFail($id);
         $brand->restore(); // Restore the soft deleted brand
 
-        return redirect()->route('brands.index')->with('success', 'Brand restored successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand restored successfully.',
+            'brand_id' => $brand->id,
+        ]);
     }
 
     public function forceDelete(string $id)
@@ -205,7 +222,11 @@ class BrandController extends Controller
         $brand = Brand::withTrashed()->findOrFail($id);
         $brand->forceDelete(); // Permanently delete the brand
 
-        return redirect()->route('brands.index')->with('success', 'Brand permanently deleted.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Brand permanently deleted.',
+            'brand_id' => $brand->id,
+        ]);
     }
 
     public function checkSlug(Request $request)

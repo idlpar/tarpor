@@ -224,9 +224,15 @@
             // Initial fetch of data when the page loads
             fetchSubscribersData();
 
-            // Search input event listener
+            // Search input event listener with debounce
             if (searchInput) {
-                searchInput.addEventListener('input', () => fetchSubscribersData());
+                let debounceTimer;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetchSubscribersData();
+                    }, 300); // Debounce for 300ms
+                });
             }
 
             // Toggle Status button event listener (using event delegation)

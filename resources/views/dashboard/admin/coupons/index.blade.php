@@ -231,9 +231,15 @@
             // Initial fetch of data when the page loads
             fetchCouponsData();
 
-            // Search input event listener
+            // Search input event listener with debounce
             if (searchInput) {
-                searchInput.addEventListener('input', () => fetchCouponsData());
+                let debounceTimer;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetchCouponsData();
+                    }, 300); // Debounce for 300ms
+                });
             }
 
             // Highlight coupon row if redirected from edit

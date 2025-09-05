@@ -97,7 +97,7 @@ class UserController extends Controller
             'is_verified' => true, // Admin-created users are verified
         ]);
 
-        return redirect()->route('users.index')->with('success', 'User created successfully.');
+        return redirect()->route('users.index')->with('success', 'User created successfully.')->with('highlight_user_id', $user->id);
     }
 
     /**

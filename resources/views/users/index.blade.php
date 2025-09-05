@@ -495,7 +495,13 @@
             });
 
             // Add event listeners for filter changes to trigger data fetch
-            searchInput.addEventListener('input', () => fetchUserData());
+            let debounceTimer;
+            searchInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    fetchUserData();
+                }, 300); // Debounce for 300ms
+            });
             roleSelect.addEventListener('change', () => fetchUserData());
             sortSelect.addEventListener('change', () => fetchUserData());
 

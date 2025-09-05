@@ -2,6 +2,19 @@
 
 @section('title', 'Brands | ' . strtoupper(config('app.name')))
 
+@push('styles')
+    <style>
+        .highlight-row {
+            animation: highlight 5s ease-out forwards;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #e6ffed; } /* Light green */
+            100% { background-color: transparent; } /* Fade to transparent */
+        }
+    </style>
+@endpush
+
 @section('admin_content')
     <div class="container mx-auto px-4 py-4">
         @include('components.ui.breadcrumbs', [
@@ -25,60 +38,319 @@
         @include('components.ui.table-filter')
 
         <x-ui.content-card>
-            @php(
-                $headers = ['ID', 'Logo', 'Name', 'Slug', 'Description', 'Status', 'Actions']
-            )
-            <x-ui.table :headers="$headers">
-                @forelse ($brands as $brand)
-                    <tr class="border-b border-gray-200 text-sm hover:bg-amber-50">
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            {{ $brand->id }}
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            @if($brand->logo)
-                                <img src="{{ $brand->logo->thumb_url }}" alt="{{ $brand->name }} Logo" class="h-10 w-10 object-contain">
-                            @else
-                                N/A
-                            @endif
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            {{ $brand->name }}
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            {{ $brand->slug }}
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            {{ Str::limit($brand->description, 50) }}
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm">
-                            <span class="px-2 py-1 rounded-full text-xs font-semibold {{ $brand->status == 'active' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800' }}">
-                                {{ ucfirst($brand->status) }}
-                            </span>
-                            @if($brand->trashed())
-                                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800 ml-2">Trashed</span>
-                            @endif
-                        </td>
-                        <td class="px-5 py-5 border-b border-gray-200 text-sm text-right">
-                            <x-ui.table-actions :item="$brand" baseRoute="brands" />
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="7" class="px-5 py-5 border-b border-gray-200 text-sm text-center">
-                            No brands found.
-                        </td>
-                    </tr>
-                @endforelse
-            </x-ui.table>
-            <div class="mt-4 flex justify-end">
-                {{ $brands->links('components.ui.custom-pagination') }}
+            <div id="brands-table-container">
+                <!-- Brands table content will be loaded here via AJAX -->
+            </div>
+            <div id="pagination-container" class="mt-4">
+                <!-- Pagination will be loaded here via AJAX -->
             </div>
         </x-ui.content-card>
+
+        <!-- Spinner for loading data -->
+        <div id="loading-spinner" class="text-center py-8" style="display: none;">
+            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
+            <p class="mt-2 text-gray-600">Loading brands...</p>
+        </div>
     </div>
 @endsection
 
 @push('scripts')
-<script>
-    // SweetAlert functions are now handled within table-actions.blade.php
-</script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const brandsTableContainer = document.getElementById('brands-table-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const searchInput = document.querySelector('input[name="search"]');
+            const currentUrl = new URL(window.location.href);
+
+            // Function to fetch and render brand data
+            async function fetchBrandsData(page = 1) {
+                loadingSpinner.style.display = 'block';
+                brandsTableContainer.innerHTML = ''; // Clear previous content
+                paginationContainer.innerHTML = ''; // Clear previous pagination
+
+                const params = new URLSearchParams();
+                if (searchInput && searchInput.value) {
+                    params.append('search', searchInput.value);
+                }
+                params.append('page', page);
+
+                try {
+                    const response = await fetch(`${currentUrl.origin}${currentUrl.pathname}?${params.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error(`HTTP error! Status: ${response.status}, Response: ${errorText}`);
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    renderBrandsTable(data.brands.data);
+                    renderPagination(data.brands, paginationContainer);
+
+                } catch (error) {
+                    console.error('Error fetching brand data:', error);
+                    brandsTableContainer.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load brands. Please try again.</p>';
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // Function to render brands table
+            function renderBrandsTable(brands) {
+                let tableHtml = `
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Logo</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                                    <th class="px-5 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th class="px-5 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                `;
+
+                if (brands.length === 0) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="7" class="px-5 py-5 text-sm text-center text-gray-500">
+                                No brands found.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    brands.forEach(brand => {
+                        const logoHtml = brand.logo ? `<img src="${brand.logo.thumb_url}" alt="${brand.name} Logo" class="h-10 w-10 object-contain">` : 'N/A';
+                        const statusClass = brand.status === 'active' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800';
+                        const trashedBadge = brand.deleted_at ? '<span class="px-2 py-1 rounded-full text-xs font-semibold bg-gray-200 text-gray-800 ml-2">Trashed</span>' : '';
+
+                        tableHtml += `
+                            <tr class="border-b border-gray-200 text-sm hover:bg-amber-50" data-id="${brand.id}">
+                                <td class="px-5 py-5 whitespace-nowrap">${brand.id}</td>
+                                <td class="px-5 py-5 whitespace-nowrap">${logoHtml}</td>
+                                <td class="px-5 py-5 whitespace-nowrap">${brand.name}</td>
+                                <td class="px-5 py-5 whitespace-nowrap">${brand.slug}</td>
+                                <td class="px-5 py-5 whitespace-nowrap">${brand.description ? brand.description.substring(0, 50) + (brand.description.length > 50 ? '...' : '') : ''}</td>
+                                <td class="px-5 py-5 whitespace-nowrap">
+                                    <span class="px-2 py-1 rounded-full text-xs font-semibold ${statusClass}">
+                                        ${brand.status.charAt(0).toUpperCase() + brand.status.slice(1)}
+                                    </span>
+                                    ${trashedBadge}
+                                </td>
+                                <td class="px-5 py-5 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <a href="/brands/${brand.id}" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="View Brand">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        <a href="/brands/${brand.id}/edit" class="text-indigo-600 hover:text-indigo-900 custom-tooltip-trigger" data-tooltip="Edit Brand">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        ${brand.deleted_at ? `
+                                            <form action="/brands/${brand.id}/restore" method="POST" class="inline restore-form" onsubmit="return false;">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" class="text-green-600 hover:text-green-900 custom-tooltip-trigger" data-tooltip="Restore Brand">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                                                </button>
+                                            </form>
+                                            <span class="text-gray-300">|</span>
+                                            <form action="/brands/${brand.id}/force-delete" method="POST" class="inline force-delete-form" onsubmit="return false;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Force Delete Brand">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </form>
+                                        ` : `
+                                            <form action="/brands/${brand.id}" method="POST" class="inline delete-form" onsubmit="return false;">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Brand">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                                </button>
+                                            </form>
+                                        `}
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                tableHtml += `
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+                brandsTableContainer.innerHTML = tableHtml;
+            }
+
+            // Function to render pagination
+            function renderPagination(paginationData, container) {
+                if (paginationData.last_page > 1) {
+                    let paginationHtml = `
+                        <div class="mt-8 bg-white rounded-lg shadow-xs border border-gray-100 overflow-hidden">
+                            <div class="flex flex-col sm:flex-row items-center justify-between px-4 py-3 sm:px-6">
+                                <!-- Pagination Info -->
+                                <div class="mb-4 sm:mb-0">
+                                    <p class="text-sm text-gray-600 font-medium">
+                                        Showing <span class="text-[var(--primary)]">${paginationData.from}</span>
+                                        to <span class="text-[var(--primary)]">${paginationData.to}</span>
+                                        of <span class="text-[var(--primary)]">${paginationData.total}</span> results
+                                    </p>
+                                </div>
+
+                                <!-- Pagination Links -->
+                                <nav class="flex items-center space-x-1">
+                    `;
+
+                    paginationData.links.forEach(link => {
+                        if (link.url) {
+                            const pageNum = new URL(link.url).searchParams.get('page') || 1;
+                            paginationHtml += `
+                                <a href="#" data-page="${pageNum}" class="${link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </a>
+                            `;
+                        } else {
+                            paginationHtml += `
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md disabled-pagination-link">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </span>
+                            `;
+                        }
+                    });
+
+                    paginationHtml += `
+                                </nav>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML = paginationHtml;
+
+                    // Add event listeners for pagination links
+                    container.querySelectorAll('a[data-page]').forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            fetchBrandsData(this.dataset.page);
+                        });
+                    });
+                } else {
+                    container.innerHTML = ''; // Clear pagination if only one page
+                }
+            }
+
+            // Initial fetch of data when the page loads
+            fetchBrandsData();
+
+            // Search input event listener with debounce
+            if (searchInput) {
+                let debounceTimer;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounceTimer);
+                    debounceTimer = setTimeout(() => {
+                        fetchBrandsData();
+                    }, 300); // Debounce for 300ms
+                });
+            }
+
+            // Highlight brand row if redirected from edit
+            const highlightBrandId = {{ session('highlight_brand_id') ?? 'null' }};
+            if (highlightBrandId) {
+                const checkTableInterval = setInterval(() => {
+                    const brandRow = brandsTableContainer.querySelector(`tr[data-id="${highlightBrandId}"]`);
+                    if (brandRow) {
+                        clearInterval(checkTableInterval);
+                        brandRow.classList.add('highlight-row');
+                        setTimeout(() => {
+                            brandRow.classList.remove('highlight-row');
+                        }, 5000);
+                    }
+                }, 100);
+            }
+
+            // Handle delete, restore, force delete form submissions with SweetAlert and AJAX
+            brandsTableContainer.addEventListener('submit', async function(event) {
+                if (event.target.classList.contains('delete-form') ||
+                    event.target.classList.contains('restore-form') ||
+                    event.target.classList.contains('force-delete-form')) {
+
+                    event.preventDefault();
+                    const form = event.target;
+                    const actionUrl = form.action;
+                    const method = form.querySelector('input[name="_method"]').value;
+
+                    let title = 'Are you sure?';
+                    let text = "You won't be able to revert this!";
+                    let confirmButtonText = 'Yes, proceed!';
+                    let icon = 'warning';
+
+                    if (form.classList.contains('restore-form')) {
+                        title = 'Restore Brand?';
+                        text = 'This will restore the brand.';
+                        confirmButtonText = 'Yes, restore it!';
+                        icon = 'info';
+                    } else if (form.classList.contains('force-delete-form')) {
+                        title = 'Permanently Delete Brand?';
+                        text = 'This action cannot be undone. The brand will be permanently deleted.';
+                        confirmButtonText = 'Yes, delete permanently!';
+                        icon = 'error';
+                    }
+
+                    Swal.fire({
+                        title: title,
+                        text: text,
+                        icon: icon,
+                        showCancelButton: true,
+                        confirmButtonColor: '#3085d6',
+                        cancelButtonColor: '#d33',
+                        confirmButtonText: confirmButtonText,
+                        focusCancel: true
+                    }).then(async (result) => {
+                        if (result.isConfirmed) {
+                            try {
+                                const response = await fetch(actionUrl, {
+                                    method: 'POST', // Always POST for Laravel forms with _method
+                                    headers: {
+                                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                                        'Content-Type': 'application/json',
+                                        'X-Requested-With': 'XMLHttpRequest',
+                                    },
+                                    body: JSON.stringify({ _method: method })
+                                });
+
+                                if (!response.ok) {
+                                    const errorData = await response.json();
+                                    throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
+                                }
+
+                                const data = await response.json();
+
+                                if (data.success) {
+                                    Swal.fire('Success!', data.message, 'success');
+                                    // Re-fetch data to update the table
+                                    fetchBrandsData();
+                                } else {
+                                    Swal.fire('Error!', data.message || 'Failed to perform action.', 'error');
+                                }
+                            } catch (error) {
+                                console.error(`Error ${method}ing brand:`, error);
+                                Swal.fire('Error!', error.message || 'An error occurred while performing the action.', 'error');
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    </script>
 @endpush

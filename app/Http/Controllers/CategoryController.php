@@ -196,7 +196,7 @@ class CategoryController extends Controller
             'status' => $validated['status'],
         ]);
 
-        return redirect()->route('categories.index')->with('success', 'Category created successfully.');
+        return redirect()->route('categories.index')->with('success', 'Category created successfully.')->with('highlight_category_id', $category->id);
     }
 
     /**

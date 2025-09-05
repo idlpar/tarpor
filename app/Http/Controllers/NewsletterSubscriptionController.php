@@ -13,7 +13,10 @@ class NewsletterSubscriptionController extends Controller
      */
     public function index(Request $request)
     {
-        $subscribers = NewsletterSubscription::orderByDesc('created_at')->paginate(10);
+        $subscribers = NewsletterSubscription::when($request->query('search'), function ($query) use ($request) {
+            $query->where('email', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderByDesc('created_at')->paginate(10);
         if ($request->ajax()) {
             return response()->json([
                 'subscribers' => $subscribers,

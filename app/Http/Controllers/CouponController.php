@@ -11,7 +11,10 @@ class CouponController extends Controller
 {
     public function index(Request $request)
     {
-        $coupons = Coupon::orderBy('id', 'desc')->paginate(10);
+        $coupons = Coupon::when($request->query('search'), function ($query) use ($request) {
+            $query->where('code', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderBy('id', 'desc')->paginate(10); // Fetch all brands, including soft deleted ones
         if ($request->ajax()) {
             return response()->json([
                 'coupons' => $coupons,
@@ -46,10 +49,10 @@ class CouponController extends Controller
         $coupon = Coupon::create($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('coupons.index')->with('success', 'Coupon created successfully.');
+            return redirect()->route('coupons.index')->with('success', 'Coupon created successfully.')->with('highlight_coupon_id', $coupon->id);
         }
 
-        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon created successfully.');
+        return redirect()->route('coupons.edit', $coupon)->with('success', 'Coupon created successfully.')->with('highlight_coupon_id', $coupon->id);
     }
 
     public function edit(Coupon $coupon)
