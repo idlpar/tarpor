@@ -105,9 +105,7 @@
                             <label for="sort" class="sr-only">Sort By</label>
                             <select id="sort" name="sort"
                                     class="block w-full pl-3 pr-10 py-2 text-base border-blue-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
-                                <option value="name_asc" {{ request('sort') == 'name_asc' ? 'selected' : '' }}>Name
-                                    (A-Z)
-                                </option>
+                                <option value="">Default (Newest ID)</option>
                                 <option value="name_desc" {{ request('sort') == 'name_desc' ? 'selected' : '' }}>Name
                                     (Z-A)
                                 </option>
@@ -140,179 +138,28 @@
                 </form>
             </div>
 
-            <!-- Users Table -->
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-blue-gray-200">
-                <div class="overflow-x-auto">
-                    <table id="users-table" class="min-w-full divide-y divide-blue-gray-200">
-                        <thead class="bg-green-100">
-                        <tr>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider sortable-column"
-                                data-sort-by="name" data-sort-direction="asc">
-                                <div class="flex items-center group cursor-pointer">
-                                    Name
-                                    <svg class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600 sort-icon"
-                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                Email
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider sortable-column"
-                                data-sort-by="created_at" data-sort-direction="desc">
-                                <div class="flex items-center group cursor-pointer">
-                                    Created
-                                    <svg class="ml-1 h-4 w-4 text-blue-gray-400 group-hover:text-blue-gray-600 sort-icon"
-                                         fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                              d="M19 9l-7 7-7-7"/>
-                                    </svg>
-                                </div>
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                Role
-                            </th>
-                            <th scope="col"
-                                class="px-6 py-3 text-right text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
-                                Actions
-                            </th>
-                        </tr>
-                        </thead>
-                        <tbody
-                            class="bg-gradient-to-r from-blue-50 via-amber-50 to-green-50 divide-y divide-blue-gray-200">
-                        @forelse ($users as $user)
-                            <tr class="hover:bg-blue-50 transition duration-150">
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex items-center">
-                                        <div
-                                            class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                                            <span
-                                                class="text-indigo-600 font-medium">{{ substr($user->name, 0, 1) }}</span>
-                                        </div>
-                                        <div class="ml-4">
-                                            <div class="text-sm font-medium text-gray-900">{{ $user->name }}</div>
-                                            <div class="text-xs text-gray-500">ID: {{ $user->id }}</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <div class="flex flex-col space-y-1">
-                                        <span class="text-sm font-medium text-gray-900">{{ $user->email }}</span>
-                                        <span class="inline-flex items-center gap-1 text-xs font-semibold
-                                             {{ $user->verified_at ? 'text-green-600' : 'text-red-500' }}">
-                                                @if ($user->verified_at)
-                                                    <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    Verified {{ $user->verified_at->diffForHumans() }}
-                                                @else
-                                                    <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-4h2v2h-2v-2zm0-8h2v6h-2V6z" clip-rule="evenodd"/>
-                                                    </svg>
-                                                    Not Verified
-                                                @endif
-                                        </span>
-                                    </div>
-                                </td>
-
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                    {{ $user->created_at->format('M d, Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap">
-                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
-                                        {{ $user->role === 'admin' ? 'bg-purple-100 text-purple-800' : ($user->role === 'staff' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800') }}">
-                                        {{ ucfirst($user->role) }}
-                                    </span>
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div class="flex items-center justify-end space-x-2">
-                                        <a href="{{ route('users.show', $user) }}"
-                                           class="text-green-600 hover:text-green-800 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="View User">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                                            </svg>
-                                        </a>
-
-                                        <span class="text-gray-300">|</span>
-                                        <a href="{{ route('users.edit', $user) }}"
-                                           class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="Edit User">
-                                            <svg class="h-5 w-5" fill="none" stroke="currentColor"
-                                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                            </svg>
-                                        </a>
-                                        <span class="text-gray-300">|</span>
-                                        <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                              class="inline-block delete-user-form" onsubmit="confirmDelete(event)">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit"
-                                                    class="text-red-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger"
-                                                    data-name="{{ $user->name }}" data-email="{{ $user->email }}" data-tooltip="Delete User">
-                                                <svg class="h-5 w-5" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                          stroke-width="2"
-                                                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                                                </svg>
-                                            </button>
-                                        </form>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="5" class="px-6 py-12 text-center">
-                                    <svg class="mx-auto h-12 w-12 text-blue-gray-400" fill="none" stroke="currentColor"
-                                         viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                                              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
-                                    </svg>
-                                    <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-                                    <p class="mt-1 text-sm text-gray-600">Try adjusting your search or filter to find
-                                        what you're looking for.</p>
-                                    <div class="mt-6">
-                                        <a href="{{ route('users.index') }}"
-                                           class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--primary)] hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 reset-filters">
-                                            Clear Filters
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @endforelse
-                        </tbody>
-                    </table>
+            <!-- Users Table Container -->
+            <div id="users-table-container" class="bg-white shadow-sm rounded-lg overflow-hidden border border-blue-gray-200">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-medium text-gray-900">All Users</h3>
+                </div>
+                <div id="users-table-body" class="table-responsive">
+                    <!-- User table content will be loaded here via AJAX -->
+                </div>
+                <div id="pagination-container" class="px-6 py-4 border-t border-gray-200">
+                    <!-- Pagination will be loaded here via AJAX -->
                 </div>
             </div>
 
-            <!-- Pagination -->
-            @if($users->hasPages())
-                <div class="mt-8 bg-white rounded-lg shadow-xs border border-gray-100 overflow-hidden">
-                    <div class="flex flex-col sm:flex-row items-center justify-between px-4 py-3 sm:px-6">
-                        <!-- Pagination Info -->
-                        <div class="mb-4 sm:mb-0">
-                            <p class="text-sm text-gray-600 font-medium">
-                                Showing <span class="text-[var(--primary)]">{{ $users->firstItem() }}</span>
-                                to <span class="text-[var(--primary)]">{{ $users->lastItem() }}</span>
-                                of <span class="text-[var(--primary)]">{{ $users->total() }}</span> results
-                            </p>
-                        </div>
-
-                        <!-- Pagination Links -->
-                        <nav class="flex items-center space-x-1">
-                            {{ $users->appends(request()->query())->onEachSide(1)->links('components.ui.custom-pagination') }}
-                        </nav>
-                    </div>
-                </div>
-            @endif
+            <!-- Spinner for loading data -->
+            <div id="loading-spinner" class="text-center py-8" style="display: none;">
+{{--                <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">--}}
+{{--                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>--}}
+{{--                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>--}}
+{{--                </svg>--}}
+                <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
+                <p class="mt-2 text-gray-600">Loading users...</p>
+            </div>
         </div>
     </section>
 @endsection
@@ -365,58 +212,242 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
-            // Filter Form
             const filterForm = document.querySelector('.filter-form');
+            const usersTableBody = document.getElementById('users-table-body');
+            const paginationContainer = document.getElementById('pagination-container');
+            const loadingSpinner = document.getElementById('loading-spinner');
+            const searchInput = document.getElementById('search');
+            const roleSelect = document.getElementById('role');
+            const sortSelect = document.getElementById('sort');
+            const currentUrl = new URL(window.location.href);
+
+            // Function to fetch and render user data
+            async function fetchUserData(page = 1) {
+                loadingSpinner.style.display = 'block';
+                usersTableBody.innerHTML = ''; // Clear previous users
+                paginationContainer.innerHTML = ''; // Clear previous pagination
+
+                const params = new URLSearchParams();
+                if (searchInput.value) {
+                    params.append('search', searchInput.value);
+                }
+                if (roleSelect.value) {
+                    params.append('role', roleSelect.value);
+                }
+                if (sortSelect.value) {
+                    params.append('sort', sortSelect.value);
+                }
+                params.append('page', page);
+
+                try {
+                    const response = await fetch(`${currentUrl.origin}${currentUrl.pathname}?${params.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest' // Laravel expects this header for ajax() check
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    renderUsersTable(data.users.data);
+                    renderPagination(data.users);
+
+                } catch (error) {
+                    console.error('Error fetching user data:', error);
+                    usersTableBody.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load users. Please try again.</p>';
+                } finally {
+                    loadingSpinner.style.display = 'none';
+                }
+            }
+
+            // Function to render users table
+            function renderUsersTable(users) {
+                let tableHtml = `
+                    <table id="users-table" class="min-w-full divide-y divide-blue-gray-200">
+                        <thead class="bg-green-100">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
+                                Name
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
+                                Email
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
+                                Created
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
+                                Role
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium font-bold text-gray-600 uppercase tracking-wider">
+                                Actions
+                            </th>
+                        </tr>
+                        </thead>
+                        <tbody class="bg-gradient-to-r from-blue-50 via-amber-50 to-green-50 divide-y divide-blue-gray-200">
+                `;
+
+                if (users.length === 0) {
+                    tableHtml += `
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <svg class="mx-auto h-12 w-12 text-blue-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
+                                </svg>
+                                <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+                                <p class="mt-1 text-sm text-gray-600">Try adjusting your search or filter to find what you're looking for.</p>
+                                <div class="mt-6">
+                                    <a href="{{ route('users.index') }}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-[var(--primary)] hover:bg-[var(--primary-dark)] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 reset-filters">
+                                        Clear Filters
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    users.forEach(user => {
+                        const verifiedHtml = user.verified_at ? `
+                            <svg class="w-3 h-3 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 00-1.414 0L9 11.586 6.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l7-7a1 1 0 000-1.414z" clip-rule="evenodd"/>
+                            </svg>
+                            Verified ${new Date(user.verified_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        ` : `
+                            <svg class="w-3 h-3 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-4h2v2h-2v-2zm0-8h2v6h-2V6z" clip-rule="evenodd"/>
+                            </svg>
+                            Not Verified
+                        `;
+
+                        tableHtml += `
+                            <tr class="hover:bg-blue-50 transition duration-150">
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex items-center">
+                                        <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
+                                            <span class="text-indigo-600 font-medium">${user.name.charAt(0)}</span>
+                                        </div>
+                                        <div class="ml-4">
+                                            <div class="text-sm font-medium text-gray-900">${user.name}</div>
+                                            <div class="text-xs text-gray-500">ID: ${user.id}</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <div class="flex flex-col space-y-1">
+                                        <span class="text-sm font-medium text-gray-900">${user.email}</span>
+                                        <span class="inline-flex items-center gap-1 text-xs font-semibold ${user.verified_at ? 'text-green-600' : 'text-red-500'}">
+                                            ${verifiedHtml}
+                                        </span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                                    ${new Date(user.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' : (user.role === 'staff' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800')}">
+                                        ${user.role.charAt(0).toUpperCase() + user.role.slice(1)}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <div class="flex items-center justify-end space-x-2">
+                                        <a href="/users/${user.id}" class="text-green-600 hover:text-green-800 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="View User">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                            </svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        <a href="/users/${user.id}/edit" class="text-indigo-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger" data-tooltip="Edit User">
+                                            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                            </svg>
+                                        </a>
+                                        <span class="text-gray-300">|</span>
+                                        <form action="/users/${user.id}" method="POST" class="inline-block delete-user-form" onsubmit="confirmDelete(event)">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="text-red-600 hover:text-amber-600 flex items-center transition duration-150 custom-tooltip-trigger" data-name="${user.name}" data-email="${user.email}" data-tooltip="Delete User">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                tableHtml += `
+                        </tbody>
+                    </table>
+                `;
+                usersTableBody.innerHTML = tableHtml;
+            }
+
+            // Function to render pagination
+            function renderPagination(paginationData) {
+                if (paginationData.last_page > 1) {
+                    let paginationHtml = `
+                        <div class="mt-8 bg-white rounded-lg shadow-xs border border-gray-100 overflow-hidden">
+                            <div class="flex flex-col sm:flex-row items-center justify-between px-4 py-3 sm:px-6">
+                                <!-- Pagination Info -->
+                                <div class="mb-4 sm:mb-0">
+                                    <p class="text-sm text-gray-600 font-medium">
+                                        Showing <span class="text-[var(--primary)]">${paginationData.from}</span>
+                                        to <span class="text-[var(--primary)]">${paginationData.to}</span>
+                                        of <span class="text-[var(--primary)]">${paginationData.total}</span> results
+                                    </p>
+                                </div>
+
+                                <!-- Pagination Links -->
+                                <nav class="flex items-center space-x-1">
+                    `;
+
+                    paginationData.links.forEach(link => {
+                        if (link.url) {
+                            const pageNum = new URL(link.url).searchParams.get('page') || 1;
+                            paginationHtml += `
+                                <a href="#" data-page="${pageNum}" class="${link.active ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'} relative inline-flex items-center px-4 py-2 border text-sm font-medium rounded-md">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </a>
+                            `;
+                        } else {
+                            paginationHtml += `
+                                <span class="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700 cursor-default rounded-md disabled-pagination-link">
+                                    ${link.label.replace(/&laquo; Previous/, 'Previous').replace(/Next &raquo;/, 'Next')}
+                                </span>
+                            `;
+                        }
+                    });
+
+                    paginationHtml += `
+                                </nav>
+                            </div>
+                        </div>
+                    `;
+                    paginationContainer.innerHTML = paginationHtml;
+
+                    // Add event listeners for pagination links
+                    paginationContainer.querySelectorAll('a[data-page]').forEach(link => {
+                        link.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            fetchUserData(this.dataset.page);
+                        });
+                    });
+                } else {
+                    paginationContainer.innerHTML = ''; // Clear pagination if only one page
+                }
+            }
+
+            // Initial fetch of data when the page loads
+            fetchUserData();
+
+            // Filter form submission
             filterForm.addEventListener('submit', function(e) {
                 e.preventDefault();
-                const searchValue = document.getElementById('search').value || '(empty)';
-                const roleSelect = document.getElementById('role');
-                const roleValue = roleSelect.options[roleSelect.selectedIndex]?.text || '(empty)';
-                const sortSelect = document.getElementById('sort');
-                const sortValue = sortSelect.options[sortSelect.selectedIndex]?.text || '(empty)';
-                Swal.fire({
-                    title: 'Confirm Filter Application',
-                    html: `
-                        <div class="text-left">
-                            <p class="mb-4 text-gray-700">You are about to apply the following filters:</p>
-                            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                                <div class="flex items-center mb-2">
-                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                    </svg>
-                                <span id="swal-search" class="font-medium">${searchValue}</span>
-                                </div>
-                                <div class="flex items-center mb-2">
-                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 005.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                    </svg>
-                                    <span id="swal-role" class="font-medium">${roleValue}</span>
-                                </div>
-                                <div class="flex items-center">
-                                    <svg class="h-5 w-5 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                                    </svg>
-                                    <span id="swal-sort" class="font-medium">${sortValue}</span>
-                                </div>
-                            </div>
-                            <p class="mt-4 text-sm text-gray-500">Please verify the filters before proceeding.</p>
-                        </div>
-                    `,
-                    showCancelButton: true,
-                    confirmButtonText: 'Apply Filters',
-                    cancelButtonText: 'Cancel',
-                    focusCancel: true,
-                    customClass: {
-                        popup: 'rounded-xl border border-gray-200 shadow-xl',
-                        title: 'text-2xl font-bold text-gray-800 border-b border-gray-200 pb-4 mb-4',
-                        confirmButton: 'bg-[var(--primary)] hover:bg-[var(--primary-dark)] px-4 py-2 rounded-md font-medium shadow-sm',
-                        cancelButton: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300 px-4 py-2 rounded-md font-medium shadow-sm mr-2',
-                    }
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        filterForm.submit();
-                    }
-                });
+                fetchUserData();
             });
 
             // Reset Filters Link
@@ -444,71 +475,20 @@
                         }
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = link.getAttribute('href');
+                            // Clear form fields before submitting
+                            searchInput.value = '';
+                            roleSelect.value = '';
+                            sortSelect.value = 'name_asc'; // Assuming a default sort
+                            fetchUserData(); // Fetch data with cleared filters
                         }
                     });
                 });
             });
 
-            // Client-side sorting logic
-            const usersTable = document.getElementById('users-table');
-            const tableBody = usersTable.querySelector('tbody');
-            const sortableColumns = usersTable.querySelectorAll('.sortable-column');
-
-            sortableColumns.forEach(header => {
-                header.addEventListener('click', () => {
-                    const sortBy = header.dataset.sortBy;
-                    let sortDirection = header.dataset.sortDirection;
-
-                    // Toggle sort direction
-                    sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-                    header.dataset.sortDirection = sortDirection;
-
-                    // Reset other sort icons
-                    sortableColumns.forEach(col => {
-                        if (col !== header) {
-                            const otherIcon = col.querySelector('.sort-icon');
-                            if (otherIcon) {
-                                otherIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>'; // Default icon
-                            }
-                        }
-                    });
-
-                    // Update current sort icon
-                    const currentIcon = header.querySelector('.sort-icon');
-                    if (currentIcon) {
-                        if (sortDirection === 'asc') {
-                            currentIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/>'; // Up arrow
-                        } else {
-                            currentIcon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>'; // Down arrow
-                        }
-                    }
-
-                    const rows = Array.from(tableBody.querySelectorAll('tr'));
-
-                    rows.sort((a, b) => {
-                        let aValue, bValue;
-
-                        if (sortBy === 'name') {
-                            aValue = a.querySelector('td:nth-child(1) .text-sm.font-medium').textContent.trim().toLowerCase();
-                            bValue = b.querySelector('td:nth-child(1) .text-sm.font-medium').textContent.trim().toLowerCase();
-                        } else if (sortBy === 'created_at') {
-                            // For date sorting, parse the date string
-                            aValue = new Date(a.querySelector('td:nth-child(3)').textContent.trim());
-                            bValue = new Date(b.querySelector('td:nth-child(3)').textContent.trim());
-                        }
-
-                        if (sortDirection === 'asc') {
-                            return aValue > bValue ? 1 : -1;
-                        } else {
-                            return aValue < bValue ? 1 : -1;
-                        }
-                    });
-
-                    // Re-append sorted rows
-                    rows.forEach(row => tableBody.appendChild(row));
-                });
-            });
+            // Add event listeners for filter changes to trigger data fetch
+            searchInput.addEventListener('input', () => fetchUserData());
+            roleSelect.addEventListener('change', () => fetchUserData());
+            sortSelect.addEventListener('change', () => fetchUserData());
         });
     </script>
 @endpush

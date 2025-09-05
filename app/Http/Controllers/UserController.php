@@ -16,7 +16,7 @@ class UserController extends Controller
     /**
      * Display a listing of users (Admin only).
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', User::class);
         $users = User::query()
@@ -45,7 +45,7 @@ class UserController extends Controller
                         break;
                 }
             }, function ($query) {
-                $query->orderBy('id', 'desc'); // Default sort
+                $query->orderBy('id', 'desc'); // Default sort: newest user ID first
             })
             ->paginate(10)
             ->withQueryString();
@@ -53,6 +53,12 @@ class UserController extends Controller
         $links = [
             'Users' => route('users.index')
         ];
+        if ($request->ajax()) {
+            return response()->json([
+                'users' => $users,
+            ]);
+        }
+
         return view('users.index', compact('users', 'links'));
     }
 
