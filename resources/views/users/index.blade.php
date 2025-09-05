@@ -15,6 +15,15 @@
             border-radius: 12px;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+
+        .highlight-row {
+            animation: highlight 5s ease-out forwards;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #e6ffed; } /* Light green */
+            100% { background-color: transparent; } /* Fade to transparent */
+        }
     </style>
 @endpush
 
@@ -319,7 +328,7 @@
                         `;
 
                         tableHtml += `
-                            <tr class="hover:bg-blue-50 transition duration-150">
+                            <tr class="hover:bg-blue-50 transition duration-150" data-id="${user.id}">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center">
@@ -489,6 +498,22 @@
             searchInput.addEventListener('input', () => fetchUserData());
             roleSelect.addEventListener('change', () => fetchUserData());
             sortSelect.addEventListener('change', () => fetchUserData());
+
+            // Highlight user row if redirected from edit
+            const highlightUserId = {{ session('highlight_user_id') ?? 'null' }};
+            if (highlightUserId) {
+                // Wait for the table to be rendered by fetchUserData
+                const checkTableInterval = setInterval(() => {
+                    const userRow = usersTableBody.querySelector(`tr[data-id="${highlightUserId}"]`);
+                    if (userRow) {
+                        clearInterval(checkTableInterval);
+                        userRow.classList.add('highlight-row');
+                        setTimeout(() => {
+                            userRow.classList.remove('highlight-row');
+                        }, 5000); // 5 seconds
+                    }
+                }, 100); // Check every 100ms
+            }
         });
     </script>
 @endpush

@@ -139,7 +139,7 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('users.index')->with('success', 'User updated successfully.');
+        return redirect()->route('users.index')->with('success', 'User updated successfully.')->with('highlight_user_id', $user->id);
     }
 
     /**
