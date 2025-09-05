@@ -201,7 +201,7 @@
                             </p>
                         </div>
                         <nav class="flex items-center space-x-1">
-                            {{ $orders->links('components.pagination.custom-pagination') }}
+                            {{ $orders->links('components.ui.custom-pagination') }}
                         </nav>
                     </div>
                 </div>

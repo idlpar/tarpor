@@ -308,7 +308,7 @@
 
                         <!-- Pagination Links -->
                         <nav class="flex items-center space-x-1">
-                            {{ $users->appends(request()->query())->onEachSide(1)->links('components.pagination.custom-pagination') }}
+                            {{ $users->appends(request()->query())->onEachSide(1)->links('components.ui.custom-pagination') }}
                         </nav>
                     </div>
                 </div>
