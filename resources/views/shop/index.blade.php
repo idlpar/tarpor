@@ -574,7 +574,7 @@
                     <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
                 </div>
             </div>
-            <div id="quick-view-product-template" class="hidden">
+            <template id="quick-view-product-template">
                 <div class="grid md:grid-cols-2 gap-6">
                     <div class="bg-gray-50 rounded-lg overflow-hidden">
                         <img src="" alt="Product" class="w-full h-auto object-contain" id="qv-main-image">
@@ -627,7 +627,7 @@
                         </div>
                     </div>
                 </div>
-            </div>
+            </template>
         </div>
     </div>
 
@@ -912,10 +912,10 @@
                                 qvGalleryThumbnails.innerHTML = ''; // Clear existing
                                 product.media.forEach(mediaItem => {
                                     const img = document.createElement('img');
-                                    img.src = mediaItem.original_url; // Assuming original_url is available
+                                    img.src = mediaItem.thumb_url; // Use thumb_url for the thumbnail
                                     img.alt = product.name + ' thumbnail';
                                     img.classList.add('w-full', 'h-16', 'object-cover', 'rounded-md', 'cursor-pointer', 'border-2', 'border-transparent', 'hover:border-blue-500', 'transition-colors', 'duration-200', 'qv-thumbnail-image');
-                                    img.dataset.src = mediaItem.original_url;
+                                    img.dataset.src = mediaItem.url; // Use url for the full-size image
                                     qvGalleryThumbnails.appendChild(img);
                                 });
 
@@ -926,12 +926,13 @@
                                 });
                             }
 
-                            // Variants
                             const qvVariantSelection = template.querySelector('#qv-variant-selection');
                             const qvVariantOptions = template.querySelector('#qv-variant-options');
                             const qvSelectedVariantId = template.querySelector('#qv-selected-variant-id');
                             const qvQuantityInput = template.querySelector('#qv-quantity-input');
                             const qvStockStatusDisplay = template.querySelector('#qv-stock-status-display');
+                            const qvDecrementQuantity = template.querySelector('#qv-decrement-quantity');
+                            const qvIncrementQuantity = template.querySelector('#qv-increment-quantity');
 
                             if (product.type === 'variable' && product.variants.length > 0) {
                                 qvVariantSelection.classList.remove('hidden');
@@ -988,8 +989,6 @@
                             }
 
                             // Quantity controls
-                            const qvDecrementQuantity = template.querySelector('#qv-decrement-quantity');
-                            const qvIncrementQuantity = template.querySelector('#qv-increment-quantity');
 
                             qvDecrementQuantity.addEventListener('click', () => {
                                 if (parseInt(qvQuantityInput.value) > 1) {
@@ -1000,6 +999,8 @@
                                 qvQuantityInput.value = parseInt(qvQuantityInput.value) + 1;
                             });
 
+                            const qvAddToCartForm = template.querySelector('#qv-add-to-cart-form');
+                            const qvBuyNowBtn = template.querySelector('#qv-buy-now-btn');
                             // Handle Add to Cart / Buy Now from Quick View
                             qvAddToCartForm.addEventListener('submit', function(e) {
                                 e.preventDefault();
