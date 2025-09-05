@@ -11,9 +11,14 @@ class NewsletterSubscriptionController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
         $subscribers = NewsletterSubscription::orderByDesc('created_at')->paginate(10);
+        if ($request->ajax()) {
+            return response()->json([
+                'subscribers' => $subscribers,
+            ]);
+        }
         $links = [
             'Newsletter Subscribers' => route('admin.newsletter.subscribers.index')
         ];
@@ -44,7 +49,7 @@ class NewsletterSubscriptionController extends Controller
 
         $subscriber->update($validated);
 
-        return redirect()->route('admin.newsletter.subscribers.index')->with('success', 'Subscriber updated successfully.');
+        return redirect()->route('admin.newsletter.subscribers.index')->with('success', 'Subscriber updated successfully.')->with('highlight_subscriber_id', $subscriber->id);
     }
 
     /**
@@ -65,6 +70,11 @@ class NewsletterSubscriptionController extends Controller
         $subscriber->is_subscribed = !$subscriber->is_subscribed;
         $subscriber->save();
 
-        return back()->with('success', 'Subscription status updated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Subscription status updated successfully.',
+            'is_subscribed' => $subscriber->is_subscribed,
+            'subscriber_id' => $subscriber->id,
+        ]);
     }
 }
