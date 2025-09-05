@@ -15,11 +15,28 @@ class CategoryController extends Controller
     /**
      * Display a listing of categories.
      */
-    public function index()
+    public function index(Request $request)
     {
         $this->authorize('viewAny', Category::class);
 
         if (auth()->check() && in_array(auth()->user()->role, ['admin', 'staff'])) {
+            if ($request->ajax()) {
+                if ($request->query('data_type') === 'tree') {
+                    $tree = $this->buildCategoryTree();
+                    $treeHtml = view('dashboard.admin.categories.partials.tree', ['tree' => $tree])->render();
+                    return response()->json(['treeHtml' => $treeHtml]);
+                } else {
+                    // Default to list if data_type is not specified or is 'list'
+                    $categories = Category::with(['children', 'parent'])
+                        ->when($request->query('search'), function ($query) use ($request) {
+                            $query->where('name', 'like', '%' . $request->query('search') . '%');
+                        })
+                        ->orderBy('id', 'desc') // Default sort for list
+                        ->paginate(15);
+                    return response()->json(['categories' => $categories]);
+                }
+            }
+
             $categories = Category::with(['children', 'parent'])->paginate(15);
             $tree = $this->buildCategoryTree();
 
@@ -225,7 +242,7 @@ class CategoryController extends Controller
             'status' => $validated['status'],
         ]);
 
-        return redirect()->route('categories.index')->with('success', 'Category updated successfully.');
+        return redirect()->route('categories.index')->with('success', 'Category updated successfully.')->with('highlight_category_id', $category->id);
     }
 
     /**
@@ -236,9 +253,16 @@ class CategoryController extends Controller
         $this->authorize('delete', $category);
         if ($category->children->isEmpty()) {
             $category->delete();
-            return redirect()->route('categories.index')->with('success', 'Category deleted successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Category deleted successfully.',
+                'category_id' => $category->id,
+            ]);
         }
-        return redirect()->route('categories.index')->with('error', 'Cannot delete category with subcategories.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Cannot delete category with subcategories.',
+        ], 400);
     }
 
     /**
