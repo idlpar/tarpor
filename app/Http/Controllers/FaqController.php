@@ -10,10 +10,17 @@ class FaqController extends Controller
 {
     public function index(Request $request)
     {
+        $faqs = Faq::when($request->query('search'), function ($query) use ($request) {
+            $query->where('question', 'like', '%' . $request->query('search') . '%')
+                  ->orWhere('answer', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderBy('id', 'desc')->paginate(10);
+
         if ($request->expectsJson()) {
-            return response()->json(Faq::all());
+            return response()->json([
+                'faqs' => $faqs,
+            ]);
         }
-        $faqs = Faq::all();
         $links = [
             'FAQs' => route('faqs.index')
         ];
@@ -38,7 +45,7 @@ class FaqController extends Controller
 
         Faq::create($request->all());
 
-        return redirect()->route('faqs.index')->with('success', 'FAQ created successfully.');
+        return redirect()->route('faqs.index')->with('success', 'FAQ created successfully.')->with('highlight_faq_id', $faq->id);
     }
 
     public function edit(Faq $faq)
@@ -59,13 +66,17 @@ class FaqController extends Controller
 
         $faq->update($request->all());
 
-        return redirect()->route('admin.faqs.index')->with('success', 'FAQ updated successfully.');
+        return redirect()->route('admin.faqs.index')->with('success', 'FAQ updated successfully.')->with('highlight_faq_id', $faq->id);
     }
 
     public function destroy(Faq $faq)
     {
         $faq->delete();
 
-        return redirect()->route('faqs.index')->with('success', 'FAQ deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'FAQ deleted successfully.',
+            'faq_id' => $faq->id,
+        ]);
     }
 }
