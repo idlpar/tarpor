@@ -105,7 +105,7 @@
                         @forelse ($recentOrders as $order)
                             <tr class="border-b">
                                 <td class="py-3 px-4 text-sm"><a href="{{ route('admin.orders.show', $order) }}" class="text-blue-500 hover:underline">#{{ $order->id }}</a></td>
-                                <td class="py-3 px-4 text-sm">{{ optional($order->user)->name ?? 'Guest' }}</td>
+                                <td class="py-3 px-4 text-sm">@if($order->user_id) {{ $order->user->name }} @else {{ $order->address->first_name }} {{ $order->address->last_name }} @endif</td>
                                 <td class="py-3 px-4 text-sm">৳{{ number_format($order->total_price, 2) }}</td>
                                 <td class="py-3 px-4 text-sm">
                                     <span class="px-2 py-1 text-xs font-semibold rounded-full

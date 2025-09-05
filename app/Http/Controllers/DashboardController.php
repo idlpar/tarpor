@@ -65,7 +65,7 @@ class DashboardController extends Controller
         $totalShipped = Order::where('status', 'shipped')->count();
 
         // Recent Orders
-        $recentOrders = Order::with('user')->latest()->take(5)->get();
+        $recentOrders = Order::with('user', 'address')->latest()->take(5)->get();
 
         // Top Selling Products
         $topSellingProducts = Product::withCount(['orderItems as quantity_sold' => function ($query) {
@@ -90,7 +90,7 @@ class DashboardController extends Controller
             });
 
         // Chart Data: New customers over the last 7 days
-        $newCustomersLast7Days = User::select(
+        $registeredCustomers = User::select(
             DB::raw('DATE(created_at) as date'),
             DB::raw('COUNT(*) as count')
         )
@@ -98,10 +98,31 @@ class DashboardController extends Controller
             ->groupBy('date')
             ->orderBy('date', 'asc')
             ->get()
-            ->pluck('count', 'date')
-            ->mapWithKeys(function ($count, $date) {
-                return [Carbon::parse($date)->format('D') => $count];
-            });
+            ->pluck('count', 'date');
+
+        $guestCustomers = Order::whereNull('user_id')
+            ->where('created_at', '>=', Carbon::now()->subDays(6))
+            ->select(
+                DB::raw('DATE(created_at) as date'),
+                DB::raw('COUNT(*) as count')
+            )
+            ->groupBy('date')
+            ->orderBy('date', 'asc')
+            ->get()
+            ->pluck('count', 'date');
+
+        $dates = collect();
+        for ($i = 6; $i >= 0; $i--) {
+            $dates->put(Carbon::now()->subDays($i)->format('Y-m-d'), 0);
+        }
+
+        $newCustomersLast7Days = $dates->map(function ($count, $date) use ($registeredCustomers, $guestCustomers) {
+            $regCount = $registeredCustomers->get($date) ?? 0;
+            $guestCount = $guestCustomers->get($date) ?? 0;
+            return $regCount + $guestCount;
+        })->mapWithKeys(function ($count, $date) {
+            return [Carbon::parse($date)->format('D') => $count];
+        });
 
         return compact(
             'salesToday',
