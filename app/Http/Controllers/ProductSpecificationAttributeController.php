@@ -11,7 +11,21 @@ class ProductSpecificationAttributeController extends Controller
 {
     public function index(Request $request)
     {
-        $attributes = ProductSpecificationAttribute::withTrashed()->orderBy('id', 'desc')->paginate(10);
+        $attributes = ProductSpecificationAttribute::withTrashed()
+            ->with('group') // Eager load the related group
+            ->when($request->query('search'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhereHas('group', function ($q) use ($request) {
+                          $q->where('name', 'like', '%' . $request->query('search') . '%');
+                      });
+            })
+            ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'attributes' => $attributes,
+            ]);
+        }
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Attributes' => null
@@ -41,10 +55,10 @@ class ProductSpecificationAttributeController extends Controller
         $attribute = ProductSpecificationAttribute::create($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute created successfully.');
+            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute created successfully.')->with('highlight_attribute_id', $attribute->id);
         }
 
-        return redirect()->route('admin.product_specifications.attributes.edit', $attribute)->with('success', 'Attribute created successfully.');
+        return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute created successfully.')->with('highlight_attribute_id', $attribute->id);
     }
 
     public function edit(ProductSpecificationAttribute $attribute)
@@ -69,17 +83,21 @@ class ProductSpecificationAttributeController extends Controller
         $attribute->update($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute updated successfully.');
+            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute updated successfully.')->with('highlight_attribute_id', $attribute->id);
         }
 
-        return redirect()->route('admin.product_specifications.attributes.edit', $attribute)->with('success', 'Attribute updated successfully.');
+        return redirect()->route('admin.product_specifications.attributes.edit', $attribute)->with('success', 'Attribute updated successfully.')->with('highlight_attribute_id', $attribute->id);
     }
 
     public function destroy(ProductSpecificationAttribute $attribute)
     {
         $attribute->delete();
 
-        return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Attribute deleted successfully.',
+            'attribute_id' => $attribute->id,
+        ]);
     }
 
     public function restore($id)
@@ -87,8 +105,32 @@ class ProductSpecificationAttributeController extends Controller
         $attribute = ProductSpecificationAttribute::withTrashed()->find($id);
         if ($attribute) {
             $attribute->restore();
-            return redirect()->route('admin.product_specifications.attributes.index')->with('success', 'Attribute restored successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Attribute restored successfully.',
+                'attribute_id' => $attribute->id,
+            ]);
         }
-        return redirect()->route('admin.product_specifications.attributes.index')->with('error', 'Attribute not found.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Attribute not found.',
+        ], 404);
+    }
+
+    public function forceDelete($id)
+    {
+        $attribute = ProductSpecificationAttribute::withTrashed()->find($id);
+        if ($attribute) {
+            $attribute->forceDelete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Attribute permanently deleted.',
+                'attribute_id' => $attribute->id,
+            ]);
+        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Attribute not found.',
+        ], 404);
     }
 }

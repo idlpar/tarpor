@@ -79,7 +79,7 @@
                     <x-ui.content-card class="p-6">
                         <h3 class="text-lg font-semibold text-gray-800 mb-2">Publish</h3>
                         <div class="pt-4 border-t border-gray-200 flex gap-4">
-                            <button type="submit" id="saveButton" class="w-full bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">Save</button>
+                            <button type="submit" id="saveButton" class="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors text-sm">Save</button>
                             <button type="submit" name="save_exit" value="1" id="saveExitButton" class="flex-1 bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">Save & Exit</button>
                         </div>
                     </x-ui.content-card>

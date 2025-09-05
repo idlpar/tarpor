@@ -11,7 +11,19 @@ class ProductSpecificationTableController extends Controller
 {
     public function index(Request $request)
     {
-        $tables = ProductSpecificationTable::withTrashed()->orderBy('id', 'desc')->paginate(10);
+        $tables = ProductSpecificationTable::withTrashed()
+            ->with('groups') // Eager load the related groups
+            ->when($request->query('search'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhere('type', 'like', '%' . $request->query('search') . '%');
+            })
+            ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'tables' => $tables,
+            ]);
+        }
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Tables' => null
@@ -50,10 +62,10 @@ class ProductSpecificationTableController extends Controller
         }
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table created successfully.');
+            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table created successfully.')->with('highlight_table_id', $table->id);
         }
 
-        return redirect()->route('admin.product_specifications.tables.edit', $table)->with('success', 'Table created successfully.');
+        return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table created successfully.')->with('highlight_table_id', $table->id);
     }
 
     public function edit(ProductSpecificationTable $table)
@@ -90,17 +102,21 @@ class ProductSpecificationTableController extends Controller
         }
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table updated successfully.');
+            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table updated successfully.')->with('highlight_table_id', $table->id);
         }
 
-        return redirect()->route('admin.product_specifications.tables.edit', $table)->with('success', 'Table updated successfully.');
+        return redirect()->route('admin.product_specifications.tables.edit')->with('success', 'Table updated successfully.')->with('highlight_table_id', $table->id);
     }
 
     public function destroy(ProductSpecificationTable $table)
     {
         $table->delete();
 
-        return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Table deleted successfully.',
+            'table_id' => $table->id,
+        ]);
     }
 
     public function restore($id)
@@ -108,8 +124,32 @@ class ProductSpecificationTableController extends Controller
         $table = ProductSpecificationTable::withTrashed()->find($id);
         if ($table) {
             $table->restore();
-            return redirect()->route('admin.product_specifications.tables.index')->with('success', 'Table restored successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Table restored successfully.',
+                'table_id' => $table->id,
+            ]);
         }
-        return redirect()->route('admin.product_specifications.tables.index')->with('error', 'Table not found.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Table not found.',
+        ], 404);
+    }
+
+    public function forceDelete($id)
+    {
+        $table = ProductSpecificationTable::withTrashed()->find($id);
+        if ($table) {
+            $table->forceDelete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Table permanently deleted.',
+                'table_id' => $table->id,
+            ]);
+        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Table not found.',
+        ], 404);
     }
 }

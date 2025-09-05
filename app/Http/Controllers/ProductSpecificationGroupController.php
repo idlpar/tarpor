@@ -10,7 +10,18 @@ class ProductSpecificationGroupController extends Controller
 {
     public function index(Request $request)
     {
-        $groups = ProductSpecificationGroup::withTrashed()->orderBy('id', 'desc')->paginate(10);
+        $groups = ProductSpecificationGroup::withTrashed()
+            ->when($request->query('search'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhere('description', 'like', '%' . $request->query('search') . '%');
+            })
+            ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'groups' => $groups,
+            ]);
+        }
         $links = [
             'Product Specifications' => route('admin.product_specifications.groups.index'),
             'Groups' => null
@@ -38,10 +49,10 @@ class ProductSpecificationGroupController extends Controller
         $group = ProductSpecificationGroup::create($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group created successfully.');
+            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group created successfully.')->with('highlight_group_id', $group->id);
         }
 
-        return redirect()->route('admin.product_specifications.groups.edit', $group)->with('success', 'Group created successfully.');
+        return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group created successfully.')->with('highlight_group_id', $group->id);
     }
 
     public function edit(ProductSpecificationGroup $group)
@@ -64,17 +75,21 @@ class ProductSpecificationGroupController extends Controller
         $group->update($request->all());
 
         if ($request->has('save_exit')) {
-            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group updated successfully.');
+            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group updated successfully.')->with('highlight_group_id', $group->id);
         }
 
-        return redirect()->route('admin.product_specifications.groups.edit', $group)->with('success', 'Group updated successfully.');
+        return redirect()->route('admin.product_specifications.groups.edit', $group)->with('success', 'Group updated successfully.')->with('highlight_group_id', $group->id);
     }
 
     public function destroy(ProductSpecificationGroup $group)
     {
         $group->delete();
 
-        return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Group deleted successfully.',
+            'group_id' => $group->id,
+        ]);
     }
 
     public function restore($id)
@@ -82,8 +97,32 @@ class ProductSpecificationGroupController extends Controller
         $group = ProductSpecificationGroup::withTrashed()->find($id);
         if ($group) {
             $group->restore();
-            return redirect()->route('admin.product_specifications.groups.index')->with('success', 'Group restored successfully.');
+            return response()->json([
+                'success' => true,
+                'message' => 'Group restored successfully.',
+                'group_id' => $group->id,
+            ]);
         }
-        return redirect()->route('admin.product_specifications.groups.index')->with('error', 'Group not found.');
+        return response()->json([
+            'success' => false,
+            'message' => 'Group not found.',
+        ], 404);
+    }
+
+    public function forceDelete($id)
+    {
+        $group = ProductSpecificationGroup::withTrashed()->find($id);
+        if ($group) {
+            $group->forceDelete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Group permanently deleted.',
+                'group_id' => $group->id,
+            ]);
+        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Group not found.',
+        ], 404);
     }
 }
