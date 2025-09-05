@@ -8,9 +8,19 @@ use Illuminate\Support\Str;
 
 class CollectionController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $collections = Collection::orderBy('id', 'desc')->paginate(10);
+        $collections = Collection::when($request->query('search'), function ($query) use ($request) {
+            $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhere('description', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'collections' => $collections,
+            ]);
+        }
         $links = [
             'Collections' => route('collections.index')
         ];
@@ -43,10 +53,10 @@ class CollectionController extends Controller
         ]);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('collections.index')->with('success', 'Collection created successfully.');
+            return redirect()->route('collections.index')->with('success', 'Collection created successfully.')->with('highlight_collection_id', $collection->id);
         }
 
-        return redirect()->route('collections.edit', $collection)->with('success', 'Collection created successfully.');
+        return redirect()->route('collections.index')->with('success', 'Collection created successfully.')->with('highlight_collection_id', $collection->id);
     }
 
     public function edit(Collection $collection)
@@ -75,17 +85,21 @@ class CollectionController extends Controller
         ]);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('collections.index')->with('success', 'Collection updated successfully.');
+            return redirect()->route('collections.index')->with('success', 'Collection updated successfully.')->with('highlight_collection_id', $collection->id);
         }
 
-        return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.');
+        return redirect()->route('collections.edit', $collection)->with('success', 'Collection updated successfully.')->with('highlight_collection_id', $collection->id);
     }
 
     public function destroy(Collection $collection)
     {
         $collection->delete();
 
-        return redirect()->route('collections.index')->with('success', 'Collection deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Collection deleted successfully.',
+            'collection_id' => $collection->id,
+        ]);
     }
 
     public function checkSlug(Request $request)

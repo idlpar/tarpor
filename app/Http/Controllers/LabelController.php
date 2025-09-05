@@ -8,9 +8,19 @@ use Illuminate\Support\Str;
 
 class LabelController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $labels = Label::orderBy('id', 'desc')->paginate(10);
+        $labels = Label::when($request->query('search'), function ($query) use ($request) {
+            $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhere('description', 'like', '%' . $request->query('search') . '%');
+        })
+        ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'labels' => $labels,
+            ]);
+        }
         $links = [
             'Labels' => route('labels.index')
         ];
@@ -43,10 +53,10 @@ class LabelController extends Controller
         ]);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('labels.index')->with('success', 'Label created successfully.');
+            return redirect()->route('labels.index')->with('success', 'Label created successfully.')->with('highlight_label_id', $label->id);
         }
 
-        return redirect()->route('labels.edit', $label)->with('success', 'Label created successfully.');
+        return redirect()->route('labels.index')->with('success', 'Label created successfully.')->with('highlight_label_id', $label->id);
     }
 
     public function edit(Label $label)
@@ -75,17 +85,21 @@ class LabelController extends Controller
         ]);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('labels.index')->with('success', 'Label updated successfully.');
+            return redirect()->route('labels.index')->with('success', 'Label updated successfully.')->with('highlight_label_id', $label->id);
         }
 
-        return redirect()->route('labels.edit', $label)->with('success', 'Label updated successfully.');
+        return redirect()->route('labels.edit', $label)->with('success', 'Label updated successfully.')->with('highlight_label_id', $label->id);
     }
 
     public function destroy(Label $label)
     {
         $label->delete();
 
-        return redirect()->route('labels.index')->with('success', 'Label deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Label deleted successfully.',
+            'label_id' => $label->id,
+        ]);
     }
 
     public function checkSlug(Request $request)

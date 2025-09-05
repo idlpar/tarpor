@@ -10,9 +10,20 @@ use Illuminate\Support\Str;
 
 class ProductAttributeController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $attributes = ProductAttribute::with('values')->orderBy('id', 'desc')->paginate(10);
+        $attributes = ProductAttribute::with('values')
+            ->when($request->query('search'), function ($query) use ($request) {
+                $query->where('name', 'like', '%' . $request->query('search') . '%')
+                      ->orWhere('description', 'like', '%' . $request->query('search') . '%');
+            })
+            ->orderBy('id', 'desc')->paginate(10);
+
+        if ($request->ajax()) {
+            return response()->json([
+                'attributes' => $attributes,
+            ]);
+        }
         $links = [
             'Product Attributes' => route('product_attributes.index')
         ];
@@ -40,10 +51,10 @@ class ProductAttributeController extends Controller
         $attribute = ProductAttribute::create($validated);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('product_attributes.index')->with('success', 'Product attribute created successfully.');
+            return redirect()->route('product_attributes.index')->with('success', 'Product attribute created successfully.')->with('highlight_attribute_id', $attribute->id);
         }
 
-        return redirect()->route('product_attributes.edit', $attribute)->with('success', 'Product attribute created successfully.');
+        return redirect()->route('product_attributes.index')->with('success', 'Product attribute created successfully.')->with('highlight_attribute_id', $attribute->id);
     }
 
     public function edit(ProductAttribute $product_attribute)
@@ -67,18 +78,21 @@ class ProductAttributeController extends Controller
         $product_attribute->update($validated);
 
         if ($request->has('save_exit')) {
-            return redirect()->route('product_attributes.index')->with('success', 'Product attribute updated successfully.');
+            return redirect()->route('product_attributes.index')->with('success', 'Product attribute updated successfully.')->with('highlight_attribute_id', $product_attribute->id);
         }
 
-        return redirect()->route('product_attributes.edit', $product_attribute)->with('success', 'Product attribute updated successfully.');
+        return redirect()->route('product_attributes.edit', $product_attribute)->with('success', 'Product attribute updated successfully.')->with('highlight_attribute_id', $product_attribute->id);
     }
 
     public function destroy(ProductAttribute $product_attribute)
     {
         $product_attribute->delete();
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Product attribute deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Product attribute deleted successfully.',
+            'attribute_id' => $product_attribute->id,
+        ]);
     }
 
     // Methods for ProductAttributeValue
@@ -90,8 +104,11 @@ class ProductAttributeController extends Controller
 
         $product_attribute->values()->create($validated);
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Attribute value added successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Attribute value added successfully.',
+            'attribute_value' => $product_attribute->values()->latest()->first(), // Return the newly created value
+        ]);
     }
 
     public function updateValue(Request $request, ProductAttribute $product_attribute, ProductAttributeValue $value)
@@ -102,15 +119,21 @@ class ProductAttributeController extends Controller
 
         $value->update($validated);
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Attribute value updated successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Attribute value updated successfully.',
+            'attribute_value' => $value,
+        ]);
     }
 
     public function destroyValue(ProductAttribute $product_attribute, ProductAttributeValue $value)
     {
         $value->delete();
 
-        return redirect()->route('product_attributes.index')
-            ->with('success', 'Attribute value deleted successfully.');
+        return response()->json([
+            'success' => true,
+            'message' => 'Attribute value deleted successfully.',
+            'attribute_value_id' => $value->id,
+        ]);
     }
 }
