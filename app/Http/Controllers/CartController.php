@@ -98,39 +98,58 @@ class CartController extends Controller
 
     public function update(Request $request)
     {
+        \Log::info('Cart update request received.', ['id' => $request->id, 'quantity' => $request->quantity]);
+
         $request->validate([
             'id' => 'required',
             'quantity' => 'required|integer|min:1',
         ]);
 
         $cart = session()->get('cart');
+        \Log::info('Current cart session:', $cart);
+
         if(isset($cart[$request->id])) {
+            \Log::info('Item found in cart.', ['item_id' => $request->id, 'old_quantity' => $cart[$request->id]['quantity']]);
             $cart[$request->id]['quantity'] = $request->quantity;
             session()->put('cart', $cart);
+            \Log::info('Cart quantity updated in session.', ['new_quantity' => $cart[$request->id]['quantity']]);
 
             // Recalculate subtotal and total for the response
             $subtotal = 0;
             foreach ($cart as $item) {
+                // Check if price and quantity are set and numeric
+                if (!isset($item['price']) || !is_numeric($item['price']) || !isset($item['quantity']) || !is_numeric($item['quantity'])) {
+                    \Log::error('Corrupted cart item found during subtotal calculation.', ['item' => $item]);
+                    // Decide how to handle: skip, throw error, or default to 0
+                    // For now, let's just skip it to see if it's the cause of the 500
+                    continue;
+                }
                 $subtotal += $item['price'] * $item['quantity'];
             }
+            \Log::info('Subtotal calculated:', ['subtotal' => $subtotal]);
 
             // Assuming delivery_charge and coupon are also in session for total calculation
             $deliveryCharge = session()->get('delivery_charge', 0);
-            $couponDiscount = session()->get('coupon.discount', 0);
+            $coupon = session()->get('coupon');
+            $couponDiscount = $coupon['discount'] ?? 0; // Safely access discount
+            \Log::info('Delivery charge and coupon discount:', ['delivery_charge' => $deliveryCharge, 'coupon_discount' => $couponDiscount]);
+
             $total = $subtotal + $deliveryCharge - $couponDiscount;
             if ($total < 0) $total = 0;
+            \Log::info('Total calculated:', ['total' => $total]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Cart updated successfully!',
-                'cart' => $cart, // Return the updated cart for client-side rendering
+                'cart' => $cart,
                 'subtotal' => $subtotal,
                 'total' => $total,
-                'item_line_total' => $cart[$request->id]['price'] * $cart[$request->id]['quantity'], // New line total for the updated item
-                'delivery_charge' => $deliveryCharge, // Explicitly return delivery charge
-                'coupon' => session()->get('coupon'), // Explicitly return coupon data
+                'item_line_total' => $cart[$request->id]['price'] * $cart[$request->id]['quantity'],
+                'delivery_charge' => $deliveryCharge,
+                'coupon' => $coupon,
             ]);
         }
+        \Log::warning('Item not found in cart for update.', ['id' => $request->id]);
         return response()->json([
             'success' => false,
             'message' => 'Item not found in cart.',

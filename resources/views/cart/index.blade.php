@@ -3,7 +3,7 @@
 @section('title', 'Shopping Cart')
 
 @push('styles')
-<style>
+        <style>
     /* Vibrant but professional color palette */
     :root {
         --primary: #4f46e5;
@@ -121,6 +121,16 @@
     .checkout-btn:hover::after {
         left: 100%;
     }
+
+    /* Hide spinner from number inputs */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
 </style>
 @endpush
 
@@ -152,33 +162,42 @@
                         </form>
                         <p class="text-gray-500 font-medium">{{ count(session('cart')) }} items</p>
                     </div>
-                    @foreach(session('cart') as $id => $details)
-                        <div class="bg-white rounded-xl shadow-sm p-4 md:p-6 mb-4 flex flex-col lg:flex-row lg:items-center transition-shadow hover:shadow-md cart-item" data-id="{{ $id }}" data-item-price="{{ $details['price'] }}">
-                            <div class="flex items-center space-x-4 flex-grow">
+                    @foreach(array_reverse(session('cart'), true) as $id => $details)
+                        <div class="bg-white rounded-xl shadow-sm p-4 mb-4 grid grid-cols-12 items-center gap-4 transition-shadow hover:shadow-md cart-item" data-id="{{ $id }}" data-item-price="{{ $details['price'] }}">
+                            <div class="col-span-1">
                                 <input type="checkbox" class="form-checkbox h-5 w-5 text-blue-600 rounded cart-item-checkbox" checked>
-                                <img src="{{ $details['image'] }}" alt="{{ $details['name'] }}" class="w-24 h-24 md:w-32 md:h-32 object-cover rounded-lg transition-transform duration-300 ease-in-out hover:scale-110">
-                                <div class="flex-grow">
-                                    <h3 class="font-semibold text-gray-800 text-lg">{{ $details['name'] }}</h3>
-                                    @if(isset($details['attributes']) && $details['attributes'] !== 'N/A')
-                                        <p class="text-sm text-gray-500">{{ $details['attributes'] }}</p>
-                                    @endif
-                                    <p class="text-md font-bold text-gemini-pink">{{ format_taka($details['price']) }}</p>
+                            </div>
+                            <div class="col-span-1">
+                                <img src="{{ $details['image'] }}" alt="{{ $details['name'] }}" class="w-20 h-20 object-cover rounded-lg">
+                            </div>
+                            <div class="col-span-4">
+                                <h3 class="font-semibold text-gray-800 text-md">{{ $details['name'] }}</h3>
+                                @if(isset($details['attributes']) && $details['attributes'] !== 'N/A')
+                                    <p class="text-sm text-gray-500">{{ $details['attributes'] }}</p>
+                                @endif
+                            </div>
+                            <div class="col-span-2 text-right">
+                                <p class="text-md font-bold text-gemini-pink">{{ format_taka($details['price']) }}</p>
+                            </div>
+                            <div class="col-span-2">
+                                <div class="flex items-center justify-center">
+                                    <form action="{{ route('cart.update', ['id' => $id]) }}" method="POST" class="flex items-center cart-update-form">
+                                        @csrf
+                                        @method('PUT')
+                                        <button type="button" class="quantity-change-btn p-1 border rounded-l-md" data-change="-1">-</button>
+                                        <input type="number" name="quantity" value="{{ $details['quantity'] }}" min="1" class="w-12 text-center border-t border-b focus:outline-none p-1 cart-item-quantity-input">
+                                        <button type="button" class="quantity-change-btn p-1 border rounded-r-md" data-change="1">+</button>
+                                    </form>
                                 </div>
                             </div>
-                            <div class="flex items-center justify-between mt-4 lg:mt-0">
-                                <form action="{{ route('cart.update', ['id' => $id]) }}" method="POST" class="flex items-center cart-update-form">
-                                    @csrf
-                                    @method('PUT')
-                                    <input type="number" name="quantity" value="{{ $details['quantity'] }}" min="1" class="form-input-custom w-20 text-center mx-4 cart-item-quantity-input">
-                                    <button type="submit" class="text-gray-500 hover:text-blue-600 p-2 rounded-full update-quantity-btn" data-tippy-content="Update">
-                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h5M20 20v-5h-5M4 20h5v-5M20 4h-5v5"></path></svg>
-                                    </button>
-                                </form>
-                                <p class="text-md font-bold text-gemini-pink ml-4 cart-item-line-total">{{ format_taka($details['price'] * $details['quantity']) }}</p>
+                            <div class="col-span-1 text-right">
+                                <p class="text-md text-gray-800 cart-item-line-total">{{ format_taka($details['price'] * $details['quantity']) }}</p>
+                            </div>
+                            <div class="col-span-1 text-right">
                                 <form action="{{ route('cart.remove', ['id' => $id]) }}" method="POST" class="cart-remove-form">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="text-red-500 hover:text-red-700 p-2 rounded-full ml-2" data-tippy-content="Delete">
+                                    <button type="submit" class="text-red-500 hover:text-red-700 p-2 rounded-full" data-tippy-content="Delete">
                                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                     </button>
                                 </form>
@@ -375,40 +394,64 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // AJAX for quantity update
     const cartItemQuantityInputs = document.querySelectorAll('.cart-item-quantity-input');
-    cartItemQuantityInputs.forEach(input => {
-        input.addEventListener('change', async function() {
-            const cartItemDiv = this.closest('.cart-item');
-            const itemId = cartItemDiv.dataset.id;
-            const newQuantity = parseInt(this.value);
+    // Debounce function to limit API calls
+    function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+            const context = this;
+            clearTimeout(timeout);
+            timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+    }
 
-            if (newQuantity < 1) {
-                this.value = 1;
-                return;
+    // Debounced version of the quantity update logic
+    const debouncedUpdateQuantity = debounce(async function(input) {
+        const cartItemDiv = input.closest('.cart-item');
+        const itemId = cartItemDiv.dataset.id;
+        const newQuantity = parseInt(input.value);
+
+        if (newQuantity < 1) {
+            input.value = 1;
+            return;
+        }
+
+        try {
+            const response = await fetch('{{ route('cart.update') }}', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ id: itemId, quantity: newQuantity })
+            });
+
+            if (!response.ok) {
+                console.error('Response not OK:', response);
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Server responded with an error.');
             }
 
-            try {
-                const response = await fetch('{{ route('cart.update') }}', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ id: itemId, quantity: newQuantity })
-                });
-                const data = await response.json();
-                if (data.success) {
-                    const itemLineTotalEl = cartItemDiv.querySelector('.cart-item-line-total');
-                    if (itemLineTotalEl) {
-                        itemLineTotalEl.textContent = formatCurrencyBD(data.item_line_total);
-                    }
-                    updateSummary();
-                } else {
-                    alert('Error updating quantity: ' + data.message);
+            const data = await response.json();
+            if (data.success) {
+                const itemLineTotalEl = cartItemDiv.querySelector('.cart-item-line-total');
+                if (itemLineTotalEl) {
+                    itemLineTotalEl.textContent = formatCurrencyBD(data.item_line_total);
                 }
-            } catch (error) {
-                alert('Network error. Could not update quantity.');
+                updateSummary();
+            } else {
+                console.error('Error updating cart item quantity:', data.message);
+                alert('Error updating quantity: ' + data.message);
             }
+        } catch (error) {
+            console.error('Network error updating cart item quantity:', error);
+            alert('Network error. Could not update quantity. Check console for details.');
+        }
+    }, 500); // Debounce with a 500ms delay
+
+    cartItemQuantityInputs.forEach(input => {
+        input.addEventListener('change', function() {
+            debouncedUpdateQuantity(this);
         });
     });
 
@@ -434,6 +477,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // ... (coupon logic remains the same)
         });
     }
+
+    // Quantity change buttons
+    document.querySelectorAll('.quantity-change-btn').forEach(button => {
+        button.addEventListener('click', function() {
+            const change = parseInt(this.dataset.change);
+            const input = this.closest('form').querySelector('.cart-item-quantity-input');
+            const currentValue = parseInt(input.value);
+            let newValue = currentValue + change;
+
+            if (newValue < 1) {
+                newValue = 1;
+            }
+            input.value = newValue;
+
+            // Trigger the change event to update the cart
+            const event = new Event('change', { bubbles: true });
+            input.dispatchEvent(event);
+        });
+    });
 
     // Initial summary calculation
     updateSummary();
