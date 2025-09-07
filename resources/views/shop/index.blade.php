@@ -580,49 +580,56 @@
                         <img src="" alt="Product" class="w-full h-auto object-contain" id="qv-main-image">
                         <div class="grid grid-cols-4 gap-2 p-2" id="qv-gallery-thumbnails"></div>
                     </div>
-                    <div>
-                        <h2 class="text-2xl font-bold text-gray-900 mb-2" id="qv-product-name"></h2>
-                        <p class="text-gray-600 text-sm mb-2">Brand: <span id="qv-product-brand"></span></p>
-                        <div class="flex items-center mb-4" id="qv-product-rating"></div>
-                        <div class="mb-4">
-                            <p class="text-lg font-bold text-gemini-pink" id="qv-product-price"></p>
-                            <p class="text-sm text-gray-500 line-through" id="qv-product-sale-price"></p>
+                    <div> <!-- Right Column -->
+                        <!-- Header -->
+                        <div class="pb-4 border-b border-gray-200">
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2" id="qv-product-name"></h2>
+                            <p class="text-gray-600 text-sm mb-2">Brand: <span id="qv-product-brand"></span></p>
+                            <div class="flex items-center" id="qv-product-rating"></div>
                         </div>
-                        <p class="text-gray-700 mb-4" id="qv-product-short-description"></p>
 
-                        <form id="qv-add-to-cart-form">
-                            @csrf
-                            <input type="hidden" name="product_id" id="qv-product-id">
-                            <input type="hidden" name="variant_id" id="qv-selected-variant-id">
-                            <input type="hidden" name="quantity" value="1" id="qv-quantity">
-
-                            <div id="qv-variant-selection" class="mb-4 hidden">
-                                <h3 class="text-sm font-semibold text-gray-700 mb-2">Select Variant:</h3>
-                                <div id="qv-variant-options" class="flex flex-wrap gap-2"></div>
-                            </div>
-
+                        <!-- Pricing & CTA -->
+                        <div class="py-4">
                             <div class="mb-4">
-                                <span class="font-semibold text-gray-700">Availability: </span>
-                                <span id="qv-stock-status-display" class="font-medium"></span>
+                                <p class="text-lg font-bold text-gemini-pink" id="qv-product-price"></p>
+                                <p class="text-sm text-gray-500 line-through" id="qv-product-sale-price"></p>
                             </div>
 
-                            <div class="flex items-center gap-3 mb-6">
-                                <div class="flex items-center border border-gray-300 rounded-md">
-                                    <button type="button" id="qv-decrement-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md">-</button>
-                                    <input type="number" id="qv-quantity-input" value="1" min="1" class="w-16 text-center border-l border-r border-gray-300 focus:outline-none">
-                                    <button type="button" id="qv-increment-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md">+</button>
+                            <form id="qv-add-to-cart-form">
+                                @csrf
+                                <input type="hidden" name="product_id" id="qv-product-id">
+                                <input type="hidden" name="variant_id" id="qv-selected-variant-id">
+
+                                <div id="qv-variant-selection" class="mb-4 hidden">
+                                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Select Variant:</h3>
+                                    <div id="qv-variant-options" class="flex flex-wrap gap-2"></div>
                                 </div>
-                                <button type="submit" name="action" value="add_to_cart" id="qv-add-to-cart-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200">
-                                    Add to Cart
-                                </button>
-                                <button type="submit" name="action" value="buy_now" id="qv-buy-now-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200">
-                                    Buy Now
-                                </button>
-                            </div>
-                        </form>
 
+                                <div class="mb-4">
+                                    <span class="font-semibold text-gray-700">Availability: </span>
+                                    <span id="qv-stock-status-display" class="font-medium"></span>
+                                </div>
+
+                                <div class="flex items-center gap-3 mb-6">
+                                    <div class="flex items-center border border-gray-300 rounded-md">
+                                        <button type="button" id="qv-decrement-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-l-md">-</button>
+                                        <input type="number" id="qv-quantity-input" value="1" min="1" class="w-16 text-center border-l border-r border-gray-300 focus:outline-none" name="quantity">
+                                        <button type="button" id="qv-increment-quantity" class="px-3 py-1 text-gray-600 hover:bg-gray-100 rounded-r-md">+</button>
+                                    </div>
+                                    <button type="submit" name="action" value="add_to_cart" id="qv-add-to-cart-btn" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200">
+                                        Add to Cart
+                                    </button>
+                                    <button type="submit" name="action" value="buy_now" id="qv-buy-now-btn" class="flex-1 bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 px-4 rounded-md transition-colors duration-200">
+                                        Buy Now
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Details -->
                         <div class="border-t border-gray-200 pt-4">
                             <h3 class="text-sm font-medium text-gray-900 mb-2">Description</h3>
+                            <div id="qv-product-short-description" class="prose max-w-none text-gray-600 text-sm mb-4"></div>
                             <div id="qv-product-description" class="prose max-w-none text-gray-600 text-sm"></div>
                         </div>
                     </div>
