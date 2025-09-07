@@ -286,16 +286,19 @@ class ProductController extends Controller
                 $response['redirect'] = route('products.edit', $product->id);
             }
 
+            session()->flash('highlight_product_id', $product->id);
             return response()->json($response);
         }
 
         if ($request->has('save_exit')) {
             return redirect()->route('products.index')
-                ->with('success', 'Product created successfully');
+                ->with('success', 'Product created successfully')
+                ->with('highlight_product_id', $product->id);
         }
 
         return redirect()->route('products.edit', $product->id)
-            ->with('success', 'Product created successfully');
+            ->with('success', 'Product created successfully')
+            ->with('highlight_product_id', $product->id);
     }
 
     public function show(Request $request, Product $product)
@@ -520,16 +523,19 @@ class ProductController extends Controller
                 $response['redirect'] = route('products.edit', $product->id);
             }
 
+            session()->flash('highlight_product_id', $product->id);
             return response()->json($response);
         }
 
         if ($request->has('save_exit')) {
             return redirect()->route('products.index')
-                ->with('success', 'Product updated successfully');
+                ->with('success', 'Product updated successfully')
+                ->with('highlight_product_id', $product->id);
         }
 
         return redirect()->route('products.edit', $product->id)
-            ->with('success', 'Product updated successfully');
+            ->with('success', 'Product updated successfully')
+            ->with('highlight_product_id', $product->id);
     }
 
     public function destroy(Product $product)
@@ -1190,6 +1196,7 @@ class ProductController extends Controller
         });
 
         if ($request->ajax() || $request->wantsJson()) {
+            session()->flash('highlight_product_id', $product->id);
             return response()->json([
                 'success' => true,
                 'message' => 'Product variants updated successfully.',
@@ -1198,7 +1205,8 @@ class ProductController extends Controller
         }
 
         return redirect()->route('products.edit', $product->id)
-            ->with('success', 'Product variants updated successfully.');
+            ->with('success', 'Product variants updated successfully.')
+            ->with('highlight_product_id', $product->id);
     }
 
     public function bulkAction(Request $request)

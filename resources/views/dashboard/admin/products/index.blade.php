@@ -2,6 +2,19 @@
 
 @section('title', 'Products Management')
 
+@push('styles')
+    <style>
+        .highlight-row {
+            animation: highlight 5s ease-out forwards;
+        }
+
+        @keyframes highlight {
+            0% { background-color: #e6ffed; } /* Light green */
+            100% { background-color: transparent; } /* Fade to transparent */
+        }
+    </style>
+@endpush
+
 @section('admin_content')
     @include('components.breadcrumbs', [
         'links' => [
@@ -220,10 +233,7 @@
 
         <!-- Spinner for loading data -->
         <div id="loading-spinner" class="text-center py-8" style="display: none;">
-            <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
+            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
             <p class="mt-2 text-gray-600">Loading products...</p>
         </div>
     </div>
@@ -425,7 +435,7 @@
                                         product.status === 'draft' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-800';
 
                     tableHtml += `
-                        <tr class="hover:bg-gray-50">
+                        <tr class="hover:bg-gray-50" data-id="${product.id}">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <input type="checkbox" name="product_ids[]" value="${product.id}" class="product-checkbox h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                             </td>
@@ -438,7 +448,7 @@
                                 <div class="flex items-center">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900">
-                                            <a href="/admin/products/${product.id}" class="hover:text-blue-600 hover:underline">
+                                            <a href="/products/${product.id}" class="hover:text-blue-600 hover:underline">
                                                 ${product.name}
                                             </a>
                                         </div>
@@ -484,21 +494,21 @@
                                         </svg>
                                     </a>
                                     <span class="text-gray-300">|</span>
-                                    <a href="/admin/products/${product.id}/edit" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Product">
+                                    <a href="/products/${product.id}/edit" class="text-blue-600 hover:text-blue-900 custom-tooltip-trigger" data-tooltip="Edit Product">
                                         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </a>
                                     ${product.type === 'variable' ? `
                                         <span class="text-gray-300">|</span>
-                                        <a href="/admin/products/${product.id}/variants/edit" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Manage Variants">
+                                        <a href="/products/${product.id}/variants/edit" class="text-purple-600 hover:text-purple-900 custom-tooltip-trigger" data-tooltip="Manage Variants">
                                             <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
                                             </svg>
                                         </a>
                                     ` : ''}
                                     <span class="text-gray-300">|</span>
-                                    <form action="/admin/products/${product.id}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
+                                    <form action="/products/${product.id}" method="POST" class="delete-form inline-block" onsubmit="confirmDelete(event)">
                                         <input type="hidden" name="_token" value="{{ csrf_token() }}">
                                         <input type="hidden" name="_method" value="DELETE">
                                         <button type="submit" class="text-red-600 hover:text-red-900 custom-tooltip-trigger" data-tooltip="Delete Product">
@@ -796,6 +806,21 @@
                     Swal.fire('Error', 'An error occurred during the bulk action.', 'error');
                 }
             });
+        }
+
+        // Highlight product row if redirected from edit
+        const highlightProductId = {{ session('highlight_product_id') ?? 'null' }};
+        if (highlightProductId) {
+            const checkTableInterval = setInterval(() => {
+                const productRow = productsTableBody.querySelector(`tr[data-id="${highlightProductId}"]`);
+                if (productRow) {
+                    clearInterval(checkTableInterval);
+                    productRow.classList.add('highlight-row');
+                    setTimeout(() => {
+                        productRow.classList.remove('highlight-row');
+                    }, 5000);
+                }
+            }, 100);
         }
     });
 </script>
