@@ -367,11 +367,11 @@
                                         <div class="mb-3">
                                             @if($product->sale_price && $product->sale_price < $product->price)
                                                 <div class="flex items-center gap-2">
-                                                    <span class="text-base font-bold text-gray-900">{{ format_taka($product->sale_price) }}</span>
-                                                    <span class="text-xs text-gray-500 line-through">{{ format_taka($product->price) }}</span>
+                                                    <span class="text-lg font-bold text-gemini-pink">{{ format_taka($product->sale_price) }}</span>
+                                                    <span class="text-sm text-gray-500 line-through">{{ format_taka($product->price) }}</span>
                                                 </div>
                                             @else
-                                                <span class="text-base font-bold text-gray-900">{{ format_taka($product->price) }}</span>
+                                                <span class="text-lg font-bold text-gemini-pink">{{ format_taka($product->price) }}</span>
                                             @endif
                                         </div>
 
@@ -585,7 +585,7 @@
                         <p class="text-gray-600 text-sm mb-2">Brand: <span id="qv-product-brand"></span></p>
                         <div class="flex items-center mb-4" id="qv-product-rating"></div>
                         <div class="mb-4">
-                            <p class="text-xl font-bold text-gray-900" id="qv-product-price"></p>
+                            <p class="text-lg font-bold text-gemini-pink" id="qv-product-price"></p>
                             <p class="text-sm text-gray-500 line-through" id="qv-product-sale-price"></p>
                         </div>
                         <p class="text-gray-700 mb-4" id="qv-product-short-description"></p>
@@ -894,28 +894,48 @@
                             console.log('Fetched product for Quick View:', product);
                             const template = document.getElementById('quick-view-product-template').content.cloneNode(true);
 
-                            // Populate product details
-                            template.querySelector('#qv-product-name').textContent = product.name;
-                            template.querySelector('#qv-product-brand').textContent = product.brand ? product.brand.name : 'N/A';
-                            template.querySelector('#qv-product-price').textContent = `BDT ${parseFloat(product.price).toFixed(2)}`;
-                            template.querySelector('#qv-product-short-description').innerHTML = product.short_description;
-                            template.querySelector('#qv-product-id').value = product.id;
-
-                            // Images
+                            const qvProductName = template.querySelector('#qv-product-name');
+                            const qvProductBrand = template.querySelector('#qv-product-brand');
+                            const qvProductPrice = template.querySelector('#qv-product-price');
+                            const qvProductSalePrice = template.querySelector('#qv-product-sale-price');
+                            const qvProductShortDescription = template.querySelector('#qv-product-short-description');
+                            const qvProductId = template.querySelector('#qv-product-id');
                             const qvMainImage = template.querySelector('#qv-main-image');
                             const qvGalleryThumbnails = template.querySelector('#qv-gallery-thumbnails');
-                            const defaultImage = '{{ asset('images/placeholder-product.png') }}';
+                            const qvVariantSelection = template.querySelector('#qv-variant-selection');
+                            const qvVariantOptions = template.querySelector('#qv-variant-options');
+                            const qvSelectedVariantId = template.querySelector('#qv-selected-variant-id');
+                            const qvQuantityInput = template.querySelector('#qv-quantity-input');
+                            const qvStockStatusDisplay = template.querySelector('#qv-stock-status-display');
+                            const qvDecrementQuantity = template.querySelector('#qv-decrement-quantity');
+                            const qvIncrementQuantity = template.querySelector('#qv-increment-quantity');
+                            const qvAddToCartForm = template.querySelector('#qv-add-to-cart-form');
+                            const qvAddToCartBtn = template.querySelector('#qv-add-to-cart-btn');
+                            const qvBuyNowBtn = template.querySelector('#qv-buy-now-btn');
 
+                            qvProductName.textContent = product.name;
+                            qvProductBrand.textContent = product.brand ? product.brand.name : 'N/A';
+                            qvProductPrice.textContent = product.formatted_price;
+                            if (product.formatted_sale_price) {
+                                qvProductSalePrice.textContent = product.formatted_sale_price;
+                                qvProductSalePrice.classList.remove('hidden');
+                            } else {
+                                qvProductSalePrice.classList.add('hidden');
+                            }
+                            qvProductShortDescription.innerHTML = product.short_description;
+                            qvProductId.value = product.id;
+
+                            const defaultImage = '{{ asset('images/placeholder-product.png') }}';
                             qvMainImage.src = product.thumbnail_url || defaultImage;
 
                             if (product.media && product.media.length > 0) {
-                                qvGalleryThumbnails.innerHTML = ''; // Clear existing
+                                qvGalleryThumbnails.innerHTML = '';
                                 product.media.forEach(mediaItem => {
                                     const img = document.createElement('img');
-                                    img.src = mediaItem.thumb_url; // Use thumb_url for the thumbnail
+                                    img.src = mediaItem.thumb_url;
                                     img.alt = product.name + ' thumbnail';
                                     img.classList.add('w-full', 'h-16', 'object-cover', 'rounded-md', 'cursor-pointer', 'border-2', 'border-transparent', 'hover:border-blue-500', 'transition-colors', 'duration-200', 'qv-thumbnail-image');
-                                    img.dataset.src = mediaItem.url; // Use url for the full-size image
+                                    img.dataset.src = mediaItem.url;
                                     qvGalleryThumbnails.appendChild(img);
                                 });
 
@@ -926,121 +946,20 @@
                                 });
                             }
 
-                            const qvVariantSelection = template.querySelector('#qv-variant-selection');
-                            const qvVariantOptions = template.querySelector('#qv-variant-options');
-                            const qvSelectedVariantId = template.querySelector('#qv-selected-variant-id');
-                            const qvQuantityInput = template.querySelector('#qv-quantity-input');
-                            const qvStockStatusDisplay = template.querySelector('#qv-stock-status-display');
-                            const qvDecrementQuantity = template.querySelector('#qv-decrement-quantity');
-                            const qvIncrementQuantity = template.querySelector('#qv-increment-quantity');
-
-                            if (product.type === 'variable' && product.variants.length > 0) {
-                                qvVariantSelection.classList.remove('hidden');
-                                qvVariantOptions.innerHTML = '';
-
-                                product.variants.forEach(variant => {
-                                    const variantDiv = document.createElement('div');
-                                    variantDiv.classList.add('variant-option-wrapper');
-                                    variantDiv.innerHTML = `
-                                        <input type="radio" name="qv_variant_id" id="qv-variant-${variant.id}" value="${variant.id}" class="sr-only qv-variant-radio"
-                                            data-price="${variant.price}"
-                                            data-sale-price="${variant.sale_price || ''}"
-                                            data-stock="${variant.stock_quantity}"
-                                            data-stock-status="${variant.stock_status}"
-                                            ${variant.stock_status === 'out_of_stock' ? 'disabled' : ''}>
-                                        <label for="qv-variant-${variant.id}" class="variant-label cursor-pointer block border border-gray-300 rounded-md p-3 text-center transition-all duration-200">
-                                            <span class="variant-name text-sm font-medium text-gray-800">
-                                                ${variant.attributes_list}
-                                            </span>
-                                            <span class="variant-price text-xs text-gray-500 block mt-1">
-                                                BDT ${parseFloat(variant.sale_price || variant.price).toFixed(2)}
-                                            </span>
-                                        </label>
-                                    `;
-                                    qvVariantOptions.appendChild(variantDiv);
-                                });
-
-                                // Add event listeners for variant selection
-                                template.querySelectorAll('.qv-variant-radio').forEach(radio => {
-                                    radio.addEventListener('change', function() {
-                                        updateQuickViewDisplay(this);
-                                    });
-                                });
-
-                                // Select first available variant by default
-                                const firstAvailableVariant = product.variants.find(v => v.stock_status !== 'out_of_stock') || product.variants[0];
-                                if (firstAvailableVariant) {
-                                    template.querySelector(`#qv-variant-${firstAvailableVariant.id}`).checked = true;
-                                    updateQuickViewDisplay(template.querySelector(`#qv-variant-${firstAvailableVariant.id}`));
-                                }
-
-                            } else {
-                                // Simple product logic
-                                qvVariantSelection.classList.add('hidden');
-                                qvSelectedVariantId.value = ''; // No variant for simple product
-                                updateQuickViewDisplay({ // Mock radio object for simple product
-                                    dataset: {
-                                        price: product.price,
-                                        sale_price: product.sale_price,
-                                        stock: product.stock_quantity,
-                                        stock_status: product.stock_status,
-                                    }
-                                });
-                            }
-
-                            // Quantity controls
-
-                            qvDecrementQuantity.addEventListener('click', () => {
-                                if (parseInt(qvQuantityInput.value) > 1) {
-                                    qvQuantityInput.value = parseInt(qvQuantityInput.value) - 1;
-                                }
-                            });
-                            qvIncrementQuantity.addEventListener('click', () => {
-                                qvQuantityInput.value = parseInt(qvQuantityInput.value) + 1;
-                            });
-
-                            const qvAddToCartForm = template.querySelector('#qv-add-to-cart-form');
-                            const qvBuyNowBtn = template.querySelector('#qv-buy-now-btn');
-                            // Handle Add to Cart / Buy Now from Quick View
-                            qvAddToCartForm.addEventListener('submit', function(e) {
-                                e.preventDefault();
-                                const selectedProductId = product.id;
-                                const selectedVariantId = qvSelectedVariantId.value || null;
-                                const selectedQuantity = qvQuantityInput.value;
-                                const action = e.submitter.value; // 'add_to_cart' or 'buy_now'
-
-                                if (action === 'add_to_cart') {
-                                    addToCart(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
-                                } else if (action === 'buy_now') {
-                                    buyNow(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
-                                }
-                                quickViewModal.classList.add('hidden');
-                                document.body.style.overflow = '';
-                            });
-
-                            // Set buy now button state
-                            if (isBuyNow) {
-                                qvBuyNowBtn.click(); // Simulate click to trigger buy now action after modal is populated
-                            }
-
-                            quickViewContent.innerHTML = '';
-                            quickViewContent.appendChild(template);
-
-                            // Helper function to update Quick View display based on selected variant
                             function updateQuickViewDisplay(selectedRadio) {
                                 console.log('Updating Quick View Display with radio data:', selectedRadio.dataset);
-                                const price = selectedRadio.dataset.price;
-                                const salePrice = selectedRadio.dataset.salePrice;
+                                const formattedPrice = selectedRadio.dataset.formattedPrice;
+                                const formattedSalePrice = selectedRadio.dataset.formattedSalePrice;
                                 const stock = parseInt(selectedRadio.dataset.stock);
                                 const stockStatus = selectedRadio.dataset.stockStatus;
                                 const variantId = selectedRadio.value;
 
-                                template.querySelector('#qv-product-price').textContent = `BDT ${parseFloat(price).toFixed(2)}`;
-                                if (salePrice) {
-                                    template.querySelector('#qv-product-sale-price').textContent = `BDT ${parseFloat(salePrice).toFixed(2)}`;
-                                    template.querySelector('#qv-product-sale-price').classList.remove('hidden');
+                                qvProductPrice.textContent = formattedSalePrice || formattedPrice;
+                                if (formattedSalePrice) {
+                                    qvProductSalePrice.textContent = formattedPrice;
+                                    qvProductSalePrice.classList.remove('hidden');
                                 } else {
-                                    template.querySelector('#qv-product-sale-price').classList.add('hidden');
+                                    qvProductSalePrice.classList.add('hidden');
                                 }
 
                                 if (stockStatus === 'in_stock') {
@@ -1057,14 +976,102 @@
                                 }
 
                                 const isOutOfStock = (stockStatus === 'out_of_stock');
-                                template.querySelector('#qv-add-to-cart-btn').disabled = isOutOfStock;
-                                template.querySelector('#qv-buy-now-btn').disabled = isOutOfStock;
+                                qvAddToCartBtn.disabled = isOutOfStock;
+                                qvBuyNowBtn.disabled = isOutOfStock;
                                 qvQuantityInput.disabled = isOutOfStock;
                                 qvDecrementQuantity.disabled = isOutOfStock;
                                 qvIncrementQuantity.disabled = isOutOfStock;
 
-                                qvSelectedVariantId.value = variantId; // Update hidden variant ID
+                                qvSelectedVariantId.value = variantId;
                             }
+
+                            if (product.type === 'variable' && product.variants.length > 0) {
+                                qvVariantSelection.classList.remove('hidden');
+                                qvVariantOptions.innerHTML = '';
+
+                                product.variants.forEach(variant => {
+                                    const variantDiv = document.createElement('div');
+                                    variantDiv.classList.add('variant-option-wrapper');
+                                    variantDiv.innerHTML = `
+                                        <input type="radio" name="qv_variant_id" id="qv-variant-${variant.id}" value="${variant.id}" class="sr-only qv-variant-radio"
+                                            data-stock="${variant.stock_quantity}"
+                                            data-stock-status="${variant.stock_status}"
+                                            data-formatted-price="${variant.formatted_price}"
+                                            data-formatted-sale-price="${variant.formatted_sale_price || ''}"
+                                            ${variant.stock_status === 'out_of_stock' ? 'disabled' : ''}>
+                                        <label for="qv-variant-${variant.id}" class="variant-label cursor-pointer block border border-gray-300 rounded-md p-3 text-center transition-all duration-200">
+                                            <span class="variant-name text-sm font-medium text-gray-800">
+                                                ${variant.attributes_list}
+                                            </span>
+                                            <span class="variant-price text-xs text-gray-500 block mt-1">
+                                                ${variant.formatted_sale_price || variant.formatted_price}
+                                            </span>
+                                        </label>
+                                    `;
+                                    qvVariantOptions.appendChild(variantDiv);
+                                });
+
+                                template.querySelectorAll('.qv-variant-radio').forEach(radio => {
+                                    radio.addEventListener('change', function() {
+                                        updateQuickViewDisplay(this);
+                                    });
+                                });
+
+                                const firstAvailableVariant = product.variants.find(v => v.stock_status !== 'out_of_stock') || product.variants[0];
+                                if (firstAvailableVariant) {
+                                    const firstAvailableRadio = template.querySelector(`#qv-variant-${firstAvailableVariant.id}`);
+                                    firstAvailableRadio.checked = true;
+                                    updateQuickViewDisplay(firstAvailableRadio);
+                                }
+
+                            } else {
+                                qvVariantSelection.classList.add('hidden');
+                                qvSelectedVariantId.value = '';
+                                updateQuickViewDisplay({
+                                    dataset: {
+                                        stock: product.stock_quantity,
+                                        stock_status: product.stock_status,
+                                        formatted_price: product.formatted_price,
+                                        formatted_sale_price: product.formatted_sale_price
+                                    },
+                                    value: ''
+                                });
+                            }
+
+                            qvDecrementQuantity.addEventListener('click', () => {
+                                if (parseInt(qvQuantityInput.value) > 1) {
+                                    qvQuantityInput.value = parseInt(qvQuantityInput.value) - 1;
+                                }
+                            });
+                            qvIncrementQuantity.addEventListener('click', () => {
+                                const max = parseInt(qvQuantityInput.max) || 999;
+                                if(parseInt(qvQuantityInput.value) < max) {
+                                    qvQuantityInput.value = parseInt(qvQuantityInput.value) + 1;
+                                }
+                            });
+
+                            qvAddToCartForm.addEventListener('submit', function(e) {
+                                e.preventDefault();
+                                const selectedProductId = product.id;
+                                const selectedVariantId = qvSelectedVariantId.value || null;
+                                const selectedQuantity = qvQuantityInput.value;
+                                const action = e.submitter.value;
+
+                                if (action === 'add_to_cart') {
+                                    addToCart(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
+                                } else if (action === 'buy_now') {
+                                    buyNow(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
+                                }
+                                quickViewModal.classList.add('hidden');
+                                document.body.style.overflow = '';
+                            });
+
+                            if (isBuyNow) {
+                                qvBuyNowBtn.click();
+                            }
+
+                            quickViewContent.innerHTML = '';
+                            quickViewContent.appendChild(template);
                         })
                         .catch(error => {
                             console.error('Error fetching quick view product:', error);
@@ -1260,6 +1267,20 @@
                     width: 98% !important; /* Almost full width on very small screens */
                     margin: 0 5px; /* Minimal margin */
                 }
+            }
+
+            /* Variant styles */
+            .qv-variant-radio:checked + .variant-label {
+                border-color: #3b82f6; /* blue-500 */
+                box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
+            }
+            .qv-variant-radio:disabled + .variant-label {
+                cursor: not-allowed;
+                background-color: #f3f4f6; /* gray-100 */
+                opacity: 0.7;
+            }
+            .qv-variant-radio:disabled + .variant-label .variant-name {
+                text-decoration: line-through;
             }
         </style>
     @endpush

@@ -35,7 +35,8 @@ if (!function_exists('format_taka')) {
         }
 
         // Add the currency symbol
-        return $symbol . ($is_negative ? '-' : '') . $formatted_whole_number;
+        // return $symbol . ($is_negative ? '-' : '') . $formatted_whole_number;
+        return $symbol . ' ' . ($is_negative ? '-' : '') . $formatted_whole_number;
     }
 }
 

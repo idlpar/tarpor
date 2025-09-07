@@ -14,7 +14,17 @@ class Product extends Model
      *
      * @return string
      */
-    protected $appends = ['thumbnail_url', 'total_stock'];
+    protected $appends = ['thumbnail_url', 'total_stock', 'formatted_price', 'formatted_sale_price'];
+
+    public function getFormattedPriceAttribute()
+    {
+        return format_taka($this->price);
+    }
+
+    public function getFormattedSalePriceAttribute()
+    {
+        return $this->sale_price ? format_taka($this->sale_price) : null;
+    }
 
     public function getRouteKeyName()
     {

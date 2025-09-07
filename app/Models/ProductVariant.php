@@ -26,6 +26,18 @@ class ProductVariant extends Model
         'is_default' => 'boolean',
     ];
 
+    protected $appends = ['attributes_list', 'final_price', 'formatted_price', 'formatted_sale_price'];
+
+    public function getFormattedPriceAttribute()
+    {
+        return format_taka($this->price);
+    }
+
+    public function getFormattedSalePriceAttribute()
+    {
+        return $this->sale_price ? format_taka($this->sale_price) : null;
+    }
+
     public function product()
     {
         return $this->belongsTo(Product::class);

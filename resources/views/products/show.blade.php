@@ -434,15 +434,18 @@
 
         variantRadios.forEach(radio => {
             radio.addEventListener('change', function () {
+                console.log('Variant changed:', this.value);
                 updateProductDisplay(this);
             });
         });
 
         // --- INITIAL STATE ---
         if (productType === 'variable') {
-            const firstSelectedVariant = document.querySelector('.variant-radio:checked');
-            if (firstSelectedVariant) {
-                updateProductDisplay(firstSelectedVariant);
+            const firstAvailableVariantRadio = document.querySelector('.variant-radio:not([disabled])');
+            if (firstAvailableVariantRadio) {
+                firstAvailableVariantRadio.checked = true;
+                // Manually trigger the change event to update the UI
+                firstAvailableVariantRadio.dispatchEvent(new Event('change'));
             }
         }
 

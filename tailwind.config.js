@@ -14,6 +14,7 @@ export default {
     theme: {
         extend: {
             colors: {
+                'gemini-pink': 'rgb(236 0 140)',
                 primary: '#2C5F2D', // Deep Forest Green
                 'primary-dark': '#1F4020', // Darker Forest Green
                 secondary: '#F5F5DC', // Cream/Beige
