@@ -55,7 +55,7 @@
                 </div>
                 <!-- Spinner for All Categories table -->
                 <div id="loading-spinner-all-categories" class="text-center py-8" style="display: none;">
-                    <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
+                    <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-24 w-24 mx-auto">
                     <p class="mt-2 text-gray-600">Loading categories...</p>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                 </div>
                 <!-- Spinner for Category Tree -->
                 <div id="loading-spinner-category-tree" class="text-center py-8" style="display: none;">
-                    <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
+                    <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-24 w-24 mx-auto">
                     <p class="mt-2 text-gray-600">Loading hierarchy...</p>
                 </div>
             </div>

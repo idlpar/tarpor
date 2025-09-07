@@ -16,8 +16,8 @@
 @endpush
 
 @section('admin_content')
-    
-        
+
+
         <!-- Header Section -->
         <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
             <div>
@@ -62,7 +62,7 @@
 
         <!-- Spinner for loading data -->
         <div id="loading-spinner" class="text-center py-8" style="display: none;">
-            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-10 w-10 mx-auto">
+            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-24 w-24 mx-auto">
             <p class="mt-2 text-gray-600">Loading FAQs...</p>
         </div>
 @endsection
