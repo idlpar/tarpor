@@ -30,12 +30,12 @@ class ProductVariant extends Model
 
     public function getFormattedPriceAttribute()
     {
-        return format_taka($this->price);
+        return format_taka($this->price ?? 0.0);
     }
 
     public function getFormattedSalePriceAttribute()
     {
-        return $this->sale_price ? format_taka($this->sale_price) : null;
+        return format_taka($this->sale_price ?? 0.0);
     }
 
     public function product()

@@ -283,7 +283,16 @@
 
         // Helper function to format currency
         function formatTaka(amount) {
-            return `BDT ${parseFloat(amount).toFixed(2)}`;
+            const numAmount = parseFloat(amount);
+            if (isNaN(numAmount)) {
+                return '৳ 0';
+            }
+            const formattedAmount = numAmount.toLocaleString('en-IN', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0,
+                useGrouping: true
+            });
+            return `৳ ${formattedAmount}`;
         }
 
         // Function to fetch and render product data
@@ -396,7 +405,7 @@
                     }
 
                     const priceHtml = product.sale_price ? `
-                        <span class="font-medium">${formatTaka(product.sale_price)}</span>
+                        <span class="font-medium text-gemini-pink">${formatTaka(product.sale_price)}</span>
                         <span class="text-xs text-gray-500 line-through">${formatTaka(product.price)}</span>
                     ` : `
                         <span class="font-medium">${formatTaka(product.price)}</span>
