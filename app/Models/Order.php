@@ -16,8 +16,23 @@ class Order extends Model
         parent::boot();
 
         static::creating(function ($order) {
-            $order->short_id = bin2hex(random_bytes(8));
+            $order->short_id = self::generateOrderNumber();
         });
+    }
+
+    public static function generateOrderNumber()
+    {
+        $timestamp = now()->utc()->format('ymdHisu');
+        $randomPart = mt_rand(100, 999);
+        $orderNumber = $timestamp . $randomPart;
+
+        // Ensure the order number is unique
+        while (self::where('short_id', $orderNumber)->exists()) {
+            $randomPart = mt_rand(100, 999);
+            $orderNumber = $timestamp . $randomPart;
+        }
+
+        return $orderNumber;
     }
 
     protected $fillable = ['user_id', 'short_id', 'total_price', 'status', 'attribution_data', 'address_id', 'delivery_charge', 'coupon_discount', 'reward_discount', 'shipping_method_id', 'coupon_id'];
