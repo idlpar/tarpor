@@ -597,7 +597,7 @@
                             </div>
 
                             <div id="qv-product-short-description" class="text-gray-600 mb-6"></div>
-                            
+
                             <div class="mt-6">
                                  <h3 class="text-md font-semibold text-gray-800 mb-2">Description</h3>
                                  <div id="qv-product-description" class="prose max-w-none text-gray-600 text-sm"></div>
@@ -658,7 +658,7 @@
     @push('scripts')
         <script>
             document.addEventListener('DOMContentLoaded', function() {
-                console.log('Shop page DOMContentLoaded');
+
                 // Filter Toggles
                 function setupFilterToggles(prefix = '') {
                     document.querySelectorAll(`${prefix}.filter-toggle`).forEach(button => {
@@ -868,7 +868,7 @@
                     button.addEventListener('click', function() {
                         const productId = this.dataset.productId;
                         const productType = this.dataset.productType;
-                        console.log(`Add to Cart clicked: Product ID ${productId}, Type: ${productType}`);
+
 
                         if (productType === 'variable') {
                             openQuickViewModal(productId);
@@ -883,7 +883,7 @@
                     button.addEventListener('click', function() {
                         const productId = this.dataset.productId;
                         const productType = this.dataset.productType;
-                        console.log(`Buy Now clicked: Product ID ${productId}, Type: ${productType}`);
+
 
                         if (productType === 'variable') {
                             openQuickViewModal(productId, true); // Open quick view for buy now
@@ -894,7 +894,7 @@
                 });
 
                 function openQuickViewModal(productId, isBuyNow = false) {
-                    console.log(`Opening Quick View Modal for Product ID: ${productId}, Buy Now: ${isBuyNow}`);
+
                     const quickViewModal = document.getElementById('quick-view-modal');
                     const quickViewContent = document.getElementById('quick-view-content');
                     const qvAddToCartForm = document.getElementById('qv-add-to-cart-form');
@@ -915,7 +915,7 @@
                     fetch(`/api/products/${productId}/quick-view`)
                         .then(response => response.json())
                         .then(product => {
-                            console.log('Fetched product for Quick View:', product);
+
                             const template = document.getElementById('quick-view-product-template').content.cloneNode(true);
 
                             const qvProductName = template.querySelector('#qv-product-name');
@@ -971,7 +971,7 @@
                             }
 
                             function updateQuickViewDisplay(selectedRadio) {
-                                console.log('Updating Quick View Display with radio data:', selectedRadio.dataset);
+
                                 const formattedPrice = selectedRadio.dataset.formattedPrice;
                                 const formattedSalePrice = selectedRadio.dataset.formattedSalePrice;
                                 const stock = parseInt(selectedRadio.dataset.stock);
@@ -1098,7 +1098,7 @@
                             quickViewContent.appendChild(template);
                         })
                         .catch(error => {
-                            console.error('Error fetching quick view product:', error);
+
                             quickViewContent.innerHTML = '<p class="text-center text-red-500">Failed to load product details.</p>';
                         });
                 }
@@ -1120,7 +1120,6 @@
 
                 // Add to Cart functionality
                 function addToCart(productId, quantity, buttonElement, variantId = null) {
-                    console.log(`addToCart called: Product ID ${productId}, Quantity: ${quantity}, Variant ID: ${variantId}`);
                     const originalText = buttonElement.innerHTML;
                     buttonElement.innerHTML = `
                         <svg class="w-4 h-4 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1173,7 +1172,6 @@
                 }
 
                 function buyNow(productId, quantity, buttonElement, variantId = null) {
-                    console.log(`buyNow called: Product ID ${productId}, Quantity: ${quantity}, Variant ID: ${variantId}`);
                     const originalText = buttonElement.innerHTML;
                     buttonElement.innerHTML = `
                         <svg class="w-4 h-4 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1233,6 +1231,17 @@
             });
         </script>
         <style>
+            /* Hide the arrows on number inputs */
+            input[type=number]::-webkit-inner-spin-button,
+            input[type=number]::-webkit-outer-spin-button {
+                -webkit-appearance: none;
+                margin: 0;
+            }
+
+            input[type=number] {
+                -moz-appearance: textfield;
+            }
+
             /* Custom scrollbar */
             .custom-scrollbar::-webkit-scrollbar {
                 width: 4px;

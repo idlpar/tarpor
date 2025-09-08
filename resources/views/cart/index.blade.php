@@ -248,7 +248,9 @@
                 <div class="mt-16">
                     <h2 class="text-3xl font-bold text-gray-900 mb-8">Frequently Bought Together</h2>
                     <div id="frequently-bought-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-                        @include('partials.product_card', ['products' => $frequentlyBought])
+                        @foreach($frequentlyBought as $product)
+                            <x-app.product-card :product="$product" />
+                        @endforeach
                     </div>
                     <div class="text-center mt-8">
                         <button id="load-more-frequently-bought" class="btn btn-secondary">Load More</button>
@@ -259,7 +261,9 @@
                 <div class="mt-16">
                     <h2 class="text-3xl font-bold text-gray-900 mb-8">You Might Also Like</h2>
                     <div id="might-also-like-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-                        @include('partials.product_card', ['products' => $mightAlsoLike])
+                        @foreach($mightAlsoLike as $product)
+                            <x-app.product-card :product="$product" />
+                        @endforeach
                     </div>
                     <div class="text-center mt-8">
                         <button id="load-more-might-also-like" class="btn btn-secondary">Load More</button>
