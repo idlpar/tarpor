@@ -32,13 +32,24 @@ class CartController extends Controller
             if (!$variant) {
                 $variant = (object)[
                     'id' => 'product_' . $product->id, // Unique ID for cart if no variant ID
-                    'final_price' => $product->price, // Assuming product has a 'price' attribute
+                    'final_price' => $product->sale_price && $product->sale_price < $product->price ? $product->sale_price : $product->price, // Assuming product has a 'price' attribute
                     'price' => $product->price,
                     'stock_quantity' => $product->stock_quantity, // Assuming product has stock_quantity
                     'attributes_list' => 'N/A', // Or some default attribute string
                 ];
             }
         }
+
+        \Log::info('Product details before adding to cart:', [
+            'product_id' => $product->id,
+            'product_price' => $product->price,
+            'product_sale_price' => $product->sale_price ?? 'N/A',
+            'variant_id' => $variant->id,
+            'variant_price' => $variant->price,
+            'variant_sale_price' => $variant->sale_price ?? 'N/A',
+            'variant_final_price' => $variant->final_price,
+            'quantity' => $request->quantity,
+        ]);
 
         $cart = session()->get('cart', []);
 
@@ -90,10 +101,30 @@ class CartController extends Controller
         ]);
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        $shippingMethods = ShippingMethod::where('is_active', true)->get(); // Added
-        return view('cart.index', compact('shippingMethods')); // Modified
+        $shippingMethods = ShippingMethod::where('is_active', true)->get();
+
+        if ($request->ajax()) {
+            $type = $request->get('type', 'might_also_like');
+            $skip = $request->get('skip', 0);
+            $take = 6;
+
+            if ($type === 'might_also_like') {
+                $products = Product::inRandomOrder()->skip($skip)->take($take)->get();
+            } else {
+                $products = Product::inRandomOrder()->skip($skip)->take($take)->get();
+            }
+
+            return response()->json([
+                'html' => view('partials.product_card', ['products' => $products])->render()
+            ]);
+        }
+
+        $mightAlsoLike = Product::inRandomOrder()->limit(6)->get();
+        $frequentlyBought = Product::inRandomOrder()->limit(6)->get();
+
+        return view('cart.index', compact('shippingMethods', 'mightAlsoLike', 'frequentlyBought'));
     }
 
     public function update(Request $request)
