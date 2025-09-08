@@ -288,30 +288,32 @@
                             @foreach($products as $product)
                                 <div class="group relative bg-white border border-gray-100 rounded-lg overflow-hidden hover:shadow-md transition-shadow duration-200">
                                     <!-- Product Labels -->
-                                    <div class="absolute top-2 left-2 z-10 flex flex-col gap-1">
+                                    <div class="absolute top-2 left-2 right-2 z-10 flex sm:justify-between">
+                                        <div class="flex flex-col gap-1">
+                                            @if($product->is_featured)
+                                                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
+                                                    Featured
+                                                </span>
+                                            @endif
+                                            @if($product->is_new)
+                                                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-green-600 rounded-full">
+                                                    New
+                                                </span>
+                                            @endif
+                                            @if($product->is_hot)
+                                                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-600 rounded-full">
+                                                    Hot
+                                                </span>
+                                            @endif
+                                            @if($product->is_sale)
+                                                <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-purple-600 rounded-full">
+                                                    Sale
+                                                </span>
+                                            @endif
+                                        </div>
                                         @if($product->sale_price && $product->sale_price < $product->price)
                                             <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-red-600 rounded-full">
                                                 {{ round(100 - ($product->sale_price / $product->price * 100)) }}% OFF
-                                            </span>
-                                        @endif
-                                        @if($product->is_featured)
-                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-blue-600 rounded-full">
-                                                Featured
-                                            </span>
-                                        @endif
-                                        @if($product->is_new)
-                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-green-600 rounded-full">
-                                                New
-                                            </span>
-                                        @endif
-                                        @if($product->is_hot)
-                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-orange-600 rounded-full">
-                                                Hot
-                                            </span>
-                                        @endif
-                                        @if($product->is_sale)
-                                            <span class="inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white bg-purple-600 rounded-full">
-                                                Sale
                                             </span>
                                         @endif
                                     </div>
