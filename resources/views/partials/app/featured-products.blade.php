@@ -9,15 +9,19 @@
             </div>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            @include('components.app.product-card', [
-                'category' => 'kids',
-                'image' => 'https://images.unsplash.com/photo-1729861229315-4c9672f15a53?q=80&w=1946&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                'title' => 'Kids Cotton Kurta',
-                'price' => 'BDT 1,200',
-                'badge' => 'New',
-                'productId' => 'kids-kurta',
-                'description' => 'Comfortable cotton kurta for kids, suitable for daily wear.'
-            ])
+            @php
+                $product = (object) [
+                    'thumbnail_url' => 'https://images.unsplash.com/photo-1729861229315-4c9672f15a53?q=80&w=1946&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                    'name' => 'Kids Cotton Kurta',
+                    'price' => 1200,
+                    'sale_price' => null,
+                    'category' => (object)['slug' => 'kids'],
+                    'id' => 'kids-kurta',
+                    'short_description' => 'Comfortable cotton kurta for kids, suitable for daily wear.',
+                    'brand' => (object)['name' => 'Tarpor'],
+                ];
+            @endphp
+            <x-app.product-card :product="$product" />
         </div>
     </div>
 </section>

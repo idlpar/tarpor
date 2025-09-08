@@ -379,7 +379,7 @@
 
                                         <!-- Stock & Buttons -->
                                         <div class="hidden md:flex gap-2">
-                                            <button class="add-to-cart-btn w-1/2 bg-gray-100 hover:bg-blue-600 text-gray-800 hover:text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
+                                            <button class="add-to-cart-btn w-1/2 bg-gray-100 hover:bg-[var(--primary)] text-gray-800 hover:text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
                                                     data-product-id="{{ $product->id }}"
                                                     data-product-type="{{ $product->type }}"
                                                 {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
@@ -388,7 +388,7 @@
                                                 </svg>
                                                 Add to Cart
                                             </button>
-                                            <button class="buy-now-btn w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
+                                            <button class="buy-now-btn w-1/2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
                                                     data-product-id="{{ $product->id }}"
                                                     data-product-type="{{ $product->type }}"
                                                 {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
@@ -402,7 +402,7 @@
                                                 {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>
                                                 <i class="fas fa-shopping-cart"></i>
                                             </button>
-                                            <button class="buy-now-btn w-1/2 bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
+                                            <button class="buy-now-btn w-1/2 bg-[var(--primary)] hover:bg-[var(--primary-dark)] text-white py-2 px-3 rounded-md text-sm font-medium transition-colors duration-200 flex items-center justify-center gap-1"
                                                     data-product-id="{{ $product->id }}"
                                                     data-product-type="{{ $product->type }}"
                                                 {{ ($product->type === 'simple' && $product->stock_status === 'out_of_stock') ? 'disabled' : '' }}>

@@ -9,24 +9,30 @@
             </div>
         </div>
         <div class="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            @include('components.app.product-card', [
-                'category' => 'kids',
-                'image' => 'https://images.unsplash.com/photo-1729861229315-4c9672f15a53?q=80&w=1946&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
-                'title' => 'Kids Festive Kurta',
-                'price' => 'BDT 1,500',
-                'badge' => 'Festive',
-                'productId' => 'kids-festive-kurta',
-                'description' => 'Festive kurta for kids, ideal for celebrations.'
-            ])
-            @include('components.app.product-card', [
-                'category' => 'men',
-                'image' => 'https://plus.unsplash.com/premium_photo-1661540638251-a8e663bf45f8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTMyfHxmcmVlJTIwaW1hZ2VzfGVufDB8fDB8fHww',
-                'title' => 'Men\'s Silk Panjabi',
-                'price' => 'BDT 3,200',
-                'badge' => 'Festive',
-                'productId' => 'mens-silk-panjabi',
-                'description' => 'Silk panjabi for men, perfect for festive occasions.'
-            ])
+            @php
+                $product1 = (object) [
+                    'thumbnail_url' => 'https://images.unsplash.com/photo-1729861229315-4c9672f15a53?q=80&w=1946&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D',
+                    'name' => 'Kids Festive Kurta',
+                    'price' => 1500,
+                    'sale_price' => null,
+                    'category' => (object)['slug' => 'kids'],
+                    'id' => 'kids-festive-kurta',
+                    'short_description' => 'Festive kurta for kids, ideal for celebrations.',
+                    'brand' => (object)['name' => 'Tarpor'],
+                ];
+                $product2 = (object) [
+                    'thumbnail_url' => 'https://plus.unsplash.com/premium_photo-1661540638251-a8e663bf45f8?w=500&auto=format&fit=crop&q=60&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTMyfHxmcmVlJTIwaW1hZ2VzfGVufDB8fDB8fHww',
+                    'name' => 'Men\'s Silk Panjabi',
+                    'price' => 3200,
+                    'sale_price' => null,
+                    'category' => (object)['slug' => 'men'],
+                    'id' => 'mens-silk-panjabi',
+                    'short_description' => 'Silk panjabi for men, perfect for festive occasions.',
+                    'brand' => (object)['name' => 'Tarpor'],
+                ];
+            @endphp
+            <x-app.product-card :product="$product1" />
+            <x-app.product-card :product="$product2" />
         </div>
     </div>
 </section>
