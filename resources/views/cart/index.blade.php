@@ -279,6 +279,7 @@
 
 @push('scripts')
     <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -339,6 +340,20 @@
             }
 
             // --- Event Listeners ---
+            if (checkoutForm) {
+                checkoutForm.addEventListener('submit', function(e) {
+                    const selectedItems = document.querySelectorAll('.cart-item-checkbox:checked');
+                    if (selectedItems.length === 0) {
+                        e.preventDefault();
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Oops...',
+                            text: 'Please select at least one item to checkout!',
+                        });
+                    }
+                });
+            }
+
             if (selectAllCheckbox) {
                 selectAllCheckbox.addEventListener('change', function() {
                     itemCheckboxes.forEach(checkbox => {

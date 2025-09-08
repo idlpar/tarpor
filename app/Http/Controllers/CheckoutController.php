@@ -12,9 +12,22 @@ use Illuminate\Validation\ValidationException;
 
 class CheckoutController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $cart = session()->get('cart', []);
+        $items = $request->input('items', []);
+
+        if (!empty($items)) {
+            $checkoutCart = array_intersect_key($cart, array_flip($items));
+            session()->put('checkout_cart', $checkoutCart);
+        } else {
+            $checkoutCart = session()->get('checkout_cart', []);
+            if(empty($checkoutCart)) {
+                $checkoutCart = $cart;
+                session()->put('checkout_cart', $checkoutCart);
+            }
+        }
+
         $coupon = session()->get('coupon');
         $deliveryCharge = session()->get('delivery_charge');
         $addresses = collect();
@@ -35,7 +48,7 @@ class CheckoutController extends Controller
             session()->put('delivery_charge', $deliveryCharge);
         }
 
-        return view('checkout.index', compact('cart', 'coupon', 'deliveryCharge', 'addresses', 'defaultAddress', 'shippingMethods'));
+        return view('checkout.index', ['cart' => $checkoutCart, 'coupon' => $coupon, 'deliveryCharge' => $deliveryCharge, 'addresses' => $addresses, 'defaultAddress' => $defaultAddress, 'shippingMethods' => $shippingMethods]);
     }
 
     public function placeOrder(Request $request)
@@ -62,7 +75,7 @@ class CheckoutController extends Controller
         try {
             $request->validate($rules);
 
-            $cart = session()->get('cart', []);
+            $cart = session()->get('checkout_cart', []);
             if (empty($cart)) {
                 return redirect()->route('home')->withErrors(['cart' => 'Your cart is empty.']);
             }
@@ -190,7 +203,7 @@ class CheckoutController extends Controller
                 }
             }
 
-            session()->forget(['cart', 'coupon', 'rewards']);
+            session()->forget(['cart', 'coupon', 'rewards', 'checkout_cart']);
 
             return redirect()->route('order.success', ['short_id' => $order->short_id])->with('success', 'Order placed successfully!');
         } catch (ValidationException $e) {
