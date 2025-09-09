@@ -1122,20 +1122,30 @@
                 function addToCart(productId, quantity, buttonElement, variantId = null) {
                     const originalText = buttonElement.innerHTML;
                     buttonElement.innerHTML = `
-                        <svg class="w-4 h-4 animate-spin text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                        </svg>
-                        Adding...
+                        <span class="flex items-center justify-center">
+                            <svg class="w-4 h-4 animate-spin mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                            Adding...
+                        </span>
                     `;
                     buttonElement.disabled = true;
 
-                    // Fly to cart animation
-                    const productCard = buttonElement.closest('.group');
-                    const productImage = productCard.querySelector('img');
-                    const flyingImage = productImage.cloneNode();
-                    const cartIcon = document.querySelector('.cart-icon'); // Assuming you have a cart icon with this class in your layout
+                    let flyingImage = null;
+                    const cartIcon = document.querySelector('.cart-icon');
+                    let productImage = null;
 
-                    if (cartIcon) {
+                    const productCard = buttonElement.closest('.group');
+                    const quickViewModal = buttonElement.closest('#quick-view-modal');
+
+                    if (productCard) { // From main page
+                        productImage = productCard.querySelector('img');
+                    } else if (quickViewModal) { // From quick view modal
+                        productImage = document.getElementById('qv-main-image');
+                    }
+
+                    if (productImage && cartIcon) {
+                        flyingImage = productImage.cloneNode();
                         flyingImage.style.position = 'fixed';
                         flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
                         flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
@@ -1168,8 +1178,7 @@
                     .then(data => {
                         if (data.success) {
                             setTimeout(() => {
-                                if (cartIcon) flyingImage.remove();
-                                let timerInterval
+                                if (flyingImage) flyingImage.remove();
                                 Swal.fire({
                                     toast: true,
                                     position: 'top-end',
@@ -1195,7 +1204,7 @@
                                 updateCartCount(data.cart_count);
                             }, 1000);
                         } else {
-                            if (cartIcon) flyingImage.remove();
+                            if (flyingImage) flyingImage.remove();
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Oops...',
@@ -1204,7 +1213,7 @@
                         }
                     })
                     .catch(error => {
-                        if (cartIcon) flyingImage.remove();
+                        if (flyingImage) flyingImage.remove();
                         console.error('Error adding to cart:', error);
                         Swal.fire({
                             icon: 'error',
