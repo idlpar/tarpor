@@ -897,8 +897,6 @@
 
                     const quickViewModal = document.getElementById('quick-view-modal');
                     const quickViewContent = document.getElementById('quick-view-content');
-                    const qvAddToCartForm = document.getElementById('qv-add-to-cart-form');
-                    const qvBuyNowBtn = document.getElementById('qv-buy-now-btn');
 
                     // Show loading state
                     quickViewContent.innerHTML = `
@@ -1080,14 +1078,25 @@
                                 const selectedVariantId = qvSelectedVariantId.value || null;
                                 const selectedQuantity = qvQuantityInput.value;
                                 const action = e.submitter.value;
+                                const buttonElement = e.submitter;
 
+                                let promise;
                                 if (action === 'add_to_cart') {
-                                    addToCart(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
+                                    promise = addToCart(selectedProductId, selectedQuantity, buttonElement, selectedVariantId);
                                 } else if (action === 'buy_now') {
-                                    buyNow(selectedProductId, selectedQuantity, e.submitter, selectedVariantId);
+                                    promise = buyNow(selectedProductId, selectedQuantity, buttonElement, selectedVariantId);
                                 }
-                                quickViewModal.classList.add('hidden');
-                                document.body.style.overflow = '';
+
+                                if (promise && action === 'add_to_cart') {
+                                    promise.then(success => {
+                                        if (success) {
+                                            setTimeout(() => {
+                                                quickViewModal.classList.add('hidden');
+                                                document.body.style.overflow = '';
+                                            }, 1000); // Wait for notification to be seen
+                                        }
+                                    });
+                                }
                             });
 
                             if (isBuyNow) {
