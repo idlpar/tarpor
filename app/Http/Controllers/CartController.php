@@ -18,92 +18,64 @@ class CartController extends Controller
             'action' => 'required|string|in:add_to_cart,buy_now',
         ]);
 
-        if ($request->action === 'buy_now') {
-            session()->forget('cart');
-            session()->forget('checkout_cart');
-        }
-
         $product = Product::findOrFail($request->product_id);
         $variant = null;
 
         if ($request->variant_id) {
             $variant = ProductVariant::findOrFail($request->variant_id);
         } else {
-            // Attempt to find a default variant for the product
             $variant = $product->variants()->first();
-
-            // If no variant exists (e.g., a truly simple product without variants in the DB),
-            // create a virtual variant from the product's main details.
             if (!$variant) {
                 $variant = (object)[
-                    'id' => 'product_' . $product->id, // Unique ID for cart if no variant ID
-                    'final_price' => $product->sale_price && $product->sale_price < $product->price ? $product->sale_price : $product->price, // Assuming product has a 'price' attribute
+                    'id' => 'product_' . $product->id,
+                    'final_price' => $product->sale_price && $product->sale_price < $product->price ? $product->sale_price : $product->price,
                     'price' => $product->price,
-                    'stock_quantity' => $product->stock_quantity, // Assuming product has stock_quantity
-                    'attributes_list' => 'N/A', // Or some default attribute string
+                    'stock_quantity' => $product->stock_quantity,
+                    'attributes_list' => 'N/A',
                 ];
             }
         }
 
-        \Log::info('Product details before adding to cart:', [
-            'product_id' => $product->id,
-            'product_price' => $product->price,
-            'product_sale_price' => $product->sale_price ?? 'N/A',
-            'variant_id' => $variant->id,
-            'variant_price' => $variant->price,
-            'variant_sale_price' => $variant->sale_price ?? 'N/A',
-            'variant_final_price' => $variant->final_price,
-            'quantity' => $request->quantity,
-        ]);
-
-        $cart = session()->get('cart', []);
-
-        if(isset($cart[$variant->id])) {
-            $cart[$variant->id]['quantity'] += $request->quantity;
-        } else {
-            $cart[$variant->id] = [
+        if ($request->action === 'buy_now') {
+            $checkoutCart = [];
+            $checkoutCart[$variant->id] = [
                 "name" => $product->name,
                 "quantity" => $request->quantity,
                 "price" => $variant->final_price,
                 "image" => $product->thumbnail_url,
                 "attributes" => $variant->attributes_list,
             ];
-        }
+            session()->put('checkout_cart', $checkoutCart);
 
-        session()->put('cart', $cart);
-
-        if ($request->action === 'buy_now') {
-            if ($request->has('delivery_charge')) {
-                session()->put('delivery_charge', $request->delivery_charge);
-            }
-            if ($request->has('coupon_code')) {
-                $coupon = \App\Models\Coupon::where('code', $request->coupon_code)->first();
-                if ($coupon) {
-                    $total = 0;
-                    foreach ($cart as $id => $details) {
-                        $total += $details['price'] * $details['quantity'];
-                    }
-                    $discountAmount = $coupon->getDiscount($total);
-                    session()->put('coupon', [
-                        'code' => $coupon->code,
-                        'discount' => $discountAmount,
-                    ]);
-                }
-            }
-            // For buy_now, we still want to redirect, but the frontend JS will handle it
             return response()->json([
                 'success' => true,
-                'message' => 'Product added to cart and redirecting to checkout!',
+                'message' => 'Redirecting to checkout!',
                 'cart_count' => count(session()->get('cart', [])),
                 'redirect' => route('checkout.index')
             ]);
-        }
+        } else {
+            $cart = session()->get('cart', []);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Product added to cart successfully!',
-            'cart_count' => count(session()->get('cart', [])),
-        ]);
+            if(isset($cart[$variant->id])) {
+                $cart[$variant->id]['quantity'] += $request->quantity;
+            } else {
+                $cart[$variant->id] = [
+                    "name" => $product->name,
+                    "quantity" => $request->quantity,
+                    "price" => $variant->final_price,
+                    "image" => $product->thumbnail_url,
+                    "attributes" => $variant->attributes_list,
+                ];
+            }
+
+            session()->put('cart', $cart);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to cart successfully!',
+                'cart_count' => count($cart),
+            ]);
+        }
     }
 
     public function index(Request $request)
