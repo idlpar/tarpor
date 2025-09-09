@@ -1129,6 +1129,32 @@
                     `;
                     buttonElement.disabled = true;
 
+                    // Fly to cart animation
+                    const productCard = buttonElement.closest('.group');
+                    const productImage = productCard.querySelector('img');
+                    const flyingImage = productImage.cloneNode();
+                    const cartIcon = document.querySelector('.cart-icon'); // Assuming you have a cart icon with this class in your layout
+
+                    if (cartIcon) {
+                        flyingImage.style.position = 'fixed';
+                        flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
+                        flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
+                        flyingImage.style.width = `${productImage.width}px`;
+                        flyingImage.style.height = `${productImage.height}px`;
+                        flyingImage.style.transition = 'all 1s ease-in-out';
+                        flyingImage.style.zIndex = '9999';
+                        document.body.appendChild(flyingImage);
+
+                        setTimeout(() => {
+                            flyingImage.style.left = `${cartIcon.getBoundingClientRect().left}px`;
+                            flyingImage.style.top = `${cartIcon.getBoundingClientRect().top}px`;
+                            flyingImage.style.width = '0px';
+                            flyingImage.style.height = '0px';
+                            flyingImage.style.opacity = '0';
+                        }, 100);
+                    }
+
+
                     fetch('{{ route('cart.add') }}', {
                         method: 'POST',
                         headers: {
@@ -1141,15 +1167,35 @@
                     .then(response => response.json())
                     .then(data => {
                         if (data.success) {
-                            Swal.fire({
-                                icon: 'success',
-                                title: 'Added to Cart!',
-                                text: data.message,
-                                showConfirmButton: false,
-                                timer: 1500
-                            });
-                            updateCartCount(data.cart_count);
+                            setTimeout(() => {
+                                if (cartIcon) flyingImage.remove();
+                                let timerInterval
+                                Swal.fire({
+                                    toast: true,
+                                    position: 'top-end',
+                                    showConfirmButton: false,
+                                    timer: 3000,
+                                    timerProgressBar: true,
+                                    html: `
+                                        <div class="flex items-center">
+                                            <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center">
+                                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                                            </div>
+                                            <div class="ml-4">
+                                                <div class="text-lg font-semibold">Product Added!</div>
+                                                <div class="text-sm text-gray-500">Your item is in the cart.</div>
+                                            </div>
+                                        </div>
+                                    `,
+                                    didOpen: (toast) => {
+                                        toast.addEventListener('mouseenter', Swal.stopTimer)
+                                        toast.addEventListener('mouseleave', Swal.resumeTimer)
+                                    }
+                                })
+                                updateCartCount(data.cart_count);
+                            }, 1000);
                         } else {
+                            if (cartIcon) flyingImage.remove();
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Oops...',
@@ -1158,6 +1204,7 @@
                         }
                     })
                     .catch(error => {
+                        if (cartIcon) flyingImage.remove();
                         console.error('Error adding to cart:', error);
                         Swal.fire({
                             icon: 'error',
@@ -1166,8 +1213,10 @@
                         });
                     })
                     .finally(() => {
-                        buttonElement.innerHTML = originalText;
-                        buttonElement.disabled = false;
+                        setTimeout(() => {
+                            buttonElement.innerHTML = originalText;
+                            buttonElement.disabled = false;
+                        }, 1000);
                     });
                 }
 
