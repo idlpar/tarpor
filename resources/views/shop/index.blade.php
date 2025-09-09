@@ -1404,6 +1404,150 @@
                     return flyingImage;
                 }
 
+                function flyToCartAnimation(buttonElement) {
+                    let flyingImage = null;
+                    const cartIcon = document.querySelector('.cart-icon');
+                    let productImage = null;
+
+                    const productCard = buttonElement.closest('.group');
+                    const quickViewModal = buttonElement.closest('#quick-view-modal');
+
+                    if (productCard) {
+                        productImage = productCard.querySelector('img');
+                    } else if (quickViewModal) {
+                        productImage = document.getElementById('qv-main-image');
+                    }
+
+                    if (productImage && cartIcon) {
+                        flyingImage = productImage.cloneNode();
+                        flyingImage.style.position = 'fixed';
+                        flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
+                        flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
+                        flyingImage.style.width = `${productImage.width}px`;
+                        flyingImage.style.height = `${productImage.height}px`;
+                        flyingImage.style.transition = 'all 1s ease-in-out';
+                        flyingImage.style.zIndex = '9999';
+                        document.body.appendChild(flyingImage);
+
+                        setTimeout(() => {
+                            flyingImage.style.left = `${cartIcon.getBoundingClientRect().left}px`;
+                            flyingImage.style.top = `${cartIcon.getBoundingClientRect().top}px`;
+                            flyingImage.style.width = '0px';
+                            flyingImage.style.height = '0px';
+                            flyingImage.style.opacity = '0';
+                        }, 100);
+                    }
+                    return flyingImage;
+                }
+
+                function flyToCartAnimation(buttonElement) {
+                    let flyingImage = null;
+                    const cartIcon = document.querySelector('.cart-icon');
+                    let productImage = null;
+
+                    const productCard = buttonElement.closest('.group');
+                    const quickViewModal = buttonElement.closest('#quick-view-modal');
+
+                    if (productCard) {
+                        productImage = productCard.querySelector('img');
+                    } else if (quickViewModal) {
+                        productImage = document.getElementById('qv-main-image');
+                    }
+
+                    if (productImage && cartIcon) {
+                        flyingImage = productImage.cloneNode();
+                        flyingImage.style.position = 'fixed';
+                        flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
+                        flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
+                        flyingImage.style.width = `${productImage.width}px`;
+                        flyingImage.style.height = `${productImage.height}px`;
+                        flyingImage.style.transition = 'all 1s ease-in-out';
+                        flyingImage.style.zIndex = '9999';
+                        document.body.appendChild(flyingImage);
+
+                        setTimeout(() => {
+                            flyingImage.style.left = `${cartIcon.getBoundingClientRect().left}px`;
+                            flyingImage.style.top = `${cartIcon.getBoundingClientRect().top}px`;
+                            flyingImage.style.width = '0px';
+                            flyingImage.style.height = '0px';
+                            flyingImage.style.opacity = '0';
+                        }, 100);
+                    }
+                    return flyingImage;
+                }
+
+                function flyToCartAnimation(buttonElement) {
+                    let flyingImage = null;
+                    const cartIcon = document.querySelector('.cart-icon');
+                    let productImage = null;
+
+                    const productCard = buttonElement.closest('.group');
+                    const quickViewModal = buttonElement.closest('#quick-view-modal');
+
+                    if (productCard) {
+                        productImage = productCard.querySelector('img');
+                    } else if (quickViewModal) {
+                        productImage = document.getElementById('qv-main-image');
+                    }
+
+                    if (productImage && cartIcon) {
+                        flyingImage = productImage.cloneNode();
+                        flyingImage.style.position = 'fixed';
+                        flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
+                        flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
+                        flyingImage.style.width = `${productImage.width}px`;
+                        flyingImage.style.height = `${productImage.height}px`;
+                        flyingImage.style.transition = 'all 1s ease-in-out';
+                        flyingImage.style.zIndex = '9999';
+                        document.body.appendChild(flyingImage);
+
+                        setTimeout(() => {
+                            flyingImage.style.left = `${cartIcon.getBoundingClientRect().left}px`;
+                            flyingImage.style.top = `${cartIcon.getBoundingClientRect().top}px`;
+                            flyingImage.style.width = '0px';
+                            flyingImage.style.height = '0px';
+                            flyingImage.style.opacity = '0';
+                        }, 100);
+                    }
+                    return flyingImage;
+                }
+
+                function flyToCartAnimation(buttonElement) {
+                    let flyingImage = null;
+                    const cartIcon = document.querySelector('.cart-icon');
+                    let productImage = null;
+
+                    const productCard = buttonElement.closest('.group');
+                    const quickViewModal = buttonElement.closest('#quick-view-modal');
+
+                    if (productCard) {
+                        productImage = productCard.querySelector('img');
+                    } else if (quickViewModal) {
+                        productImage = document.getElementById('qv-main-image');
+                    }
+
+                    if (productImage && cartIcon) {
+                        flyingImage = productImage.cloneNode();
+                        flyingImage.style.position = 'fixed';
+                        flyingImage.style.left = `${productImage.getBoundingClientRect().left}px`;
+                        flyingImage.style.top = `${productImage.getBoundingClientRect().top}px`;
+                        flyingImage.style.width = `${productImage.width}px`;
+                        flyingImage.style.height = `${productImage.height}px`;
+                        flyingImage.style.transition = 'all 1s ease-in-out';
+                        flyingImage.style.zIndex = '9999';
+                        document.body.appendChild(flyingImage);
+
+                        setTimeout(() => {
+                            flyingImage.style.left = `${cartIcon.getBoundingClientRect().left}px`;
+                            flyingImage.style.top = `${cartIcon.getBoundingClientRect().top}px`;
+                            flyingImage.style.width = '0px';
+                            flyingImage.style.height = '0px';
+                            flyingImage.style.opacity = '0';
+                        }, 100);
+                    }
+                    return flyingImage;
+                }
+
                 function updateCartCount(count) {
                     const cartCountElements = document.querySelectorAll('.cart-count');
                     cartCountElements.forEach(element => {

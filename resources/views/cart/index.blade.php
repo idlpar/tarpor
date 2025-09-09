@@ -22,33 +22,61 @@
                     <div class="lg:col-span-8">
                         <div class="flex justify-between items-center mb-6">
                             <h1 class="text-3xl font-bold text-gray-900">Your Cart</h1>
-                            <div class="flex items-center">
-                                <input type="checkbox" id="select-all" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" checked>
-                                <label for="select-all" class="ml-2 text-sm font-medium text-gray-700">Select all</label>
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="select-all" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" checked>
+                                    <label for="select-all" class="ml-2 text-sm font-medium text-gray-700">Select all</label>
+                                </div>
+                                <form action="{{ route('cart.clear') }}" method="POST" id="empty-cart-form">
+                                    @csrf
+                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">Empty Cart</button>
+                                </form>
                             </div>
                         </div>
-                        <div id="cart-items" class="space-y-4">
-                            @foreach(session('cart') as $id => $details)
-                                <div class="bg-white rounded-lg shadow-sm p-4 flex items-center gap-4 cart-item" data-id="{{ $id }}" data-price="{{ $details['price'] }}">
-                                    <input type="checkbox" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary item-checkbox" checked>
-                                    <img src="{{ $details['image'] }}" alt="{{ $details['name'] }}" class="w-20 h-20 object-cover rounded-md">
-                                    <div class="flex-grow">
-                                        <h3 class="font-semibold text-gray-800">{{ Str::limit($details['name'], 40) }}</h3>
-                                        @if(isset($details['attributes']) && $details['attributes'] !== 'N/A')
-                                            <p class="text-sm text-gray-500">{{ $details['attributes'] }}</p>
-                                        @endif
+                        <div class="bg-white rounded-lg shadow-sm">
+                            <div class="bg-white rounded-lg shadow-sm">
+                            <div class="hidden md:grid grid-cols-12 gap-4 p-4 border-b font-semibold text-gray-600 text-sm">
+                                <div class="col-span-1"></div>
+                                <div class="col-span-5">Product</div>
+                                <div class="col-span-2 text-center">Quantity</div>
+                                <div class="col-span-2 text-center">Total</div>
+                                <div class="col-span-2 text-right">Action</div>
+                            </div>
+                            <div id="cart-items" class="divide-y divide-gray-200">
+                                @foreach(session('cart') as $id => $details)
+                                    <div class="grid grid-cols-12 gap-4 items-center p-4 cart-item" data-id="{{ $id }}" data-price="{{ $details['price'] }}">
+                                        <div class="col-span-1 flex justify-center">
+                                            <input type="checkbox" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary item-checkbox" checked>
+                                        </div>
+                                        <div class="col-span-11 md:col-span-5 flex items-center gap-4">
+                                            <img src="{{ $details['image'] }}" alt="{{ $details['name'] }}" class="w-20 h-20 object-cover rounded-md">
+                                            <div>
+                                                <h3 class="font-semibold text-gray-800">{{ Str::limit($details['name'], 40) }}</h3>
+                                                @if(isset($details['attributes']) && $details['attributes'] !== 'N/A')
+                                                    <p class="text-sm text-gray-500">{{ $details['attributes'] }}</p>
+                                                @endif
+                                                <p class="text-md font-bold text-gemini-pink mt-2">{{ format_taka($details['price']) }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-6 md:col-span-2 flex items-center justify-center">
+                                            <div class="flex items-center border border-gray-300 rounded-md">
+                                                <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-l-md" data-action="decrement">-</button>
+                                                <span class="quantity-text w-12 text-center border-l border-r border-gray-300">{{ $details['quantity'] }}</span>
+                                                <button class="quantity-btn p-2 text-gray-600 hover:bg-gray-100 rounded-r-md" data-action="increment">+</button>
+                                            </div>
+                                        </div>
+                                        <div class="col-span-6 md:col-span-2 flex items-center justify-end">
+                                            <p class="text-md font-bold text-gray-800 item-total">{{ format_taka($details['price'] * $details['quantity']) }}</p>
+                                        </div>
+                                        <div class="col-span-6 md:col-span-2 flex items-center justify-end">
+                                            <button class="remove-item-btn text-red-500 hover:text-red-700">
+                                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
+                                            </button>
+                                        </div>
                                     </div>
-                                    <div class="flex items-center gap-3">
-                                        <button class="quantity-btn text-gray-500 hover:text-gray-700" data-action="decrement">-</button>
-                                        <span class="quantity-text font-semibold">{{ $details['quantity'] }}</span>
-                                        <button class="quantity-btn text-gray-500 hover:text-gray-700" data-action="increment">+</button>
-                                    </div>
-                                    <p class="text-md font-bold text-gray-800 item-total">{{ format_taka($details['price'] * $details['quantity']) }}</p>
-                                    <button class="remove-item-btn text-red-500 hover:text-red-700">
-                                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm4 0a1 1 0 012 0v6a1 1 0 11-2 0V8z" clip-rule="evenodd" /></svg>
-                                    </button>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            </div>
+                        </div>
                         </div>
                     </div>
 
@@ -78,7 +106,9 @@
                 <div class="mt-16">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
                     <div id="recommendations-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                        <!-- Products will be loaded here -->
+                        @foreach($mightAlsoLike as $product)
+                            @include('partials._product_card', ['product' => $product])
+                        @endforeach
                     </div>
                     <div class="text-center mt-8">
                         <button id="load-more-recommendations" class="bg-white text-primary border border-primary hover:bg-gray-100 font-bold py-2 px-4 rounded-md">Load More</button>
@@ -98,6 +128,7 @@
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="{{ asset('js/product-card.js') }}"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -119,21 +150,25 @@
                 document.getElementById('summary-total').textContent = formatCurrency(subtotal);
             }
 
+            let debounceTimer;
             function updateCartItem(id, quantity) {
                 const item = document.querySelector(`.cart-item[data-id="${id}"]`);
                 item.querySelector('.quantity-text').textContent = quantity;
                 const price = parseFloat(item.dataset.price);
                 item.querySelector('.item-total').textContent = formatCurrency(price * quantity);
-                updateSummary();
 
-                fetch('{{ route('cart.update') }}', {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ id, quantity })
-                });
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    updateSummary();
+                    fetch('{{ route('cart.update') }}', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify({ id, quantity })
+                    });
+                }, 1000);
             }
 
             document.getElementById('cart-items').addEventListener('click', e => {
@@ -178,7 +213,7 @@
                 });
                 updateSummary();
             });
-            
+
             document.getElementById('checkout-btn').addEventListener('click', e => {
                 const selectedItems = Array.from(document.querySelectorAll('.item-checkbox:checked')).map(cb => cb.closest('.cart-item').dataset.id);
                 if (selectedItems.length === 0) {
@@ -193,6 +228,17 @@
                     checkoutUrl.searchParams.set('items', selectedItems.join(','));
                     e.target.href = checkoutUrl.toString();
                 }
+            });
+
+            let skip = 6;
+            document.getElementById('load-more-recommendations').addEventListener('click', function() {
+                fetch(`{{ route('cart.index') }}?type=might_also_like&skip=${skip}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const recommendationsContainer = document.getElementById('recommendations-container');
+                        recommendationsContainer.insertAdjacentHTML('beforeend', data.html);
+                        skip += 6;
+                    });
             });
 
             // Initial summary calculation
