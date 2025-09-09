@@ -21,17 +21,33 @@
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 xl:gap-12">
                     <div class="lg:col-span-8">
                         <div class="flex justify-between items-center mb-6">
+                            <!-- Left: Title -->
                             <h1 class="text-3xl font-bold text-gray-900">Your Cart</h1>
-                            <div class="flex items-center space-x-4">
+
+                            <!-- Center: Select All -->
+                            <div class="flex-1 flex justify-center">
                                 <div class="flex items-center">
-                                    <input type="checkbox" id="select-all" class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" checked>
+                                    <input type="checkbox" id="select-all"
+                                           class="h-4 w-4 text-primary rounded border-gray-300 focus:ring-primary" checked>
                                     <label for="select-all" class="ml-2 text-sm font-medium text-gray-700">Select all</label>
                                 </div>
-                                <form action="{{ route('cart.clear') }}" method="POST" id="empty-cart-form">
-                                    @csrf
-                                    <button type="submit" class="text-sm font-medium text-red-600 hover:text-red-800">Empty Cart</button>
-                                </form>
                             </div>
+
+                            <!-- Right: Empty Cart -->
+                            <form action="{{ route('cart.clear') }}" method="POST" id="empty-cart-form"
+                                  class="flex items-center">
+                                @csrf
+                                <button type="submit"
+                                        class="flex items-center gap-2 text-sm font-medium text-red-600 hover:text-red-800">
+                                    <!-- SVG Trash Icon -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                                         stroke="currentColor" class="w-5 h-5">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Empty Cart
+                                </button>
+                            </form>
                         </div>
                         <div class="bg-white rounded-lg shadow-sm">
                             <div class="bg-white rounded-lg shadow-sm">
