@@ -18,6 +18,11 @@ class CartController extends Controller
             'action' => 'required|string|in:add_to_cart,buy_now',
         ]);
 
+        if ($request->action === 'buy_now') {
+            session()->forget('cart');
+            session()->forget('checkout_cart');
+        }
+
         $product = Product::findOrFail($request->product_id);
         $variant = null;
 
