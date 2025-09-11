@@ -255,6 +255,9 @@ Route::post('/products/{product}/reviews', [ShopController::class, 'storeReview'
 
 Route::get('/categories', [CategoryController::class, 'index'])->name('categories.index');
 Route::get('/categories/{category:slug}', [CategoryController::class, 'show'])->name('categories.show');
+Route::post('/categories/{category}/move-up', [CategoryController::class, 'moveUp'])->name('categories.moveUp');
+Route::post('/categories/{category}/move-down', [CategoryController::class, 'moveDown'])->name('categories.moveDown');
+Route::post('/categories/update-order', [CategoryController::class, 'updateOrder'])->name('categories.updateOrder');
 
 
 

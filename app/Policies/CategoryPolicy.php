@@ -37,6 +37,11 @@ class CategoryPolicy
         return in_array($user->role, ['admin', 'staff']);
     }
 
+    public function updateOrder(User $user): bool
+    {
+        return in_array($user->role, ['admin', 'staff']);
+    }
+
     public function delete(User $user, Category $category): bool
     {
         // Only allow deletion if no children exist

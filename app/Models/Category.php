@@ -27,7 +27,7 @@ class Category extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(__CLASS__, 'parent_id');
+        return $this->hasMany(__CLASS__, 'parent_id')->orderBy('position', 'asc');
     }
 
     public function childrenRecursive(): HasMany

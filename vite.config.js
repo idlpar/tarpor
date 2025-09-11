@@ -8,7 +8,8 @@ import { viteStaticCopy } from 'vite-plugin-static-copy';
 export default defineConfig({
     plugins: [
         laravel({
-            input: ['resources/css/app.css', 'resources/js/app.js', 'resources/js/wishlist.js', 'resources/js/cookie-consent.js', 'resources/css/print.css'],
+            input: ['resources/css/app.css',                 'resources/js/app.js'
+            , 'resources/js/wishlist.js', 'resources/js/cookie-consent.js', 'resources/css/print.css'],
             refresh: true,
         }),
         viteStaticCopy({
@@ -45,7 +46,7 @@ export default defineConfig({
         minify: 'esbuild',
         rollupOptions: {
             output: {
-                
+
             },
         },
     },

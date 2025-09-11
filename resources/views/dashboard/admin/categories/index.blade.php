@@ -47,6 +47,11 @@
                 <div class="px-6 py-4 border-b border-gray-200">
                     <h2 class="text-lg font-semibold text-gray-800">All Categories</h2>
                 </div>
+                <div class="px-6 py-4">
+                    <form id="search-form">
+                        <input type="text" name="search" placeholder="Search categories..." class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    </form>
+                </div>
                 <div id="all-categories-table-body" class="overflow-x-auto">
                     <!-- All Categories table content will be loaded here via AJAX -->
                 </div>
@@ -78,6 +83,8 @@
     </div>
 @endsection
 
+@push('scripts')
+
 
 
 @push('scripts')
@@ -88,7 +95,7 @@
             const loadingSpinnerAllCategories = document.getElementById('loading-spinner-all-categories');
             const categoryTreeBody = document.getElementById('category-tree-body');
             const loadingSpinnerCategoryTree = document.getElementById('loading-spinner-category-tree');
-            const searchInput = document.querySelector('x-ui-search-box input[name="search"]');
+            const searchInput = document.querySelector('#search-form input[name="search"]');
             const currentUrl = new URL(window.location.href);
 
             // Function to fetch and render all categories data (paginated list)
@@ -388,6 +395,94 @@
             // The renderCategoryTree function already includes a call to Alpine.initTree(categoryTreeBody);
             // Ensure Alpine.js is loaded and Alpine.initTree is available.
 
+            function initSortable() {
+                const container = document.getElementById('category-tree-container');
+                new Sortable(container, {
+                    group: 'nested',
+                    animation: 150,
+                    fallbackOnBody: true,
+                    swapThreshold: 0.65,
+                    handle: '.handle',
+                    onEnd: function (evt) {
+                        const order = serialize(container);
+                        fetch('{{ route("categories.updateOrder") }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                            },
+                            body: JSON.stringify({ order: order })
+                        });
+                    }
+                });
+
+                document.querySelectorAll('.sortable-group').forEach(function (group) {
+                    new Sortable(group, {
+                        group: 'nested',
+                        animation: 150,
+                        fallbackOnBody: true,
+                        swapThreshold: 0.65,
+                        handle: '.handle',
+                        onEnd: function (evt) {
+                            const container = document.getElementById('category-tree-container');
+                            const order = serialize(container);
+                            fetch('{{ route("categories.updateOrder") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({ order: order })
+                            });
+                        }
+                    });
+                });
+            }
+
+            function serialize(container) {
+                let order = [];
+                container.querySelectorAll(':scope > .tree-node').forEach(function (node) {
+                    let children = node.querySelector('.sortable-group');
+                    let item = {
+                        id: node.dataset.id,
+                    };
+                    if (children) {
+                        item.children = serialize(children);
+                    }
+                    order.push(item);
+                });
+                return order;
+            }
+
+            // Modify fetchCategoryTreeData to initialize sortable after rendering
+            async function fetchCategoryTreeData() {
+                loadingSpinnerCategoryTree.style.display = 'block';
+                categoryTreeBody.innerHTML = ''; // Clear previous content
+
+                const params = new URLSearchParams();
+                params.append('data_type', 'tree'); // Request tree data
+
+                try {
+                    const response = await fetch(`${currentUrl.origin}${currentUrl.pathname}?${params.toString()}`, {
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    const data = await response.json();
+
+                    renderCategoryTree(data.treeHtml);
+                    initSortable(); // Initialize sortable here
+
+                } catch (error) {
+                    console.error('Error fetching category tree data:', error);
+                    categoryTreeBody.innerHTML = '<p class="text-red-500 text-center py-4">Failed to load category tree. Please try again.</p>';
+                } finally {
+                    loadingSpinnerCategoryTree.style.display = 'none';
+                }
+            }
         });
 
         // Re-initialize Alpine.js components for dynamically loaded content

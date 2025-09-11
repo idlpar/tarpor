@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Category;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
@@ -31,7 +32,7 @@ class CategoryController extends Controller
                         ->when($request->query('search'), function ($query) use ($request) {
                             $query->where('name', 'like', '%' . $request->query('search') . '%');
                         })
-                        ->orderBy('id', 'desc') // Default sort for list
+                        ->orderBy('position', 'asc') // Default sort for list
                         ->paginate(15);
                     return response()->json(['categories' => $categories]);
                 }
@@ -51,12 +52,18 @@ class CategoryController extends Controller
             ]);
         }
 
-        $categories = Category::where('status', 'active')
-            ->with(['children' => function($query) {
-                $query->where('status', 'active');
+        $query = Category::where('status', 'active')
+            ->with(['children' => function($q) {
+                $q->where('status', 'active');
             }])
-            ->whereNull('parent_id')
-            ->get();
+            ->whereNull('parent_id');
+
+        if ($request->has('search')) {
+            $searchTerm = $request->input('search');
+            $query->where('name', 'like', '%' . $searchTerm . '%');
+        }
+
+        $categories = $query->get();
 
         return view('categories.index', compact('categories'));
     }
@@ -154,10 +161,9 @@ class CategoryController extends Controller
     private function buildCategoryTree($parentId = null)
     {
         return Category::where('parent_id', $parentId)
-            ->with(['children' => function($query) {
-                $query->with('children')->withCount('products');
-            }])
+            ->with('childrenRecursive')
             ->withCount('products')
+            ->orderBy('position', 'asc')
             ->get();
     }
 
@@ -291,5 +297,31 @@ class CategoryController extends Controller
         }
 
         return response()->json(['exists' => false]);
+    }
+
+    public function updateOrder(Request $request)
+    {
+        Log::info('updateOrder triggered');
+        $this->authorize('updateOrder', Category::class);
+        $order = $request->input('order');
+        Log::info('Received order data:', ['order' => $order]);
+        $this->processOrder($order, null);
+        return response()->json(['status' => 'success', 'message' => 'Category order updated successfully.']);
+    }
+
+    private function processOrder(array $items, ?int $parentId): void
+    {
+        foreach ($items as $index => $item) {
+            Log::info('Processing item:', ['id' => $item['id'], 'new_position' => $index, 'new_parent_id' => $parentId]);
+            Category::where('id', $item['id'])->update([
+                'position' => $index,
+                'parent_id' => $parentId,
+            ]);
+
+            if (!empty($item['children'])) {
+                Log::info('Processing children for item:', ['id' => $item['id']]);
+                $this->processOrder($item['children'], $item['id']);
+            }
+        }
     }
 }

@@ -7,6 +7,15 @@
             <p class="text-lg text-gray-600 max-w-3xl mx-auto">Browse through our carefully curated product categories to find exactly what you're looking for.</p>
         </div>
 
+        <div class="mb-8">
+            <form action="{{ route('categories.index') }}" method="GET">
+                <div class="relative">
+                    <input type="text" name="search" placeholder="Search categories..." class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500" value="{{ request('search') }}">
+                    <button type="submit" class="absolute right-2.5 top-1/2 -translate-y-1/2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">Search</button>
+                </div>
+            </form>
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             @foreach ($categories as $category)
                 <a href="{{ route('categories.show', $category->slug) }}" class="group relative block overflow-hidden rounded-xl bg-white shadow-md hover:shadow-lg transition duration-300">
