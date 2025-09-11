@@ -19,6 +19,7 @@ return new class extends Migration
             $table->text('description')->nullable(); // Category description
             $table->string('image')->nullable(); // Category image URL
             $table->enum('status', ['active', 'inactive'])->default('active'); // Category status
+            $table->integer('position')->default(0);
             $table->timestamps(); // created_at and updated_at
 
             $table->index('parent_id');

@@ -255,21 +255,21 @@ class ProductController extends Controller
             }
 
             // Handle SEO
+            $seoData = $validated['seo'] ?? [];
+            $ogImage = $request->hasFile('seo.og_image') ? $request->file('seo.og_image')->store('seo/og_images', 'public') : ($product->thumbnail_url ?? null);
+            $twitterImage = $request->hasFile('seo.twitter_image') ? $request->file('seo.twitter_image')->store('seo/twitter_images', 'public') : ($product->thumbnail_url ?? null);
+
             $product->seo()->updateOrCreate(
                 ['entity_type' => Product::class, 'entity_id' => $product->id],
                 [
-                    'meta_title' => $validated['meta_title'] ?? '',
-                    'meta_description' => $validated['meta_description'] ?? '',
-                    'meta_keywords' => $validated['meta_keywords'] ?? '',
-                    'canonical_url' => $validated['canonical_url'] ?? '',
-                    'og_title' => $validated['og_title'] ?? '',
-                    'og_description' => $validated['og_description'] ?? '',
-                    'og_image' => $request->hasFile('og_image') ? $request->file('og_image')->store('seo/og_images', 'public') : ($product->seo->og_image ?? null),
-                    'twitter_title' => $validated['twitter_title'] ?? '',
-                    'twitter_description' => $validated['twitter_description'] ?? '',
-                    'twitter_image' => $request->hasFile('twitter_image') ? $request->file('twitter_image')->store('seo/twitter_images', 'public') : ($product->seo->twitter_image ?? null),
-                    'schema_markup' => !empty($validated['schema_markup']) ? $validated['schema_markup'] : '{}',
-                    'robots' => $validated['robots'] ?? '',
+                    'meta_title' => $seoData['meta_title'] ?? $product->name,
+                    'meta_description' => $seoData['meta_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'og_title' => $seoData['og_title'] ?? $product->name,
+                    'og_description' => $seoData['og_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'twitter_title' => $seoData['twitter_title'] ?? $product->name,
+                    'twitter_description' => $seoData['twitter_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'og_image' => $ogImage,
+                    'twitter_image' => $twitterImage,
                 ]
             );
         });
@@ -492,21 +492,21 @@ class ProductController extends Controller
             }
 
             // Handle SEO
+            $seoData = $validated['seo'] ?? [];
+            $ogImage = $request->hasFile('seo.og_image') ? $request->file('seo.og_image')->store('seo/og_images', 'public') : ($product->thumbnail_url ?? null);
+            $twitterImage = $request->hasFile('seo.twitter_image') ? $request->file('seo.twitter_image')->store('seo/twitter_images', 'public') : ($product->thumbnail_url ?? null);
+
             $product->seo()->updateOrCreate(
                 ['entity_type' => Product::class, 'entity_id' => $product->id],
                 [
-                    'meta_title' => $validated['meta_title'] ?? '',
-                    'meta_description' => $validated['meta_description'] ?? '',
-                    'meta_keywords' => $validated['meta_keywords'] ?? '',
-                    'canonical_url' => $validated['canonical_url'] ?? '',
-                    'og_title' => $validated['og_title'] ?? '',
-                    'og_description' => $validated['og_description'] ?? '',
-                    'og_image' => $request->hasFile('og_image') ? $request->file('og_image')->store('seo/og_images', 'public') : ($product->seo->og_image ?? null),
-                    'twitter_title' => $validated['twitter_title'] ?? '',
-                    'twitter_description' => $validated['twitter_description'] ?? '',
-                    'twitter_image' => $request->hasFile('twitter_image') ? $request->file('twitter_image')->store('seo/twitter_images', 'public') : ($product->seo->twitter_image ?? null),
-                    'schema_markup' => !empty($validated['schema_markup']) ? $validated['schema_markup'] : '{}',
-                    'robots' => $validated['robots'] ?? '',
+                    'meta_title' => $seoData['meta_title'] ?? $product->name,
+                    'meta_description' => $seoData['meta_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'og_title' => $seoData['og_title'] ?? $product->name,
+                    'og_description' => $seoData['og_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'twitter_title' => $seoData['twitter_title'] ?? $product->name,
+                    'twitter_description' => $seoData['twitter_description'] ?? Str::limit(strip_tags($product->description), 160),
+                    'og_image' => $ogImage,
+                    'twitter_image' => $twitterImage,
                 ]
             );
         });
@@ -775,6 +775,11 @@ class ProductController extends Controller
                 'tags' => json_decode($request->tags, true)
             ]);
         }
+        if ($request->has('seo') && is_array($request->input('seo'))) {
+            $request->merge([
+                'seo' => $request->input('seo')
+            ]);
+        }
         Log::info('Request data after tags JSON decode and merge:', $request->all());
 
         $rules = [
@@ -818,18 +823,18 @@ class ProductController extends Controller
             'selected_faqs' => 'nullable|array',
             'selected_faqs.*' => 'exists:faqs,id',
             'specifications' => 'nullable|json',
-            'meta_title' => 'nullable|string|max:255',
-            'meta_description' => 'nullable|string',
-            'meta_keywords' => 'nullable|string',
-            'canonical_url' => 'nullable|url',
-            'og_title' => 'nullable|string|max:255',
-            'og_description' => 'nullable|string',
-            'og_image' => 'nullable|image|max:2048',
-            'twitter_title' => 'nullable|string|max:255',
-            'twitter_description' => 'nullable|string',
-            'twitter_image' => 'nullable|image|max:2048',
-            'schema_markup' => 'nullable|string',
-            'robots' => 'nullable|string',
+            'seo.meta_title' => 'nullable|string|max:255',
+            'seo.meta_description' => 'nullable|string',
+            'seo.meta_keywords' => 'nullable|string',
+            'seo.canonical_url' => 'nullable|url',
+            'seo.og_title' => 'nullable|string|max:255',
+            'seo.og_description' => 'nullable|string',
+            'seo.og_image' => 'nullable|image|max:2048',
+            'seo.twitter_title' => 'nullable|string|max:255',
+            'seo.twitter_description' => 'nullable|string',
+            'seo.twitter_image' => 'nullable|image|max:2048',
+            'seo.schema_markup' => 'nullable|string',
+            'seo.robots' => 'nullable|string',
             'type' => 'required|in:simple,variable',
             'tags' => 'nullable|array',
             'tags.*' => 'string',
