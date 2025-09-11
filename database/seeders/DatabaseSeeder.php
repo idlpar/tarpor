@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
             
             JobSeeder::class,
 //            SeoMetasSeeder::class,
-            CategorySeeder::class,
+                        CategorySeeder::class,
             BrandSeeder::class,
 //            ProductSeeder::class,
 //            ProductReviewSeeder::class,

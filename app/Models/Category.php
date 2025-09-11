@@ -27,7 +27,12 @@ class Category extends Model
      */
     public function children(): HasMany
     {
-        return $this->hasMany(__CLASS__, 'parent_id')->with('children');
+        return $this->hasMany(__CLASS__, 'parent_id');
+    }
+
+    public function childrenRecursive(): HasMany
+    {
+        return $this->children()->with('childrenRecursive');
     }
 
     /**
