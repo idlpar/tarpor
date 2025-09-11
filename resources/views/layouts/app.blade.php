@@ -137,7 +137,7 @@
 @include('components.app.toast')
 
 
-@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/wishlist.js', 'resources/js/cookie-consent.js'])
+@vite(['resources/css/app.css', 'resources/js/app.js', 'resources/js/wishlist.js', 'resources/js/cookie-consent.js', 'resources/js/product-card.js'])
 @stack('scripts')
 <script>
     document.addEventListener('DOMContentLoaded', function() {

@@ -121,7 +121,7 @@
 
                 <div class="mt-16">
                     <h2 class="text-2xl font-bold text-gray-900 mb-6">You Might Also Like</h2>
-                    <div id="recommendations-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                    <div id="recommendations-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
                         @foreach($mightAlsoLike as $product)
                             @include('partials._product_card', ['product' => $product])
                         @endforeach
@@ -144,7 +144,7 @@
 
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="{{ asset('js/product-card.js') }}"></script>
+    
     <script>
         document.addEventListener('DOMContentLoaded', function() {
 
@@ -246,6 +246,15 @@
                 }
             });
 
+            function initializeZoom() {
+                mediumZoom('.product-card-image', {
+                    margin: 24,
+                    background: 'rgba(255, 255, 255, 0.8)'
+                });
+            }
+
+            initializeZoom();
+
             let skip = 6;
             document.getElementById('load-more-recommendations').addEventListener('click', function() {
                 fetch(`{{ route('cart.index') }}?type=might_also_like&skip=${skip}`)
@@ -254,6 +263,7 @@
                         const recommendationsContainer = document.getElementById('recommendations-container');
                         recommendationsContainer.insertAdjacentHTML('beforeend', data.html);
                         skip += 6;
+                        initializeZoom(); // Re-initialize zoom on new elements
                     });
             });
 

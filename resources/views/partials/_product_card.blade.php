@@ -35,7 +35,7 @@
         <a href="{{ route('products.show.frontend', $product->slug) }}" class="block w-full h-full">
             <img src="{{ $product->thumbnail_url ?? asset('images/placeholder-product.png') }}"
                  alt="{{ $product->name }}"
-                 class="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90">
+                 class="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90 product-card-image">
         </a>
         <div class="absolute inset-0 flex items-center justify-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-black bg-opacity-20">
             <button class="quick-view-btn p-2 rounded-full bg-white text-gray-800 hover:bg-blue-100 transition-colors duration-200 shadow-sm"
@@ -59,7 +59,7 @@
         @if($product->brand)
             <p class="text-xs text-gray-500 mb-1 truncate">{{ $product->brand->name }}</p>
         @endif
-        <h3 class="text-sm font-semibold text-gray-900 mb-1.5">
+        <h3 class="text-sm font-semibold text-gray-900 mb-1.5 truncate">
             <a href="{{ route('products.show.frontend', $product->slug) }}" class="hover:text-blue-600 transition-colors duration-200 line-clamp-2" style="-webkit-line-clamp: 2;">
                 {{ $product->name }}
             </a>
