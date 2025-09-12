@@ -14,7 +14,6 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
-            display: none;
         }
 
         /* Smooth transitions */
@@ -96,8 +95,11 @@
                 {{ session('error') }}
             </div>
         @endif
-        <!-- Loading spinner -->
-        <div id="loading-spinner" class="text-4xl text-blue-500">Loading...</div>
+        <!-- Spinner for loading data -->
+        <div id="loading-spinner" class="text-center py-8">
+            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-24 w-24 mx-auto">
+            <p class="mt-2 text-gray-600">Loading product form...</p>
+        </div>
 
         <!-- Breadcrumb Navigation -->
         @include('components.breadcrumbs', [
@@ -118,6 +120,7 @@
         </x-ui.page-header>
 
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
+            <div id="product-form-container" style="display: none;">
             <form action="{{ route('products.update', $product->id) }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
                 @method('PUT')
                 @csrf
@@ -234,14 +237,14 @@
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price</label>
+                                    <label class="block font-semibold text-gray-700 mb-2">Regular Price</label>
                                     <input type="number" name="price" value="{{ old('price', $product->price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     @error('price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
+                                    <label class="block font-semibold text-gray-700 mb-2">Sale Price</label>
                                     <input type="number" name="sale_price" value="{{ old('sale_price', $product->sale_price) }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
                                     @error('sale_price')
@@ -378,7 +381,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', '[]') }}">
+                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', $product->relatedProducts->pluck('id')->toJson()) }}">
                                 @error('related_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -421,7 +424,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                                <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', '[]') }}">
+                                <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', $product->crossSellingProducts->pluck('id')->toJson()) }}">
                                 @error('cross_selling_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -437,95 +440,85 @@
                         </x-form.card>
 
                         <!-- Search Engine Optimize -->
-                        <div class="bg-white p-6 mb-6 shadow-lg rounded-lg">
+                        <div x-data="{
+                            open: false,
+                            metaTitle: '{{ old('seo.meta_title', $product->seo->meta_title ?? '') }}',
+                            metaDescription: '{{ old('seo.meta_description', $product->seo->meta_description ?? '') }}',
+                            ogTitle: '{{ old('seo.og_title', $product->seo->og_title ?? '') }}',
+                            ogDescription: '{{ old('seo.og_description', $product->seo->og_description ?? '') }}',
+                            twitterTitle: '{{ old('seo.twitter_title', $product->seo->twitter_title ?? '') }}',
+                            twitterDescription: '{{ old('seo.twitter_description', $product->seo->twitter_description ?? '') }}',
+                            userHasEdited: {
+                                metaTitle: {{ old('seo.meta_title') ? 'true' : 'false' }},
+                                metaDescription: {{ old('seo.meta_description') ? 'true' : 'false' }},
+                                ogTitle: {{ old('seo.og_title') ? 'true' : 'false' }},
+                                ogDescription: {{ old('seo.og_description') ? 'true' : 'false' }},
+                                twitterTitle: {{ old('seo.twitter_title') ? 'true' : 'false' }},
+                                twitterDescription: {{ old('seo.twitter_description') ? 'true' : 'false' }}
+                            },
+                            init() {
+                                const nameInput = document.getElementById('name');
+                                const descriptionEditor = tinymce.get('description');
+
+                                const updateDefaults = () => {
+                                    const productName = nameInput.value;
+                                    const productDescription = descriptionEditor ? descriptionEditor.getContent({ format: 'text' }).substring(0, 160) : '';
+
+                                    if (!this.userHasEdited.metaTitle) this.metaTitle = productName;
+                                    if (!this.userHasEdited.metaDescription) this.metaDescription = productDescription;
+                                    if (!this.userHasEdited.ogTitle) this.ogTitle = productName;
+                                    if (!this.userHasEdited.ogDescription) this.ogDescription = productDescription;
+                                    if (!this.userHasEdited.twitterTitle) this.twitterTitle = productName;
+                                    if (!this.userHasEdited.twitterDescription) this.twitterDescription = productDescription;
+                                };
+
+                                nameInput.addEventListener('input', debounce(updateDefaults, 300));
+                                if(descriptionEditor) {
+                                    descriptionEditor.on('change', debounce(updateDefaults, 300));
+                                }
+                            }
+                        }" class="bg-white p-6 mb-6 shadow-lg rounded-lg">
                             <div class="flex justify-between items-center border-b border-gray-200 mb-4">
                                 <label class="block text-xl font-bold text-gray-800">Search Engine Optimize</label>
-                                <button type="button" class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-blue-500 hover:bg-blue-600 transition-all">Edit SEO Meta</button>
+                                <button @click="open = !open" type="button" class="px-6 py-2 rounded-lg text-white text-sm font-semibold bg-blue-500 hover:bg-blue-600 transition-all">
+                                    <span x-show="!open">Edit SEO Meta</span>
+                                    <span x-show="open">Close SEO Meta</span>
+                                </button>
                             </div>
                             <p class="text-sm text-gray-500 mt-2">Setup meta title & description to make your site easy to discover on search engines such as Google.</p>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
-                                <input type="text" name="meta_title" value="{{ old('meta_title', $product->seo->meta_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_title') border-red-500 @enderror" placeholder="Meta Title">
-                                @error('meta_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
-                                <textarea name="meta_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_description') border-red-500 @enderror">{{ old('meta_description', $product->seo->meta_description ?? '') }}</textarea>
-                                @error('meta_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Meta Keywords</label>
-                                <input type="text" name="meta_keywords" value="{{ old('meta_keywords', $product->seo->meta_keywords ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('meta_keywords') border-red-500 @enderror" placeholder="Meta Keywords">
-                                @error('meta_keywords')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Canonical URL</label>
-                                <input type="url" name="canonical_url" value="{{ old('canonical_url', $product->seo->canonical_url ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('canonical_url') border-red-500 @enderror" placeholder="Canonical URL">
-                                @error('canonical_url')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
-                                <input type="text" name="og_title" value="{{ old('og_title', $product->seo->og_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_title') border-red-500 @enderror" placeholder="Open Graph Title">
-                                @error('og_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
-                                <textarea name="og_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_description') border-red-500 @enderror">{{ old('og_description', $product->seo->og_description ?? '') }}</textarea>
-                                @error('og_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Open Graph Image</label>
-                                <input type="file" name="og_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('og_image') border-red-500 @enderror">
-                                @error('og_image')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
-                                <input type="text" name="twitter_title" value="{{ old('twitter_title', $product->seo->twitter_title ?? '') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_title') border-red-500 @enderror">
-                                @error('twitter_title')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
-                                <textarea name="twitter_description" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_description') border-red-500 @enderror">{{ old('twitter_description', $product->seo->twitter_description ?? '') }}</textarea>
-                                @error('twitter_description')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Twitter Image</label>
-                                <input type="file" name="twitter_image" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('twitter_image') border-red-500 @enderror">
-                                @error('twitter_image')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Schema Markup</label>
-                                <textarea name="schema_markup" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('schema_markup') border-red-500 @enderror">{{ old('schema_markup', $product->seo->schema_markup ?? '') }}</textarea>
-                                @error('schema_markup')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
-                            </div>
-                            <div class="mt-4">
-                                <label class="block font-semibold text-gray-700 mb-2">Robots</label>
-                                <input type="text" name="robots" value="{{ old('robots', $product->seo->robots ?? 'index, follow') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('robots') border-red-500 @enderror" placeholder="index, follow">
-                                @error('robots')
-                                <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                                @enderror
+                            <div x-show="open" x-collapse class="mt-4 space-y-4">
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
+                                    <input type="text" name="seo[meta_title]" x-model="metaTitle" @input="userHasEdited.metaTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Meta Title">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
+                                    <textarea name="seo[meta_description]" x-model="metaDescription" @input="userHasEdited.metaDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
+                                    <input type="text" name="seo[og_title]" x-model="ogTitle" @input="userHasEdited.ogTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Open Graph Title">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
+                                    <textarea name="seo[og_description]" x-model="ogDescription" @input="userHasEdited.ogDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
+                                    <input type="text" name="seo[twitter_title]" x-model="twitterTitle" @input="userHasEdited.twitterTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Twitter Title">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
+                                    <textarea name="seo[twitter_description]" x-model="twitterDescription" @input="userHasEdited.twitterDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Open Graph Image</label>
+                                    <input type="file" name="seo[og_image]" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block font-semibold text-gray-700 mb-2">Twitter Image</label>
+                                    <input type="file" name="seo[twitter_image]" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -747,6 +740,7 @@
                     </x-form.card>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 @endsection
@@ -1277,10 +1271,9 @@
 
     <!-- Page Load -->
     <script>
-        document.getElementById('loading-spinner').style.display = 'block';
         window.addEventListener('load', () => {
             document.getElementById('loading-spinner').style.display = 'none';
-            document.body.style.visibility = 'visible';
+            document.getElementById('product-form-container').style.display = 'block';
         });
     </script>
 

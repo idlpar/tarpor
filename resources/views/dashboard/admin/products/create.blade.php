@@ -240,14 +240,14 @@
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price</label>
+                                    <label class="block font-semibold text-gray-700 mb-2">Regular Price</label>
                                     <input type="number" name="price" value="{{ old('price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     @error('price')
                                     <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                     @enderror
                                 </div>
                                 <div>
-                                    <label class="block font-semibold text-gray-700 mb-2">Price Sale</label>
+                                    <label class="block font-semibold text-gray-700 mb-2">Sale Price</label>
                                     <input type="number" name="sale_price" value="{{ old('sale_price') }}" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('sale_price') border-red-500 @enderror" placeholder="Tk. 0" step="0.01">
                                     <p class="text-sm text-gray-500 mt-2">Choose Discount Period</p>
                                     @error('sale_price')

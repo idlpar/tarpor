@@ -457,7 +457,7 @@
                                 <div class="flex items-center">
                                     <div>
                                         <div class="text-sm font-medium text-gray-900">
-                                            <a href="/products/${product.id}" class="hover:text-blue-600 hover:underline">
+                                            <a href="/admin/products/${product.id}" class="hover:text-blue-600 hover:underline">
                                                 ${product.name}
                                             </a>
                                         </div>
