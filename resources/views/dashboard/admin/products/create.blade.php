@@ -14,7 +14,6 @@
             left: 50%;
             transform: translate(-50%, -50%);
             z-index: 1000;
-            display: none;
         }
 
         /* Smooth transitions */
@@ -99,8 +98,11 @@
                 {{ session('error') }}
             </div>
         @endif
-        <!-- Loading spinner -->
-        <div id="loading-spinner" class="text-4xl text-blue-500">Loading...</div>
+        <!-- Spinner for loading data -->
+        <div id="loading-spinner" class="text-center py-8">
+            <img src="{{ asset('images/spinner.gif') }}" alt="Loading..." class="h-24 w-24 mx-auto">
+            <p class="mt-2 text-gray-600">Loading product form...</p>
+        </div>
 
         <!-- Breadcrumb Navigation -->
         @include('components.breadcrumbs', [
@@ -121,6 +123,7 @@
         </x-ui.page-header>
 
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-6">
+            <div id="product-form-container" style="display: none;">
             <form action="{{ route('products.store') }}" method="POST" enctype="multipart/form-data" class="w-full flex flex-col lg:flex-row gap-6" id="productForm">
                 @csrf
                 <!-- Left Column -->
@@ -738,6 +741,7 @@
                     </x-form.card>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 @endsection
@@ -1222,10 +1226,9 @@
 
     <!-- Page Load -->
     <script>
-        document.getElementById('loading-spinner').style.display = 'block';
         window.addEventListener('load', () => {
             document.getElementById('loading-spinner').style.display = 'none';
-            document.body.style.visibility = 'visible';
+            document.getElementById('product-form-container').style.display = 'block';
         });
     </script>
 
@@ -1457,6 +1460,16 @@
     </script>
 
     <script>
+        function formatTaka(amount, symbol = '৳', includeDecimal = false) {
+            const formatter = new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'BDT',
+                minimumFractionDigits: includeDecimal ? 2 : 0,
+                maximumFractionDigits: includeDecimal ? 2 : 0,
+            });
+            return formatter.format(amount).replace('BDT', symbol).trim();
+        }
+
         function setupProductSelector(options) {
             const {
                 searchInputId,
@@ -1517,7 +1530,12 @@
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
                                     <div class="text-xs text-gray-400">Category: ${product.category_name || 'N/A'}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
+                                <div class="text-sm font-semibold">
+                                    ${product.sale_price && product.sale_price < product.price
+                                        ? `<span class="text-gemini-pink">${formatTaka(product.sale_price)}</span>`
+                                        : `<span class="text-gemini-pink">${formatTaka(product.price)}</span>`
+                                    }
+                                </div>
                                 <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded-full p-1 transition-all duration-200 ${removeButtonClass}">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
@@ -1562,7 +1580,12 @@
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
                                     <div class="text-xs text-gray-400 sm:col-span-2">Category: ${product.category_name || 'N/A'}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold text-right">${product.price}</div>
+                                <div class="text-sm font-semibold text-right">
+                                    ${product.sale_price && product.sale_price < product.price
+                                        ? `<span class="text-gemini-pink">${formatTaka(product.sale_price)}</span>`
+                                        : `<span class="text-gemini-pink">${formatTaka(product.price)}</span>`
+                                    }
+                                </div>
                             </div>
                         `).join('')
                         : '<div class="p-3 text-gray-500">No products found</div>';
@@ -1622,7 +1645,12 @@
                                         <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
                                         <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
                                     </div>
-                                    <div class="text-sm text-gray-700 font-semibold">${suggestion.price}</div>
+                                    <div class="text-sm font-semibold">
+                                        ${suggestion.sale_price && suggestion.sale_price < suggestion.price
+                                            ? `<span class="text-gemini-pink">${formatTaka(suggestion.sale_price)}</span>`
+                                            : `<span class="text-gemini-pink">${formatTaka(suggestion.price)}</span>`
+                                        }
+                                    </div>
                                 </div>
                             `).join('')}
                         `

@@ -624,7 +624,7 @@ class ProductController extends Controller
             $query->whereNotIn('id', $excludeIds);
         }
 
-        $products = $query->limit(10)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price']);
+        $products = $query->limit(10)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price', 'sale_price']);
 
         return response()->json($products->map(function($product) {
             $product->thumbnail = $product->thumbnail_url;
@@ -652,7 +652,7 @@ class ProductController extends Controller
         })
         ->limit(5)
         ->with(['categories', 'media'])
-        ->get(['id', 'name', 'sku', 'price']);
+        ->get(['id', 'name', 'sku', 'price', 'sale_price']);
 
         return response()->json($products->map(function($product) {
             $product->thumbnail = $product->thumbnail_url;
@@ -669,6 +669,7 @@ class ProductController extends Controller
             'name' => $product->name,
             'sku' => $product->sku,
             'price' => $product->price,
+            'sale_price' => $product->sale_price,
             'thumbnail' => $product->thumbnail_url,
             'category_name' => $product->categories->isNotEmpty() ? $product->categories->first()->name : 'N/A',
         ]);
@@ -677,7 +678,7 @@ class ProductController extends Controller
     public function briefBatch(Request $request)
     {
         $ids = $request->input('ids');
-        $products = Product::whereIn('id', $ids)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price']);
+        $products = Product::whereIn('id', $ids)->with(['categories', 'media'])->get(['id', 'name', 'sku', 'price', 'sale_price']);
 
         return response()->json($products->map(function($product) {
             $product->thumbnail = $product->thumbnail_url;
