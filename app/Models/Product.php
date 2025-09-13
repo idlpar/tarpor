@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\OrderItem;
+use App\Models\SeoMeta;
 
 class Product extends Model
 {
@@ -145,7 +146,7 @@ class Product extends Model
 
     public function seo()
     {
-        return $this->morphOne(Seo::class, 'seoable', 'entity_type', 'entity_id');
+        return $this->morphOne(SeoMeta::class, 'entity');
     }
 
     public function getFinalPriceAttribute()

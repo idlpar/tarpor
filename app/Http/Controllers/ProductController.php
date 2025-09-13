@@ -14,7 +14,7 @@ use App\Models\ProductSpecialOffer;
 use App\Models\Media;
 use App\Models\Label;
 use App\Models\Collection;
-use App\Models\Seo;
+use App\Models\SeoMeta;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -256,22 +256,10 @@ class ProductController extends Controller
 
             // Handle SEO
             $seoData = $validated['seo'] ?? [];
-            $ogImage = $request->hasFile('seo.og_image') ? $request->file('seo.og_image')->store('seo/og_images', 'public') : ($product->thumbnail_url ?? null);
-            $twitterImage = $request->hasFile('seo.twitter_image') ? $request->file('seo.twitter_image')->store('seo/twitter_images', 'public') : ($product->thumbnail_url ?? null);
-
-            $product->seo()->updateOrCreate(
-                ['entity_type' => Product::class, 'entity_id' => $product->id],
-                [
-                    'meta_title' => $seoData['meta_title'] ?? $product->name,
-                    'meta_description' => $seoData['meta_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'og_title' => $seoData['og_title'] ?? $product->name,
-                    'og_description' => $seoData['og_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'twitter_title' => $seoData['twitter_title'] ?? $product->name,
-                    'twitter_description' => $seoData['twitter_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'og_image' => $ogImage,
-                    'twitter_image' => $twitterImage,
-                ]
-            );
+            $seo = $product->seo()->firstOrNew([]);
+            $seo->fill($seoData);
+            Log::info('SEO Data before save:', $seo->toArray());
+            $seo->save();
         });
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -493,22 +481,10 @@ class ProductController extends Controller
 
             // Handle SEO
             $seoData = $validated['seo'] ?? [];
-            $ogImage = $request->hasFile('seo.og_image') ? $request->file('seo.og_image')->store('seo/og_images', 'public') : ($product->thumbnail_url ?? null);
-            $twitterImage = $request->hasFile('seo.twitter_image') ? $request->file('seo.twitter_image')->store('seo/twitter_images', 'public') : ($product->thumbnail_url ?? null);
-
-            $product->seo()->updateOrCreate(
-                ['entity_type' => Product::class, 'entity_id' => $product->id],
-                [
-                    'meta_title' => $seoData['meta_title'] ?? $product->name,
-                    'meta_description' => $seoData['meta_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'og_title' => $seoData['og_title'] ?? $product->name,
-                    'og_description' => $seoData['og_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'twitter_title' => $seoData['twitter_title'] ?? $product->name,
-                    'twitter_description' => $seoData['twitter_description'] ?? Str::limit(strip_tags($product->description), 160),
-                    'og_image' => $ogImage,
-                    'twitter_image' => $twitterImage,
-                ]
-            );
+            $seo = $product->seo()->firstOrNew([]);
+            $seo->fill($seoData);
+            Log::info('SEO Data before save:', $seo->toArray());
+            $seo->save();
         });
 
         if ($request->ajax() || $request->wantsJson()) {
@@ -849,6 +825,25 @@ class ProductController extends Controller
 
         $validatedData = $validator->validated();
         Log::info('Validated data in validateProduct:', ['tags_data' => $validatedData['tags'] ?? 'not set']);
+
+        if (empty($validatedData['seo']['meta_title']) && !empty($validatedData['name'])) {
+            $validatedData['seo']['meta_title'] = $validatedData['name'];
+        }
+        if (empty($validatedData['seo']['meta_description']) && !empty($validatedData['description'])) {
+            $validatedData['seo']['meta_description'] = Str::limit(strip_tags($validatedData['description']), 160);
+        }
+        if (empty($validatedData['seo']['og_title']) && !empty($validatedData['name'])) {
+            $validatedData['seo']['og_title'] = $validatedData['name'];
+        }
+        if (empty($validatedData['seo']['og_description']) && !empty($validatedData['description'])) {
+            $validatedData['seo']['og_description'] = Str::limit(strip_tags($validatedData['description']), 160);
+        }
+        if (empty($validatedData['seo']['twitter_title']) && !empty($validatedData['name'])) {
+            $validatedData['seo']['twitter_title'] = $validatedData['name'];
+        }
+        if (empty($validatedData['seo']['twitter_description']) && !empty($validatedData['description'])) {
+            $validatedData['seo']['twitter_description'] = Str::limit(strip_tags($validatedData['description']), 160);
+        }
 
         // Sanitize description and short_description to prevent XSS
         if (isset($validatedData['description'])) {

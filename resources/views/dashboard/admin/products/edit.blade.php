@@ -457,6 +457,20 @@
                                 twitterDescription: false
                             },
                             init() {
+                                this.metaTitle = @js(old('seo.meta_title', $product->seo?->meta_title ?? ''));
+                                this.metaDescription = @js(old('seo.meta_description', $product->seo?->meta_description ?? ''));
+                                this.ogTitle = @js(old('seo.og_title', $product->seo?->og_title ?? ''));
+                                this.ogDescription = @js(old('seo.og_description', $product->seo?->og_description ?? ''));
+                                this.twitterTitle = @js(old('seo.twitter_title', $product->seo?->twitter_title ?? ''));
+                                this.twitterDescription = @js(old('seo.twitter_description', $product->seo?->twitter_description ?? ''));
+
+                                this.userHasEdited.metaTitle = !!this.metaTitle;
+                                this.userHasEdited.metaDescription = !!this.metaDescription;
+                                this.userHasEdited.ogTitle = !!this.ogTitle;
+                                this.userHasEdited.ogDescription = !!this.ogDescription;
+                                this.userHasEdited.twitterTitle = !!this.twitterTitle;
+                                this.userHasEdited.twitterDescription = !!this.twitterDescription;
+
                                 const nameInput = document.getElementById('name');
                                 const descriptionEditor = tinymce.get('description');
 
