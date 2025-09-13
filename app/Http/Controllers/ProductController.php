@@ -131,7 +131,7 @@ class ProductController extends Controller
     public function create()
     {
         $brands = Brand::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::with('childrenRecursive')->whereNull('parent_id')->orderBy('name')->get();
         $attributes = ProductAttribute::orderBy('name')->get();
         $collections = Collection::orderBy('name')->get();
         $labels = Label::orderBy('name')->get();
@@ -353,7 +353,7 @@ class ProductController extends Controller
     public function edit(Product $product)
     {
         $brands = Brand::orderBy('name')->get();
-        $categories = Category::orderBy('name')->get();
+        $categories = Category::with('childrenRecursive')->whereNull('parent_id')->orderBy('name')->get();
         $attributes = ProductAttribute::orderBy('name')->get();
         $collections = Collection::orderBy('name')->get();
         $labels = Label::orderBy('name')->get();
