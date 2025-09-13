@@ -359,8 +359,9 @@ class ProductController extends Controller
         $attributes = ProductAttribute::orderBy('name')->get();
         $collections = Collection::orderBy('name')->get();
         $labels = Label::orderBy('name')->get();
+        $faqs = Faq::orderBy('question')->get();
 
-        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes', 'collections', 'labels']);
+        $product->load(['variants.attributeValues', 'inventoryItems', 'pricingTiers', 'specialOffers', 'media', 'seo', 'productAttributes', 'collections', 'labels', 'faqs']);
 
         $links = [
             'Products' => route('products.index'),
@@ -374,7 +375,8 @@ class ProductController extends Controller
             'attributes',
             'collections',
             'labels',
-            'links'
+            'links',
+            'faqs'
         ));
     }
 

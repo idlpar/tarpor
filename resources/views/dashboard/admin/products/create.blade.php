@@ -449,22 +449,22 @@
 
                             <div class="mt-4">
                                 <span class="text-gray-600">or</span>
-                                <a href="javascript:void(0)" data-bb-toggle="select-from-existing" class="text-blue-500 hover:underline ml-2">
+                                <button type="button" id="toggle-existing-faqs" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors ml-2">
                                     Select from existing FAQs
-                                </a>
+                                </button>
                             </div>
 
-                            <div class="existing-faq-schema-items mt-2">
+                            <div id="existing-faqs-container" class="d-none mt-2 p-4 border border-gray-300 rounded-lg shadow-sm">
                                 <div class="position-relative" data-bb-toggle="dropdown-checkboxes" data-name="selected_existing_faqs[]" data-selected-text="selected" data-placeholder="Select an option">
                                     <span class="form-select text-truncate" style="display: none;">Select an option</span>
-                                    <input type="text" class="form-select" placeholder="Search..." style="">
-                                    <div class="dropdown-menu dropdown-menu-end w-100 show">
-                                        <ul class="list-unstyled p-3 pb-0">
+                                    <input type="text" class="form-select w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-3" placeholder="Search...">
+                                    <div class="dropdown-menu dropdown-menu-end w-100 show" style="position: static; display: block; opacity: 1; visibility: visible;">
+                                        <ul class="list-unstyled p-3 pb-0 max-h-60 overflow-y-auto">
                                             @foreach($faqs as $faq)
                                                 <li>
-                                                    <label class="form-check">
-                                                        <input type="checkbox" id="selected-existing-faqs-item-{{ $faq->id }}" name="selected_faqs[]" class="form-check-input" value="{{ $faq->id }}">
-                                                        <span class="form-check-label">
+                                                    <label class="form-check flex items-center space-x-2 py-1">
+                                                        <input type="checkbox" id="selected-existing-faqs-item-{{ $faq->id }}" name="selected_faqs[]" class="form-checkbox h-5 w-5 text-blue-600 rounded" value="{{ $faq->id }}">
+                                                        <span class="form-check-label text-gray-700">
                                                             {{ $faq->question }}
                                                         </span>
                                                     </label>
@@ -2095,6 +2095,31 @@
                     });
                 });
             }
+
+            const toggleExistingFaqsButton = document.getElementById('toggle-existing-faqs');
+            const existingFaqsContainer = document.getElementById('existing-faqs-container');
+
+            toggleExistingFaqsButton.addEventListener('click', () => {
+                existingFaqsContainer.classList.toggle('d-none');
+            });
+
+            // Existing FAQs search functionality
+            const existingFaqSearchInput = existingFaqsContainer.querySelector('input[type="text"]');
+            const existingFaqList = existingFaqsContainer.querySelector('ul');
+
+            function filterExistingFaqs() {
+                const searchTerm = existingFaqSearchInput.value.toLowerCase();
+                Array.from(existingFaqList.children).forEach(listItem => {
+                    const faqQuestion = listItem.querySelector('.form-check-label').textContent.toLowerCase();
+                    if (faqQuestion.includes(searchTerm)) {
+                        listItem.style.display = ''; // Show the item
+                    } else {
+                        listItem.style.display = 'none'; // Hide the item
+                    }
+                });
+            }
+
+            existingFaqSearchInput.addEventListener('input', debounce(filterExistingFaqs, 300)); // Use the existing debounce function
         });
     </script>
 @endpush
