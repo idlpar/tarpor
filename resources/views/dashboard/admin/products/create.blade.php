@@ -436,10 +436,44 @@
 
                         <!-- Product FAQs -->
                         <x-form.card label="Product FAQs" class="bg-transparent">
-                            <input type="text" name="product_faqs" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 @error('product_faqs') border-red-500 @enderror" placeholder="Search or select from existing FAQs">
-                            @error('product_faqs')
-                            <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
-                            @enderror
+                            <div id="add-faq-section" class="mb-4">
+                                <button type="button" id="add-new-faq-button" class="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors">Add New FAQ</button>
+                            </div>
+
+                            <div id="faq-input-container" class="d-none space-y-4">
+                                <div class="faq-repeater-group" data-next-index="0">
+                                    {{-- Existing FAQs will be populated here for edit page --}}
+                                </div>
+                                <button type="button" id="add-another-faq-button" class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors">Add Another FAQ</button>
+                            </div>
+
+                            <div class="mt-4">
+                                <span class="text-gray-600">or</span>
+                                <a href="javascript:void(0)" data-bb-toggle="select-from-existing" class="text-blue-500 hover:underline ml-2">
+                                    Select from existing FAQs
+                                </a>
+                            </div>
+
+                            <div class="existing-faq-schema-items mt-2">
+                                <div class="position-relative" data-bb-toggle="dropdown-checkboxes" data-name="selected_existing_faqs[]" data-selected-text="selected" data-placeholder="Select an option">
+                                    <span class="form-select text-truncate" style="display: none;">Select an option</span>
+                                    <input type="text" class="form-select" placeholder="Search..." style="">
+                                    <div class="dropdown-menu dropdown-menu-end w-100 show">
+                                        <ul class="list-unstyled p-3 pb-0">
+                                            @foreach($faqs as $faq)
+                                                <li>
+                                                    <label class="form-check">
+                                                        <input type="checkbox" id="selected-existing-faqs-item-{{ $faq->id }}" name="selected_faqs[]" class="form-check-input" value="{{ $faq->id }}">
+                                                        <span class="form-check-label">
+                                                            {{ $faq->question }}
+                                                        </span>
+                                                    </label>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
                         </x-form.card>
 
                         <!-- Search Engine Optimize -->
@@ -1988,6 +2022,78 @@
 
             function selectSuggestion(suggestion) {
                 addTag(suggestion.name);
+            }
+        });
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const addNewFaqButton = document.getElementById('add-new-faq-button');
+            const faqInputContainer = document.getElementById('faq-input-container');
+            const faqRepeaterGroup = faqInputContainer.querySelector('.faq-repeater-group');
+            const addAnotherFaqButton = document.getElementById('add-another-faq-button');
+
+            let faqIndex = 0; // To keep track of the index for new FAQs
+
+            // Function to add a new FAQ item
+            function addFaqItem(question = '', answer = '') {
+                const newFaqItem = document.createElement('div');
+                newFaqItem.className = 'faq-item bg-gray-50 p-4 rounded-lg border border-gray-200 relative';
+                newFaqItem.innerHTML = `
+                    <div class="mb-3">
+                        <label class="block font-semibold text-gray-700 mb-2">Question</label>
+                        <textarea class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" name="new_faqs_data[${faqIndex}][question]" rows="1">${question}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="block font-semibold text-gray-700 mb-2">Answer</label>
+                        <textarea class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" name="new_faqs_data[${faqIndex}][answer]" rows="1">${answer}</textarea>
+                    </div>
+                    <button type="button" class="remove-faq-item absolute top-2 right-2 text-red-500 hover:text-red-700">
+                        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                `;
+                faqRepeaterGroup.appendChild(newFaqItem);
+
+                // Add event listener for the remove button
+                newFaqItem.querySelector('.remove-faq-item').addEventListener('click', () => {
+                    newFaqItem.remove();
+                    // If all FAQ items are removed, hide the container and show the "Add New FAQ" button
+                    if (faqRepeaterGroup.children.length === 0) {
+                        faqInputContainer.classList.add('d-none');
+                        addNewFaqButton.classList.remove('d-none');
+                    }
+                });
+
+                faqIndex++; // Increment index for the next FAQ
+            }
+
+            // Event listener for the initial "Add New FAQ" button
+            addNewFaqButton.addEventListener('click', () => {
+                faqInputContainer.classList.remove('d-none');
+                addNewFaqButton.classList.add('d-none');
+                addFaqItem(); // Add the first FAQ item
+            });
+
+            // Event listener for the "Add Another FAQ" button
+            addAnotherFaqButton.addEventListener('click', () => {
+                addFaqItem();
+            });
+
+            // Initial check: if there are pre-existing FAQs (for edit page), show the container
+            // For create page, this will be empty, so it will remain hidden initially
+            if (faqRepeaterGroup.children.length > 0) {
+                faqInputContainer.classList.remove('d-none');
+                addNewFaqButton.classList.add('d-none');
+                // Re-attach event listeners for pre-existing remove buttons
+                faqRepeaterGroup.querySelectorAll('.remove-faq-item').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.target.closest('.faq-item').remove();
+                        if (faqRepeaterGroup.children.length === 0) {
+                            faqInputContainer.classList.add('d-none');
+                            addNewFaqButton.classList.remove('d-none');
+                        }
+                    });
+                });
             }
         });
     </script>

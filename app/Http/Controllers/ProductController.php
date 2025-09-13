@@ -15,6 +15,7 @@ use App\Models\Media;
 use App\Models\Label;
 use App\Models\Collection;
 use App\Models\SeoMeta;
+use App\Models\Faq;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
@@ -135,13 +136,14 @@ class ProductController extends Controller
         $attributes = ProductAttribute::orderBy('name')->get();
         $collections = Collection::orderBy('name')->get();
         $labels = Label::orderBy('name')->get();
+        $faqs = Faq::orderBy('question')->get();
 
         $links = [
             'Products' => route('products.index'),
             'Add New' => null
         ];
 
-        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes', 'collections', 'labels', 'links'));
+        return view('dashboard.admin.products.create', compact('brands', 'categories', 'attributes', 'collections', 'labels', 'links', 'faqs'));
     }
 
     public function store(Request $request)
