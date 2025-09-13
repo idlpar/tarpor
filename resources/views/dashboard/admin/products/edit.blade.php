@@ -381,7 +381,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', $product->relatedProducts->pluck('id')->toJson()) }}">
+                                <input type="hidden" name="related_products" id="related-products-input" value="{{ old('related_products', $product->relatedProducts->pluck('id')) }}">
                                 @error('related_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -424,7 +424,7 @@
                                         @endforeach
                                     @endif
                                 </div>
-                                <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', $product->crossSellingProducts->pluck('id')->toJson()) }}">
+                                <input type="hidden" name="cross_selling_products" id="cross-selling-products-input" value="{{ old('cross_selling_products', $product->crossSellingProducts->pluck('id')) }}">
                                 @error('cross_selling_products')
                                 <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                                 @enderror
@@ -442,19 +442,19 @@
                         <!-- Search Engine Optimize -->
                         <div x-data="{
                             open: false,
-                            metaTitle: '{{ old('seo.meta_title', $product->seo->meta_title ?? '') }}',
-                            metaDescription: '{{ old('seo.meta_description', $product->seo->meta_description ?? '') }}',
-                            ogTitle: '{{ old('seo.og_title', $product->seo->og_title ?? '') }}',
-                            ogDescription: '{{ old('seo.og_description', $product->seo->og_description ?? '') }}',
-                            twitterTitle: '{{ old('seo.twitter_title', $product->seo->twitter_title ?? '') }}',
-                            twitterDescription: '{{ old('seo.twitter_description', $product->seo->twitter_description ?? '') }}',
+                            metaTitle: '',
+                            metaDescription: '',
+                            ogTitle: '',
+                            ogDescription: '',
+                            twitterTitle: '',
+                            twitterDescription: '',
                             userHasEdited: {
-                                metaTitle: {{ old('seo.meta_title') ? 'true' : 'false' }},
-                                metaDescription: {{ old('seo.meta_description') ? 'true' : 'false' }},
-                                ogTitle: {{ old('seo.og_title') ? 'true' : 'false' }},
-                                ogDescription: {{ old('seo.og_description') ? 'true' : 'false' }},
-                                twitterTitle: {{ old('seo.twitter_title') ? 'true' : 'false' }},
-                                twitterDescription: {{ old('seo.twitter_description') ? 'true' : 'false' }}
+                                metaTitle: false,
+                                metaDescription: false,
+                                ogTitle: false,
+                                ogDescription: false,
+                                twitterTitle: false,
+                                twitterDescription: false
                             },
                             init() {
                                 const nameInput = document.getElementById('name');
@@ -489,27 +489,27 @@
                             <div x-show="open" x-collapse class="mt-4 space-y-4">
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Meta Title</label>
-                                    <input type="text" name="seo[meta_title]" x-model="metaTitle" @input="userHasEdited.metaTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Meta Title">
+                                    <input type="text" name="seo[meta_title]" :value="metaTitle" @input="userHasEdited.metaTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Meta Title">
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Meta Description</label>
-                                    <textarea name="seo[meta_description]" x-model="metaDescription" @input="userHasEdited.metaDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                    <textarea name="seo[meta_description]" :value="metaDescription" @input="userHasEdited.metaDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Open Graph Title</label>
-                                    <input type="text" name="seo[og_title]" x-model="ogTitle" @input="userHasEdited.ogTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Open Graph Title">
+                                    <input type="text" name="seo[og_title]" :value="ogTitle" @input="userHasEdited.ogTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Open Graph Title">
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Open Graph Description</label>
-                                    <textarea name="seo[og_description]" x-model="ogDescription" @input="userHasEdited.ogDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                    <textarea name="seo[og_description]" :value="ogDescription" @input="userHasEdited.ogDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Twitter Title</label>
-                                    <input type="text" name="seo[twitter_title]" x-model="twitterTitle" @input="userHasEdited.twitterTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Twitter Title">
+                                    <input type="text" name="seo[twitter_title]" :value="twitterTitle" @input="userHasEdited.twitterTitle = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Twitter Title">
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Twitter Description</label>
-                                    <textarea name="seo[twitter_description]" x-model="twitterDescription" @input="userHasEdited.twitterDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
+                                    <textarea name="seo[twitter_description]" :value="twitterDescription" @input="userHasEdited.twitterDescription = true" class="w-full border border-gray-300 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"></textarea>
                                 </div>
                                 <div>
                                     <label class="block font-semibold text-gray-700 mb-2">Open Graph Image</label>
@@ -1502,6 +1502,16 @@
     </script>
 
     <script>
+        function formatTaka(amount, symbol = '৳', includeDecimal = false) {
+            const formatter = new Intl.NumberFormat('en-IN', {
+                style: 'currency',
+                currency: 'BDT',
+                minimumFractionDigits: includeDecimal ? 2 : 0,
+                maximumFractionDigits: includeDecimal ? 2 : 0,
+            });
+            return formatter.format(amount).replace('BDT', symbol).trim();
+        }
+
         function setupProductSelector(options) {
             const {
                 searchInputId,
@@ -1562,7 +1572,12 @@
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
                                     <div class="text-xs text-gray-400">Category: ${product.category_name || 'N/A'}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold">${product.price}</div>
+                                <div class="text-sm font-semibold">
+                                    ${product.sale_price && product.sale_price < product.price
+                                        ? `<span class="text-gemini-pink">${formatTaka(product.sale_price)}</span>`
+                                        : `<span class="text-gemini-pink">${formatTaka(product.price)}</span>`
+                                    }
+                                </div>
                                 <button type="button" class="text-red-500 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 rounded-full p-1 transition-all duration-200 ${removeButtonClass}">
                                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                                 </button>
@@ -1607,7 +1622,12 @@
                                     <div class="text-sm text-gray-500">SKU: ${product.sku}</div>
                                     <div class="text-xs text-gray-400 sm:col-span-2">Category: ${product.category_name || 'N/A'}</div>
                                 </div>
-                                <div class="text-sm text-gray-700 font-semibold text-right">${product.price}</div>
+                                <div class="text-sm font-semibold text-right">
+                                    ${product.sale_price && product.sale_price < product.price
+                                        ? `<span class="text-gemini-pink">${formatTaka(product.sale_price)}</span>`
+                                        : `<span class="text-gemini-pink">${formatTaka(product.price)}</span>`
+                                    }
+                                </div>
                             </div>
                         `).join('')
                         : '<div class="p-3 text-gray-500">No products found</div>';
@@ -1667,7 +1687,12 @@
                                         <div class="text-sm text-gray-500">SKU: ${suggestion.sku}</div>
                                         <div class="text-xs text-gray-400 mt-1">${suggestion.reason}</div>
                                     </div>
-                                    <div class="text-sm text-gray-700 font-semibold">${suggestion.price}</div>
+                                    <div class="text-sm font-semibold">
+                                        ${suggestion.sale_price && suggestion.sale_price < suggestion.price
+                                            ? `<span class="text-gemini-pink">${formatTaka(suggestion.sale_price)}</span>`
+                                            : `<span class="text-gemini-pink">${formatTaka(suggestion.price)}</span>`
+                                        }
+                                    </div>
                                 </div>
                             `).join('')}
                         `
