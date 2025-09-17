@@ -1,0 +1,101 @@
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    .printable-voucher, .printable-voucher * {
+        visibility: visible;
+    }
+
+    .printable-voucher {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        transform: scale(0.95);
+        transform-origin: top left;
+    }
+
+    .action-btn,
+    .breadcrumbs,
+    .alert,
+    .page-header,
+    #admin-sidebar,
+    header,
+    footer,
+    .btn,
+    .print\:hidden {
+        display: none !important;
+    }
+
+    /* Order & Customer Details */
+    .grid.grid-cols-1.md\:grid-cols-2 {
+        display: flex !important;
+        justify-content: space-between !important;
+    }
+
+    .grid.grid-cols-1.md\:grid-cols-2 > div {
+        width: 48% !important;
+    }
+
+    /* QR Code and Order Summary */
+    .flex.justify-between.items-start {
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: flex-start !important;
+    }
+
+    .flex.justify-between.items-start > .flex-shrink-0 {
+        width: 48% !important;
+    }
+
+    .flex.justify-between.items-start > .w-full {
+        width: 48% !important;
+        border: 1px solid #000; /* Add border to the container */
+        padding: 10px; /* Add some padding inside the box */
+    }
+
+    /* Remove individual line borders */
+    .printable-voucher .w-full.md\:w-1\/2 > div {
+        border-bottom: none !important;
+        border-top: none !important;
+        padding-top: 5px !important;
+        padding-bottom: 5px !important;
+    }
+
+    /* Maintain the bold grand total line */
+    .printable-voucher .w-full.md\:w-1\/2 > div:last-child {
+        border-top: 2px solid #000 !important;
+        padding-top: 10px !important;
+        margin-top: 10px !important;
+    }
+
+    /* Note spacing */
+    .print-note {
+        margin-top: 20px !important;
+    }
+
+    /* Table layout */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 20px;
+    }
+
+    th, td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    @page {
+        size: A4;
+        margin: 0;
+    }
+}

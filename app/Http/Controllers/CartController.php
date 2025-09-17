@@ -1,0 +1,187 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Product;
+use App\Models\ProductVariant;
+use App\Models\ShippingMethod; // Added
+use Illuminate\Http\Request;
+
+class CartController extends Controller
+{
+    public function add(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'variant_id' => 'nullable|exists:product_variants,id',
+            'quantity' => 'required|integer|min:1',
+            'action' => 'required|string|in:add_to_cart,buy_now',
+        ]);
+
+        $product = Product::findOrFail($request->product_id);
+        $variant = null;
+
+        if ($request->variant_id) {
+            $variant = ProductVariant::findOrFail($request->variant_id);
+        } else {
+            $variant = $product->variants()->first();
+            if (!$variant) {
+                $variant = (object)[
+                    'id' => 'product_' . $product->id,
+                    'final_price' => $product->sale_price && $product->sale_price < $product->price ? $product->sale_price : $product->price,
+                    'price' => $product->price,
+                    'stock_quantity' => $product->stock_quantity,
+                    'attributes_list' => 'N/A',
+                ];
+            }
+        }
+
+        if ($request->action === 'buy_now') {
+            $checkoutCart = [];
+            $checkoutCart[$variant->id] = [
+                "name" => $product->name,
+                "quantity" => $request->quantity,
+                "price" => $variant->final_price,
+                "image" => $product->thumbnail_url,
+                "attributes" => $variant->attributes_list,
+            ];
+            session()->put('checkout_cart', $checkoutCart);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Redirecting to checkout!',
+                'cart_count' => count(session()->get('cart', [])),
+                'redirect' => route('checkout.index')
+            ]);
+        } else {
+            $cart = session()->get('cart', []);
+
+            if(isset($cart[$variant->id])) {
+                $cart[$variant->id]['quantity'] += $request->quantity;
+            } else {
+                $cart[$variant->id] = [
+                    "name" => $product->name,
+                    "quantity" => $request->quantity,
+                    "price" => $variant->final_price,
+                    "image" => $product->thumbnail_url,
+                    "attributes" => $variant->attributes_list,
+                ];
+            }
+
+            session()->put('cart', $cart);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Product added to cart successfully!',
+                'cart_count' => count($cart),
+            ]);
+        }
+    }
+
+    public function index(Request $request)
+    {
+        $shippingMethods = ShippingMethod::where('is_active', true)->get();
+
+        if ($request->ajax()) {
+            $type = $request->get('type', 'might_also_like');
+            $skip = $request->get('skip', 0);
+            $take = 6;
+
+            if ($type === 'might_also_like') {
+                $products = Product::inRandomOrder()->skip($skip)->take($take)->get();
+            } else {
+                $products = Product::inRandomOrder()->skip($skip)->take($take)->get();
+            }
+
+            return response()->json([
+                'html' => view('partials.product_card', ['products' => $products])->render()
+            ]);
+        }
+
+        $mightAlsoLike = Product::inRandomOrder()->limit(6)->get();
+        $frequentlyBought = Product::inRandomOrder()->limit(6)->get();
+
+        return view('cart.index', compact('shippingMethods', 'mightAlsoLike', 'frequentlyBought'));
+    }
+
+    public function update(Request $request)
+    {
+        \Log::info('Cart update request received.', ['id' => $request->id, 'quantity' => $request->quantity]);
+
+        $request->validate([
+            'id' => 'required',
+            'quantity' => 'required|integer|min:1',
+        ]);
+
+        $cart = session()->get('cart');
+        \Log::info('Current cart session:', $cart);
+
+        if(isset($cart[$request->id])) {
+            \Log::info('Item found in cart.', ['item_id' => $request->id, 'old_quantity' => $cart[$request->id]['quantity']]);
+            $cart[$request->id]['quantity'] = $request->quantity;
+            session()->put('cart', $cart);
+            \Log::info('Cart quantity updated in session.', ['new_quantity' => $cart[$request->id]['quantity']]);
+
+            // Recalculate subtotal and total for the response
+            $subtotal = 0;
+            foreach ($cart as $item) {
+                // Check if price and quantity are set and numeric
+                if (!isset($item['price']) || !is_numeric($item['price']) || !isset($item['quantity']) || !is_numeric($item['quantity'])) {
+                    \Log::error('Corrupted cart item found during subtotal calculation.', ['item' => $item]);
+                    // Decide how to handle: skip, throw error, or default to 0
+                    // For now, let's just skip it to see if it's the cause of the 500
+                    continue;
+                }
+                $subtotal += $item['price'] * $item['quantity'];
+            }
+            \Log::info('Subtotal calculated:', ['subtotal' => $subtotal]);
+
+            // Assuming delivery_charge and coupon are also in session for total calculation
+            $deliveryCharge = session()->get('delivery_charge', 0);
+            $coupon = session()->get('coupon');
+            $couponDiscount = $coupon['discount'] ?? 0; // Safely access discount
+            \Log::info('Delivery charge and coupon discount:', ['delivery_charge' => $deliveryCharge, 'coupon_discount' => $couponDiscount]);
+
+            $total = $subtotal + $deliveryCharge - $couponDiscount;
+            if ($total < 0) $total = 0;
+            \Log::info('Total calculated:', ['total' => $total]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart updated successfully!',
+                'cart' => $cart,
+                'subtotal' => $subtotal,
+                'total' => $total,
+                'item_line_total' => $cart[$request->id]['price'] * $cart[$request->id]['quantity'],
+                'delivery_charge' => $deliveryCharge,
+                'coupon' => $coupon,
+            ]);
+        }
+        \Log::warning('Item not found in cart for update.', ['id' => $request->id]);
+        return response()->json([
+            'success' => false,
+            'message' => 'Item not found in cart.',
+        ], 404);
+    }
+
+    public function remove(Request $request)
+    {
+        $request->validate([
+            'id' => 'required',
+        ]);
+
+        $cart = session()->get('cart');
+        if(isset($cart[$request->id])) {
+            unset($cart[$request->id]);
+            session()->put('cart', $cart);
+            return redirect()->back()->with('success', 'Product removed from cart successfully!');
+        }
+        return redirect()->back()->withErrors(['cart' => 'Item not found in cart.']);
+    }
+
+    public function clear()
+    {
+        session()->forget('cart');
+        return redirect()->back()->with('success', 'Cart cleared successfully!');
+    }
+}

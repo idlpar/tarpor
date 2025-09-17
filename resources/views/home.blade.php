@@ -1,0 +1,15 @@
+@extends('layouts.app')
+
+@section('content')
+    @include('partials.app.hero')
+    @include('partials.app.new-arrivals')
+    @include('partials.app.best-sellers')
+    @include('partials.app.featured-products')
+    @include('partials.app.categories')
+    @include('partials.app.style-guide')
+    @include('partials.app.behind-craft')
+    @include('partials.app.our-story')
+    @include('partials.app.festive-collection')
+    @include('partials.app.why-choose-us')
+    @include('partials.app.testimonials')
+@endsection
